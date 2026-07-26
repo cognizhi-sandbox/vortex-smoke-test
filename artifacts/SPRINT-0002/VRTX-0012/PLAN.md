@@ -1,8 +1,8 @@
-# Plan — VRTX-0011: Implement health check endpoint variant B
+# Plan — VRTX-0012: Implement health check endpoint variant C
 
 ## Objective
 
-Implement the second independent health check endpoint at `GET /api/healthz-smoke-126862920-b` as a standalone Nitro route with no shared code, no database access, no authentication, and no dependencies on other endpoints. This endpoint is completely independent from VRTX-0010 (endpoint A) and VRTX-0012 (endpoint C).
+Implement the third independent health check endpoint at `GET /api/healthz-smoke-126862920-c` as a standalone Nitro route with no shared code, no database access, no authentication, and no dependencies on other endpoints. This endpoint is completely independent from VRTX-0010 (endpoint A) and VRTX-0011 (endpoint B).
 
 ---
 
@@ -10,7 +10,7 @@ Implement the second independent health check endpoint at `GET /api/healthz-smok
 
 ### 1. Create the Route File
 
-**File**: `routes/api/healthz-smoke-126862920-b.ts`
+**File**: `routes/api/healthz-smoke-126862920-c.ts`
 
 ```typescript
 import { defineHandler } from "nitro/h3";
@@ -35,28 +35,28 @@ export default defineHandler((event) => {
 
 ### 2. Create the Integration Test
 
-**File**: `routes/api/healthz-smoke-126862920-b.test.ts`
+**File**: `routes/api/healthz-smoke-126862920-c.test.ts`
 
 ```typescript
 import { H3Event } from "nitro/h3";
 import { describe, expect, it } from "vitest";
 
-import healthzB from "./healthz-smoke-126862920-b";
+import healthzC from "./healthz-smoke-126862920-c";
 
-describe("GET /api/healthz-smoke-126862920-b", () => {
+describe("GET /api/healthz-smoke-126862920-c", () => {
   it("returns HTTP 200 with correct response body", async () => {
-    const event = new H3Event(new Request("http://localhost/api/healthz-smoke-126862920-b"));
+    const event = new H3Event(new Request("http://localhost/api/healthz-smoke-126862920-c"));
 
-    const result = await healthzB(event);
+    const result = await healthzC(event);
 
     expect(result).toEqual({ ok: true, variant: "126862920" });
   });
 
   it("responds in under 100ms", async () => {
-    const event = new H3Event(new Request("http://localhost/api/healthz-smoke-126862920-b"));
+    const event = new H3Event(new Request("http://localhost/api/healthz-smoke-126862920-c"));
 
     const start = Date.now();
-    await healthzB(event);
+    await healthzC(event);
     const elapsed = Date.now() - start;
 
     expect(elapsed).toBeLessThan(100);
@@ -98,9 +98,9 @@ bun run lint
 bun run test
 ```
 
-- New test in `routes/api/healthz-smoke-126862920-b.test.ts` must pass
+- New test in `routes/api/healthz-smoke-126862920-c.test.ts` must pass
 - All existing tests must continue to pass
-- VRTX-0008 (endpoint A) tests should also still pass
+- VRTX-0008 (endpoint A) and VRTX-0009 (endpoint B) tests should also still pass
 
 ### 6. Build
 
@@ -121,7 +121,7 @@ bun run dev
 Then in another terminal:
 
 ```bash
-curl http://localhost:5000/api/healthz-smoke-126862920-b
+curl http://localhost:5000/api/healthz-smoke-126862920-c
 ```
 
 Expected response:
@@ -138,12 +138,12 @@ This TASK creates:
 
 | File/Path                                      | Operation | Notes                           |
 | ---------------------------------------------- | --------- | ------------------------------- |
-| `routes/api/healthz-smoke-126862920-b.ts`      | Create    | Route handler for endpoint B    |
-| `routes/api/healthz-smoke-126862920-b.test.ts` | Create    | Integration test for endpoint B |
+| `routes/api/healthz-smoke-126862920-c.ts`      | Create    | Route handler for endpoint C    |
+| `routes/api/healthz-smoke-126862920-c.test.ts` | Create    | Integration test for endpoint C |
 
-**No other TASKs should modify these files** during this sprint. These files are exclusive to VRTX-0011.
+**No other TASKs should modify these files** during this sprint. These files are exclusive to VRTX-0012.
 
-**No file overlap with other TASKs**: VRTX-0008 creates `healthz-smoke-126862920-a.*`, VRTX-0010 creates `healthz-smoke-126862920-c.*`, VRTX-0011 modifies docs only.
+**No file overlap with other TASKs**: VRTX-0010 creates `healthz-smoke-126862920-a.*`, VRTX-0011 creates `healthz-smoke-126862920-b.*`, VRTX-0013 verifies and updates docs only.
 
 ---
 
@@ -151,7 +151,7 @@ This TASK creates:
 
 ### Fixed Route Interface
 
-**Endpoint**: `GET /api/healthz-smoke-126862920-b`
+**Endpoint**: `GET /api/healthz-smoke-126862920-c`
 
 **HTTP Status**: MUST return HTTP 200
 
@@ -177,7 +177,7 @@ This TASK creates:
 ### Fixed Test Interface
 
 - Test file MUST use the `H3Event` + handler pattern
-- Test file MUST be located at `routes/api/healthz-smoke-126862920-b.test.ts`
+- Test file MUST be located at `routes/api/healthz-smoke-126862920-c.test.ts`
 - Test file MUST use Vitest (`describe`, `expect`, `it`)
 - Test file MUST be automatically excluded from production bundle (via `nitro({ ignore: ["**/*.test.ts"] })` in `vite.config.ts`)
 
@@ -185,13 +185,13 @@ This TASK creates:
 
 ## Definition of Done
 
-✅ `routes/api/healthz-smoke-126862920-b.ts` created with correct handler  
-✅ `routes/api/healthz-smoke-126862920-b.test.ts` created with passing tests  
+✅ `routes/api/healthz-smoke-126862920-c.ts` created with correct handler  
+✅ `routes/api/healthz-smoke-126862920-c.test.ts` created with passing tests  
 ✅ `bun run typecheck` passes (no errors)  
 ✅ `bun run lint` passes (zero warnings)  
-✅ `bun run test` passes (new test + all existing tests + VRTX-0008 tests)  
+✅ `bun run test` passes (new test + all existing tests + VRTX-0008 & VRTX-0009 tests)  
 ✅ `bun run build` succeeds (`dist/` and `.output/server/index.mjs` exist)  
 ✅ Manual `curl` test confirms endpoint responds with correct body  
 ✅ Response time verified < 100ms  
 ✅ Both files committed on ticket branch  
-✅ `artifacts/SPRINT-0002/VRTX-0011/PLAN.md` committed
+✅ `artifacts/SPRINT-0002/VRTX-0012/PLAN.md` committed

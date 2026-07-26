@@ -143,7 +143,7 @@ This TASK creates:
 
 **No other TASKs should modify these files** during this sprint. These files are exclusive to VRTX-0010.
 
-**No file overlap with other TASKs**: VRTX-0008 creates `healthz-smoke-126862920-a.*`, VRTX-0009 creates `healthz-smoke-126862920-b.*`, VRTX-0011 modifies docs only.
+**No file overlap with other TASKs**: VRTX-0008 creates `healthz-smoke-126862920-a.*`, VRTX-0011 creates `healthz-smoke-126862920-b.*`, VRTX-0013 verifies docs only.
 
 ---
 
