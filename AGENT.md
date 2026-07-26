@@ -233,6 +233,10 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 
 ## Changelog
 
+### 2026-07-26 — Sprint SPRINT-0019: Three Independent Health Check Endpoints
+
+Added three independent health check endpoints (`/api/healthz-smoke-302960562-a`, `/api/healthz-smoke-302960562-b`, `/api/healthz-smoke-302960562-c`) as worked examples of parallel endpoint development without code sharing. Each endpoint follows the H3Event integration test pattern; copy `routes/api/healthz-smoke-302960562-a.test.ts` when adding new endpoints. Demonstrates that multiple endpoints can be built concurrently with no coordination overhead.
+
 ### 2026-07-26 — Sprint SPRINT-0007: Health Check Endpoint
 
 Added `/healthz-smoke-cancel-569985850` endpoint as third example of simple self-contained API route. Pattern identical to SPRINT-0004 and SPRINT-0005 endpoints. See [Adding Tests](./AGENT.md#adding-tests) for test pattern: integration test using real H3Event, no live server needed. Copy `routes/api/healthz-smoke-cancel-569985850.test.ts` when adding new endpoints.
