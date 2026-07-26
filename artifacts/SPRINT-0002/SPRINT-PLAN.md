@@ -151,17 +151,21 @@ Each doc gets an updated dated `## Changelog` section: `2026-07-27: Health check
 
 ## Ticket Map
 
-| Phase | Ticket           | Title                                          | Agent    | Notes                                      |
-| ----- | ---------------- | ---------------------------------------------- | -------- | ------------------------------------------ |
-| 1     | VRTX-0008 (TASK) | Implement healthz endpoint variant A           | Engineer | Route + test, no dependencies              |
-| 1     | VRTX-0009 (TASK) | Implement healthz endpoint variant B           | Engineer | Route + test, independent from A           |
-| 1     | VRTX-0010 (TASK) | Implement healthz endpoint variant C           | Engineer | Route + test, independent from A & B       |
-| 3–6   | VRTX-0011 (TASK) | Verify build, test, lint, CI; update root docs | Engineer | Depends on VRTX-0008, VRTX-0009, VRTX-0010 |
+| Ticket    | Type  | Title                                              | Parent    | Agent    | Notes                                      |
+| --------- | ----- | -------------------------------------------------- | --------- | -------- | ------------------------------------------ |
+| VRTX-0008 | EPIC  | Health check endpoints: parallel deployment model  | (root)    | Product  | Epic grouping this sprint's work           |
+| VRTX-0009 | STORY | Implement three independent health check endpoints | VRTX-0008 | Product  | Container story for the three endpoints    |
+| VRTX-0010 | TASK  | Implement health check endpoint variant A          | VRTX-0009 | Engineer | Route + test, no dependencies              |
+| VRTX-0011 | TASK  | Implement health check endpoint variant B          | VRTX-0009 | Engineer | Route + test, independent from A           |
+| VRTX-0012 | TASK  | Implement health check endpoint variant C          | VRTX-0009 | Engineer | Route + test, independent from A & B       |
+| VRTX-0013 | TASK  | Verify build, test, lint, CI                       | VRTX-0009 | Engineer | Depends on VRTX-0010, VRTX-0011, VRTX-0012 |
 
 **Decomposition rationale**:
 
-- **VRTX-0008/9/10**: Each endpoint is truly independent (no shared code, no file overlap). Separate TASKs allow parallel development and deployment.
-- **VRTX-0011**: Depends on all three endpoints being implemented. Runs verification gates and updates root docs.
+- **VRTX-0008 (EPIC)**: Groups all work for this sprint
+- **VRTX-0009 (STORY)**: Container story for the three independent endpoints
+- **VRTX-0010/11/12 (TASKs)**: Each endpoint is truly independent (no shared code, no file overlap). Separate TASKs allow parallel development and deployment.
+- **VRTX-0013 (TASK)**: Verification gate. Depends on all three endpoints being implemented. Verifies all tests pass and CI succeeds.
 
 ---
 
