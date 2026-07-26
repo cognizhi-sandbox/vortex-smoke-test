@@ -64,3 +64,7 @@ $ bun run test
 ```
 
 All existing tests continue to pass with the new route and tests in place.
+
+---
+
+TDD-RESULT: 2 passed, 0 failed
