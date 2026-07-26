@@ -14,7 +14,7 @@ Add a self-contained health check endpoint following the established pattern fro
 
 Create the endpoint at `routes/api/healthz-smoke-cancel-1023069404.ts` and its test suite at `routes/api/healthz-smoke-cancel-1023069404.test.ts`, following the exact pattern of existing endpoints.
 
-**Ticket:** VRTX-0042 (TASK)  
+**Ticket:** VRTX-0044 (TASK — under VRTX-0043 STORY, under VRTX-0042 EPIC)  
 **Acceptance Criteria:**
 
 - Endpoint returns `{ok:true, variant:"1023069404"}` on GET /api/healthz-smoke-cancel-1023069404
@@ -81,6 +81,8 @@ None — this is an isolated, additive feature.
 
 ## Decomposition
 
-| Ticket    | Type | Title                                               | Dependencies |
-| --------- | ---- | --------------------------------------------------- | ------------ |
-| VRTX-0042 | TASK | Implement /healthz-smoke-cancel-1023069404 endpoint | None         |
+| Ticket    | Type  | Title                                                         | Parent    | Dependencies |
+| --------- | ----- | ------------------------------------------------------------- | --------- | ------------ |
+| VRTX-0042 | EPIC  | SPRINT-0009: Add /healthz-smoke-cancel-1023069404 endpoint    | VST-0009  | None         |
+| VRTX-0043 | STORY | Add /healthz-smoke-cancel-1023069404 endpoint                 | VRTX-0042 | None         |
+| VRTX-0044 | TASK  | Implement /healthz-smoke-cancel-1023069404 endpoint and tests | VRTX-0043 | None         |
