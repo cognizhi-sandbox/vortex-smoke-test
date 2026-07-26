@@ -29,9 +29,17 @@ This sprint adds a single HTTP GET endpoint to the running service that returns 
 
 ## Decomposition
 
-### 1 TASK: Implement /healthz-smoke-cancel-80899557 Endpoint & Tests
+### 1 EPIC: Add /healthz-smoke-cancel-80899557 Endpoint (VRTX-0065)
 
-Self-contained implementation task: write the endpoint handler, test suite, and update root docs per sprint convention.
+Single, additive feature with one clear implementation story.
+
+#### Story 1: Implement Endpoint & Tests (VRTX-0066)
+
+Self-contained story: write the endpoint handler and test suite.
+
+**Task 1: Implement /healthz-smoke-cancel-80899557 Endpoint & Tests (VRTX-0067)**
+
+Hands-on implementation: create endpoint handler, test suite, and update root docs per sprint convention.
 
 ---
 
@@ -51,7 +59,7 @@ Self-contained implementation task: write the endpoint handler, test suite, and 
 
 ---
 
-### Phase 2: Implementation (VRTX-0065)
+### Phase 2: Implementation (VRTX-0067)
 
 **Task**: Implement `/healthz-smoke-cancel-80899557` endpoint
 
@@ -82,7 +90,7 @@ Self-contained implementation task: write the endpoint handler, test suite, and 
 - `ARCHITECTURE.md` — update Changelog section (new entry: 2026-07-26 SPRINT-0015)
 - `DESIGN.md` — update Changelog section (new entry: 2026-07-26 SPRINT-0015)
 - `AGENT.md` — update Changelog section (new entry: 2026-07-26 SPRINT-0015)
-- `artifacts/SPRINT-0015/VRTX-0065/PLAN.md` — detailed task plan
+- `artifacts/SPRINT-0015/VRTX-0067/PLAN.md` — detailed task plan
 
 **Definition of Done**:
 
@@ -247,21 +255,24 @@ Current smoke test doesn't include this endpoint, so it's out of scope for this 
 
 ## Ticket Summary
 
-| Ticket    | Type | Title                                             | Dependencies     | Owner    |
-| --------- | ---- | ------------------------------------------------- | ---------------- | -------- |
-| VRTX-0065 | TASK | Implement /healthz-smoke-cancel-80899557 endpoint | VRTX-0064 (this) | engineer |
+| Ticket    | Type  | Title                                             | Dependencies     | Owner    |
+| --------- | ----- | ------------------------------------------------- | ---------------- | -------- |
+| VRTX-0065 | EPIC  | Add /healthz-smoke-cancel-80899557 endpoint       | VRTX-0064 (this) | product  |
+| VRTX-0066 | STORY | Implement /healthz-smoke-cancel-80899557 endpoint | VRTX-0065        | engineer |
+| VRTX-0067 | TASK  | Implement /healthz-smoke-cancel-80899557 endpoint | VRTX-0066        | engineer |
 
-**Total Scope**: 1 TASK (minimal viable backlog).
+**Total Scope**: 1 EPIC → 1 STORY → 1 TASK (minimal viable backlog).
 
 ---
 
 ## Next Steps (Post-Sprint)
 
-1. Engineer implements VRTX-0065: writes endpoint + tests + updates docs, pushes to branch
+1. Engineer implements VRTX-0067: writes endpoint + tests, pushes to branch
 2. CI validates (lint, typecheck, test, build)
 3. Ticket transitions to in_review, then done
-4. Sprint branch merges into main
-5. Endpoint is live in next deployment
+4. Story/Epic transitions to done
+5. Sprint branch merges into main
+6. Endpoint is live in next deployment
 
 ---
 
