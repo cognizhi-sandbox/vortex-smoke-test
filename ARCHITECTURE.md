@@ -75,20 +75,25 @@ Four tiers, one worked example each. Commands and how to extend: [README.md](./R
 
 ## Key Decisions
 
-| Decision                    | Rationale                                                                                                                                                          |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **React 19**                | Latest stable, ESM-first, better hooks ergonomics, Suspense for data fetching                                                                                      |
-| **Vite 8**                  | Industry-standard bundler, HMR speed, first-class TypeScript support, ESM-native config                                                                            |
-| **Nitro 3**                 | Full-stack with React SPA in same repo, zero-config routing, H3 middleware system                                                                                  |
-| **SQLite + Drizzle**        | SQLite needs no separate database server (file-local), Drizzle provides type-safe ORM without runtime overhead, migrations committed alongside code                |
-| **Bun runtime**             | `bun:sqlite` is the Bun native driver; Bun's speed and TypeScript support reduce dev/prod friction. Requirement: dev, test, and production must all run under Bun. |
-| **Tailwind CSS v4**         | CSS-first design (no JS config file), performance, design tokens via custom properties, ecosystem of plugins                                                       |
-| **shadcn-style primitives** | Radix + CVA patterns decouple styled primitives from app logic, supports composition + polymorphism, smaller bundle than full component library                    |
-| **Playwright**              | Cross-browser E2E, pinned to `~1.50.0` to match QA container Chromium, snapshot testing support, fast iteration                                                    |
+| Decision                                       | Rationale                                                                                                                                                                                                                                        |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **React 19**                                   | Latest stable, ESM-first, better hooks ergonomics, Suspense for data fetching                                                                                                                                                                    |
+| **Vite 8**                                     | Industry-standard bundler, HMR speed, first-class TypeScript support, ESM-native config                                                                                                                                                          |
+| **Nitro 3**                                    | Full-stack with React SPA in same repo, zero-config routing, H3 middleware system                                                                                                                                                                |
+| **SQLite + Drizzle**                           | SQLite needs no separate database server (file-local), Drizzle provides type-safe ORM without runtime overhead, migrations committed alongside code                                                                                              |
+| **Bun runtime**                                | `bun:sqlite` is the Bun native driver; Bun's speed and TypeScript support reduce dev/prod friction. Requirement: dev, test, and production must all run under Bun.                                                                               |
+| **Tailwind CSS v4**                            | CSS-first design (no JS config file), performance, design tokens via custom properties, ecosystem of plugins                                                                                                                                     |
+| **shadcn-style primitives**                    | Radix + CVA patterns decouple styled primitives from app logic, supports composition + polymorphism, smaller bundle than full component library                                                                                                  |
+| **Playwright**                                 | Cross-browser E2E, pinned to `~1.50.0` to match QA container Chromium, snapshot testing support, fast iteration                                                                                                                                  |
+| **Independent health endpoints (SPRINT-0001)** | Demonstrated by adding 3 standalone GET endpoints (`/healthz-smoke-136110581-{a,b,c}`); endpoints with no shared code, auth, or database allow parallel development and independent testing. Proof of concept for lightweight service additions. |
 
 ---
 
 ## Changelog
+
+### 2026-07-26 — SPRINT-0001: Add independent health-check endpoints
+
+Added 3 independent GET endpoints (`/healthz-smoke-136110581-a`, `/healthz-smoke-136110581-b`, `/healthz-smoke-136110581-c`) returning `{ok: true, variant: "136110581"}` each. Demonstrates standalone endpoint pattern: no shared code, no auth, no database, no middleware — each endpoint is a leaf unit of work (no dependencies between tasks). Integration tests via Vitest + H3Event. Documented sprint plan in artifacts/SPRINT-0001/SPRINT-PLAN.md with parallel development workflow.
 
 ### 2026-07-26 — Bootstrap sprint
 

@@ -44,6 +44,10 @@ Dark-mode tokens exist (`.dark` class) but no toggle is wired up — nothing set
 
 ## Changelog
 
+### 2026-07-26 — SPRINT-0001: Add independent health-check endpoints
+
+No design changes in SPRINT-0001 (API endpoints only, no frontend/UI modifications). Sprint plan documented in artifacts/SPRINT-0001/SPRINT-PLAN.md.
+
 ### 2026-07-26 — Bootstrap sprint
 
 Initial design system documentation. OKLCH custom properties in `src/index.css` for light/dark mode tokens, mapped to Tailwind v4 utilities. Component pattern: CVA + Radix Slot for variants and polymorphism. Icons: lucide-react (general) + @heroicons/react (overlay/nav). Animation via tw-animate-css. Dark mode exists but no toggle wired yet.

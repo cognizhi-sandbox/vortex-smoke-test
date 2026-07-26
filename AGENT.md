@@ -233,6 +233,10 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 
 ## Changelog
 
+### 2026-07-26 — SPRINT-0001: Add independent health-check endpoints
+
+Added 3 independent GET endpoints with integration tests. Test pattern: Vitest + H3Event for API route testing. Documented in artifacts/SPRINT-0001/SPRINT-PLAN.md with implementation details in VRTX-0004/PLAN.md, VRTX-0005/PLAN.md, VRTX-0006/PLAN.md. Each endpoint follows standalone pattern: no shared code, no database, no auth.
+
 ### 2026-07-26 — Bootstrap sprint
 
 Initial agent guide. Development workflow: `bun install`, `bun run dev`, `bun run build`. Verification gates: `bun run verify` (core, no browser), `bun run verify:full` (includes E2E). Conventions: file-based routing (frontend + backend), auto-imports (react + react-router), Tailwind v4 + shadcn pattern, Drizzle in `db/`, test tiers (unit/component/API/E2E). Gotchas: Nitro `serverDir: "./"`, Bun runtime requirement for `bun:sqlite`, Playwright on port 5178, ts-composite setup. CI via GitHub Actions on `vortex/**` branches.

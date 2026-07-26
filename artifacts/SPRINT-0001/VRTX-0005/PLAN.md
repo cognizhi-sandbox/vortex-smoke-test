@@ -1,8 +1,8 @@
-# VRTX-0004 Implementation Plan
+# VRTX-0005 Implementation Plan
 
-**Title**: Implement `/healthz-smoke-136110581-a` endpoint
+**Title**: Implement `/healthz-smoke-136110581-b` endpoint
 
-**Ticket**: VRTX-0004 (TASK)
+**Ticket**: VRTX-0005 (TASK)
 
 **Parent**: VRTX-0003 (STORY)
 
@@ -12,31 +12,31 @@
 
 ## Problem
 
-The service needs a lightweight health-check endpoint at `/healthz-smoke-136110581-a` to confirm readiness. No auth, no database, no shared code — just a GET endpoint returning `{ok: true, variant: "136110581"}` with HTTP 200.
+The service needs a lightweight health-check endpoint at `/healthz-smoke-136110581-b` to confirm readiness. No auth, no database, no shared code — just a GET endpoint returning `{ok: true, variant: "136110581"}` with HTTP 200.
 
 ## Solution
 
-Implement a standalone Nitro route handler at `routes/api/healthz-smoke-136110581-a.ts` that:
+Implement a standalone Nitro route handler at `routes/api/healthz-smoke-136110581-b.ts` that:
 
-1. Accepts GET requests to `/api/healthz-smoke-136110581-a`
+1. Accepts GET requests to `/api/healthz-smoke-136110581-b`
 2. Returns `{ok: true, variant: "136110581"}` with HTTP 200
 3. Has no dependencies on middleware, database, or other endpoints
 
 ## Acceptance Criteria (Definition of Done)
 
-- [ ] File `routes/api/healthz-smoke-136110581-a.ts` created with Nitro handler
+- [ ] File `routes/api/healthz-smoke-136110581-b.ts` created with Nitro handler
 - [ ] Handler returns `{ok: true, variant: "136110581"}` with HTTP 200
-- [ ] Integration test `routes/api/healthz-smoke-136110581-a.test.ts` created and passing
+- [ ] Integration test `routes/api/healthz-smoke-136110581-b.test.ts` created and passing
 - [ ] `bun run lint` passes with zero warnings
 - [ ] `bun run typecheck` passes
 - [ ] `bun run test` passes (all tests including new integration test)
-- [ ] Code committed with clear message: "feat(SPRINT-0001): add /healthz-smoke-136110581-a endpoint"
+- [ ] Code committed with clear message: "feat(SPRINT-0001): add /healthz-smoke-136110581-b endpoint"
 
 ---
 
 ## Implementation Details
 
-### File: `routes/api/healthz-smoke-136110581-a.ts`
+### File: `routes/api/healthz-smoke-136110581-b.ts`
 
 ```typescript
 import { defineHandler } from "nitro/h3";
@@ -51,14 +51,14 @@ export default defineHandler((event) => {
 
 **Pattern**: Standalone Nitro handler using `defineHandler` + H3 (H3 automatically sets HTTP 200 for successful responses).
 
-### File: `routes/api/healthz-smoke-136110581-a.test.ts`
+### File: `routes/api/healthz-smoke-136110581-b.test.ts`
 
 ```typescript
 import { describe, it, expect } from "vitest";
-import handler from "./healthz-smoke-136110581-a.ts";
+import handler from "./healthz-smoke-136110581-b.ts";
 import { createEvent } from "h3";
 
-describe("GET /api/healthz-smoke-136110581-a", () => {
+describe("GET /api/healthz-smoke-136110581-b", () => {
   it("returns {ok: true, variant: '136110581'} with HTTP 200", async () => {
     const event = createEvent({
       method: "GET",
@@ -77,7 +77,7 @@ describe("GET /api/healthz-smoke-136110581-a", () => {
 
 ## Testing Strategy
 
-1. **Unit/Integration Test**: Vitest + H3Event (routes/api/healthz-smoke-136110581-a.test.ts)
+1. **Unit/Integration Test**: Vitest + H3Event (routes/api/healthz-smoke-136110581-b.test.ts)
    - Assert response structure matches `{ok: true, variant: "136110581"}`
    - Assert HTTP status is 200
    - Run via `bun run test`
@@ -86,7 +86,7 @@ describe("GET /api/healthz-smoke-136110581-a", () => {
 
    ```bash
    bun run dev
-   curl http://localhost:5000/api/healthz-smoke-136110581-a
+   curl http://localhost:5000/api/healthz-smoke-136110581-b
    # Expected: {"ok":true,"variant":"136110581"}
    ```
 
@@ -103,8 +103,8 @@ describe("GET /api/healthz-smoke-136110581-a", () => {
 
 | Module                                         | Ownership | Dependencies              |
 | ---------------------------------------------- | --------- | ------------------------- |
-| `routes/api/healthz-smoke-136110581-a.ts`      | VRTX-0004 | Nitro/H3 (no custom deps) |
-| `routes/api/healthz-smoke-136110581-a.test.ts` | VRTX-0004 | Vitest, H3 test utilities |
+| `routes/api/healthz-smoke-136110581-b.ts`      | VRTX-0005 | Nitro/H3 (no custom deps) |
+| `routes/api/healthz-smoke-136110581-b.test.ts` | VRTX-0005 | Vitest, H3 test utilities |
 
 **No shared code** — this endpoint is completely standalone. No middleware, no database, no auth, no helpers. Does NOT touch or depend on any other task's code.
 
@@ -115,7 +115,7 @@ describe("GET /api/healthz-smoke-136110581-a", () => {
 ### Endpoint
 
 ```
-GET /api/healthz-smoke-136110581-a
+GET /api/healthz-smoke-136110581-b
 ```
 
 ### Request
@@ -145,12 +145,12 @@ No query parameters, request body, or headers required.
 - [ ] `bun run typecheck` passes (no TypeScript errors)
 - [ ] `bun run lint` passes (ESLint 9 + Prettier check)
 - [ ] Manual curl test confirms HTTP 200 and JSON response
-- [ ] Git commit created with message "feat(SPRINT-0001): add /healthz-smoke-136110581-a endpoint"
+- [ ] Git commit created with message "feat(SPRINT-0001): add /healthz-smoke-136110581-b endpoint"
 
 ---
 
 ## Changelog
 
-### 2026-07-26 — VRTX-0004 Implementation
+### 2026-07-26 — VRTX-0005 Implementation
 
-Standalone GET endpoint at `/healthz-smoke-136110581-a` returning `{ok: true, variant: "136110581"}` with HTTP 200. No auth, no database, no shared code. Integration test via Vitest + H3Event. Passes lint, typecheck, and test gates.
+Standalone GET endpoint at `/healthz-smoke-136110581-b` returning `{ok: true, variant: "136110581"}` with HTTP 200. No auth, no database, no shared code. Integration test via Vitest + H3Event. Passes lint, typecheck, and test gates.
