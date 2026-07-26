@@ -44,6 +44,10 @@ Dark-mode tokens exist (`.dark` class) but no toggle is wired up — nothing set
 
 ## Changelog
 
+### 2026-07-26 — Sprint SPRINT-0014: Bugfix — Missing Health Check Endpoint
+
+No design system changes for this sprint (backend-only bugfix endpoint addition).
+
 ### 2026-07-26 — Sprint SPRINT-0007: Health Check Endpoint
 
 No design system changes for this sprint (backend-only API endpoint addition).

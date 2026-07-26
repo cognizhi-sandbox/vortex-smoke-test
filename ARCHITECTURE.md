@@ -90,6 +90,10 @@ Four tiers, one worked example each. Commands and how to extend: [README.md](./R
 
 ## Changelog
 
+### 2026-07-26 — Sprint SPRINT-0014: Bugfix — Missing Health Check Endpoint
+
+Fixed missing `/healthz-smoke-cancel-bugfix-805287530` endpoint to `routes/api/` with matching test in `routes/api/healthz-smoke-cancel-bugfix-805287530.test.ts`. Endpoint was returning 404; now returns 200 with `{ok:true, variant:"805287530"}`. Pattern identical to health check endpoints from prior sprints.
+
 ### 2026-07-26 — Sprint SPRINT-0007: Health Check Endpoint
 
 Added `/healthz-smoke-cancel-569985850` endpoint to `routes/api/` with matching test in `routes/api/healthz-smoke-cancel-569985850.test.ts`. Demonstrates simple, self-contained GET endpoint pattern with no middleware or database dependencies. Third example of the health check pattern.
