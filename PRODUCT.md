@@ -1,23 +1,51 @@
 # Product
 
-React + TypeScript + Nitro full-stack boilerplate — not a real product. Replace this file's content once a real product is built on top of it.
+**vortex-smoke-test-bootstrap** — A working template demonstrating the Vortex infrastructure stack: React + TypeScript + Nitro full-stack with file-based routing, SQLite persistence, and a complete test harness (unit, component, E2E, smoke).
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for how it's built, [DESIGN.md](./DESIGN.md) for the visual system.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for how it's built, [DESIGN.md](./DESIGN.md) for the visual system, and [AGENT.md](./AGENT.md) for the operating manual.
 
-## Purpose
+## Problem
 
-A starting point for a new full-stack TypeScript app: React frontend + Nitro backend API, file-based routing on both sides, a working test setup, so the first commit is product code, not scaffolding.
+Teams building full-stack TypeScript applications spend significant time scaffolding infrastructure before writing product code — toolchain setup, build configuration, test harness, dev/prod parity, deployment. This template eliminates that friction.
 
-## Included
+## Users
 
-- Frontend: React 19, file-based routing, auto-imports, Tailwind v4 + shadcn/ui-style components
-- Backend: Nitro/H3 file-based API routes + middleware
-- Tests: one working example per tier (unit, integration, UI, E2E, smoke)
+- **Vortex engineers** — prove the boilerplate works end-to-end before feature sprints
+- **Early adopters** — bootstrap new full-stack projects on a known-good foundation
+- **Future product teams** — extend this template with domain features
 
-## Demo content
+## Scope
 
-`src/pages/index.tsx` (hero) and `routes/api/users/*` (mock data) are placeholder — replace with real pages/data.
+### Included
 
-## Filling this in for real
+- **Frontend**: React 19 SPA with file-based routing, auto-imports for hooks/components, TypeScript strict mode
+- **Backend**: Nitro 3 server with file-based API routes, SQLite persistence via Drizzle ORM, middleware support
+- **Testing**: Vitest + React Testing Library (unit/component/API integration tests), Playwright for E2E and smoke tests — all working examples, all scripts in `package.json`
+- **Styling**: Tailwind CSS v4 (CSS-first, no config files), shadcn/ui-style component primitives, custom design tokens
+- **DevEx**: ESLint 9 + typescript-eslint, Prettier, Husky pre-commit hooks, hot module reload, sourcemaps
+- **Deployment**: Bun-based production server (`.output/server/index.mjs`), Docker/docker-compose for containerization
+- **CI/CD**: GitHub Actions workflow triggering on `vortex/**` branches
 
-Document, at minimum: the problem being solved, who the users are, and what's in/out of scope for the first release.
+### Not in Scope
+
+- Real authentication (stub middleware exists; swap with real auth before shipping)
+- Domains features or business logic (boilerplate only)
+- Component library beyond shadcn-style primitives
+- Custom visualization/charting framework
+- Mobile-specific optimization
+
+## Success Criteria
+
+✅ Application builds and runs locally from a clean checkout  
+✅ Home page renders and shows the project name  
+✅ Type-check, lint, and unit tests pass  
+✅ End-to-end smoke test passes against the running app  
+✅ CI is green on the sprint branch (typecheck, lint, test, build all pass)
+
+---
+
+## Changelog
+
+### 2026-07-26 — Bootstrap sprint
+
+Initial project setup from the vortex-boilerplate-ts-reactjs-vite-tailwindcss template. Renamed project to vortex-smoke-test-bootstrap, updated homepage, added GitHub Actions CI workflow, documented root specs (AGENT/PRODUCT/ARCHITECTURE/DESIGN). Stack: React 19, Vite 8, Nitro 3, SQLite + Drizzle, Tailwind CSS v4, Vitest + Playwright.

@@ -133,11 +133,12 @@ const Home = () => {
           </div>
           <div className="text-center">
             <h1 className="text-5xl font-semibold tracking-tight text-balance text-white sm:text-7xl">
-              Vortex: the AI-driven autonomous software factory
+              vortex-smoke-test-bootstrap: Full-stack TypeScript on day one
             </h1>
             <p className="mt-8 text-lg font-medium text-pretty text-gray-400 sm:text-xl/8">
-              This is the production-ready boilerplate powering Vortex &mdash; fully typed, blazing
-              fast, and pre-wired with everything a modern web app needs to ship on day one.
+              A complete full-stack TypeScript boilerplate demonstrating React 19, Nitro 3, SQLite,
+              and a production-ready test harness — proof that the Vortex infrastructure works
+              end-to-end.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <a

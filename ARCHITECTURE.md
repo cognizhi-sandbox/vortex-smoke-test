@@ -1,6 +1,6 @@
 # Architecture
 
-See [PRODUCT.md](./PRODUCT.md) for what this is, [DESIGN.md](./DESIGN.md) for the visual system.
+See [PRODUCT.md](./PRODUCT.md) for what this is, [DESIGN.md](./DESIGN.md) for the visual system, and [AGENT.md](./AGENT.md) for the operating manual.
 
 ## Stack
 
@@ -17,7 +17,7 @@ See [PRODUCT.md](./PRODUCT.md) for what this is, [DESIGN.md](./DESIGN.md) for th
 - **Tests**: Vitest + Testing Library (unit/integration/UI), Playwright (E2E/smoke)
 - **Lint/format**: ESLint 9 + typescript-eslint, Prettier, Husky + lint-staged
 
-## Directory structure
+## Directory Structure
 
 ```
 .
@@ -34,10 +34,12 @@ See [PRODUCT.md](./PRODUCT.md) for what this is, [DESIGN.md](./DESIGN.md) for th
 ├── drizzle/                  # Generated SQL migrations (drizzle-kit generate), committed
 ├── e2e/                     # Playwright specs + global-setup.ts
 ├── configs/, scripts/
+├── .github/workflows/       # GitHub Actions CI
 ├── server.ts                # Nitro server entry
 ├── vite.config.ts, vitest.config.ts, playwright.config.ts, drizzle.config.ts
 ├── tsconfig.json             # src
 ├── tsconfig.node.json          # server/config/test files
+├── artifacts/               # Sprint plans and per-ticket docs
 └── package.json
 ```
 
@@ -47,7 +49,7 @@ See [PRODUCT.md](./PRODUCT.md) for what this is, [DESIGN.md](./DESIGN.md) for th
 
 **Backend**: `routes/api/*.ts` → `/api/*`, `middleware/*.ts` runs first and can set `event.context`. Requires `nitro({ serverDir: "./" })` in `vite.config.ts` — default is `false` (no scanning). `*.test.ts` excluded via `nitro({ ignore })`.
 
-## Data flow example
+## Data Flow Example
 
 `GET /api/hello`: `middleware/auth.ts` sets `event.context.user` → `routes/api/hello.ts` reads it and responds. `routes/api/users/[id].ts` shows the dynamic-route + `createError()` 404 pattern, backed by a real query against `db/client.ts`'s Drizzle instance.
 
@@ -68,3 +70,26 @@ Four tiers, one worked example each. Commands and how to extend: [README.md](./R
 
 - `ecosystem.config.js` (PM2) runs the real build: `.output/server/index.mjs`, under Bun (`interpreter: "bun"`) — required by `db/client.ts`'s `bun:sqlite` import. `nitro.service` (systemd) is the non-PM2 equivalent, same requirement.
 - `Dockerfile`/`docker-compose.yml` build a static `dist/` served by nginx — don't rely on them for the Nitro/DB-backed API without fixing first (they never run `.output/server/index.mjs`)
+
+---
+
+## Key Decisions
+
+| Decision                    | Rationale                                                                                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **React 19**                | Latest stable, ESM-first, better hooks ergonomics, Suspense for data fetching                                                                                      |
+| **Vite 8**                  | Industry-standard bundler, HMR speed, first-class TypeScript support, ESM-native config                                                                            |
+| **Nitro 3**                 | Full-stack with React SPA in same repo, zero-config routing, H3 middleware system                                                                                  |
+| **SQLite + Drizzle**        | SQLite needs no separate database server (file-local), Drizzle provides type-safe ORM without runtime overhead, migrations committed alongside code                |
+| **Bun runtime**             | `bun:sqlite` is the Bun native driver; Bun's speed and TypeScript support reduce dev/prod friction. Requirement: dev, test, and production must all run under Bun. |
+| **Tailwind CSS v4**         | CSS-first design (no JS config file), performance, design tokens via custom properties, ecosystem of plugins                                                       |
+| **shadcn-style primitives** | Radix + CVA patterns decouple styled primitives from app logic, supports composition + polymorphism, smaller bundle than full component library                    |
+| **Playwright**              | Cross-browser E2E, pinned to `~1.50.0` to match QA container Chromium, snapshot testing support, fast iteration                                                    |
+
+---
+
+## Changelog
+
+### 2026-07-26 — Bootstrap sprint
+
+Initial architecture documentation. Stack: React 19, Vite 8, Nitro 3, TypeScript 5, SQLite + Drizzle ORM, Tailwind CSS v4, shadcn-style primitives, Vitest + Playwright. File-based routing on frontend (vite-plugin-pages + react-router) and backend (Nitro H3). SQLite persistence in `db/`, migrations in `drizzle/`. Full test harness (unit, component, API integration, E2E smoke). GitHub Actions CI on `vortex/**` branches. Project requires Bun runtime for `bun:sqlite` support.

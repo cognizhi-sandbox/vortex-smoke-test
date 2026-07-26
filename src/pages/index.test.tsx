@@ -17,7 +17,7 @@ describe("Home page", () => {
     render(<Home />);
 
     expect(
-      screen.getByRole("heading", { level: 1, name: /Vortex: the AI-driven autonomous/i }),
+      screen.getByRole("heading", { level: 1, name: /vortex-smoke-test-bootstrap/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Get started" })).toBeInTheDocument();
   });
