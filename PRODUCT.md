@@ -46,6 +46,10 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 
 ## Changelog
 
+### 2026-07-26 — Sprint SPRINT-0004: Health Check Endpoint
+
+Added `/healthz-smoke-cancel-407995880` GET endpoint returning `{ok:true, variant:"407995880"}`. Self-contained, no auth/database, simple health check for smoke testing.
+
 ### 2026-07-26 — Bootstrap sprint
 
 Initial project setup from the vortex-boilerplate-ts-reactjs-vite-tailwindcss template. Renamed project to vortex-smoke-test-bootstrap, updated homepage, added GitHub Actions CI workflow, documented root specs (AGENT/PRODUCT/ARCHITECTURE/DESIGN). Stack: React 19, Vite 8, Nitro 3, SQLite + Drizzle, Tailwind CSS v4, Vitest + Playwright.
