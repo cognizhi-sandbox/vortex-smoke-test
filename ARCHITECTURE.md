@@ -90,6 +90,10 @@ Four tiers, one worked example each. Commands and how to extend: [README.md](./R
 
 ## Changelog
 
+### 2026-07-26 — Sprint SPRINT-0005: Health Check Endpoint
+
+Added `/healthz-smoke-cancel-158110053` endpoint to `routes/api/` with matching test in `routes/api/healthz-smoke-cancel-158110053.test.ts`. Demonstrates simple, self-contained GET endpoint pattern with no middleware or database dependencies. Second example of the health check pattern.
+
 ### 2026-07-26 — Sprint SPRINT-0004: Health Check Endpoint
 
 Added `/healthz-smoke-cancel-407995880` endpoint to `routes/api/` with matching test in `routes/api/healthz-smoke-cancel-407995880.test.ts`. Demonstrates simple, self-contained GET endpoint pattern with no middleware or database dependencies.

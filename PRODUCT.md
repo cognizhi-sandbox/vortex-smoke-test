@@ -46,6 +46,10 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 
 ## Changelog
 
+### 2026-07-26 — Sprint SPRINT-0005: Health Check Endpoint
+
+Added `/healthz-smoke-cancel-158110053` GET endpoint returning `{ok:true, variant:"158110053"}`. Self-contained, no auth/database, simple health check for smoke testing. Second example of minimal health check pattern.
+
 ### 2026-07-26 — Sprint SPRINT-0004: Health Check Endpoint
 
 Added `/healthz-smoke-cancel-407995880` GET endpoint returning `{ok:true, variant:"407995880"}`. Self-contained, no auth/database, simple health check for smoke testing.

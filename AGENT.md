@@ -233,6 +233,10 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 
 ## Changelog
 
+### 2026-07-26 — Sprint SPRINT-0005: Health Check Endpoint
+
+Added `/healthz-smoke-cancel-158110053` endpoint as second example of simple self-contained API route. Pattern identical to SPRINT-0004 endpoint. See [Adding Tests](./AGENT.md#adding-tests) for test pattern: integration test using real H3Event, no live server needed. Copy `routes/api/healthz-smoke-cancel-158110053.test.ts` when adding new endpoints.
+
 ### 2026-07-26 — Sprint SPRINT-0004: Health Check Endpoint
 
 Added `/healthz-smoke-cancel-407995880` endpoint as example of simple self-contained API route. See [Adding Tests](./AGENT.md#adding-tests) for test pattern: integration test using real H3Event, no live server needed. Copy `routes/api/healthz-smoke-cancel-407995880.test.ts` when adding new endpoints.
