@@ -56,10 +56,10 @@ All lint and typecheck gates passed.
 
 ## Summary
 
-✅ **TDD-RESULT: 2 passed, 0 failed**
-
 Both test cases pass consistently:
 
 - Response body assertion: `expect(result).toEqual({ ok: true, variant: "680958919" })`
 - Response time assertion: `expect(elapsed).toBeLessThan(100)` — actual ~0ms
 - Full test suite: 68 tests pass, no failures
+
+TDD-RESULT: 2 passed, 0 failed
