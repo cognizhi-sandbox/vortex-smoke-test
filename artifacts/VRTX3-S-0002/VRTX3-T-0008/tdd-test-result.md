@@ -66,3 +66,7 @@ The regression test (`routes/api/healthz-smoke-bugfix2-524723214.test.ts`) was c
 2. Performance baseline is met (<100ms)
 
 The test fails red (file not found) before the fix is applied, and passes green after the route handler is created.
+
+---
+
+TDD-RESULT: 2 passed, 0 failed
