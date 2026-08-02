@@ -91,3 +91,5 @@ curl -s http://localhost:5000/api/healthz-smoke-bugfix-106285986
 | Manual | ✅     | Curl test returns correct 200 response     |
 
 Regression test successfully pins the bug (RED) and confirms the fix (GREEN).
+
+TDD-RESULT: 2 passed, 0 failed
