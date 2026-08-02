@@ -233,6 +233,10 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 
 ## Changelog
 
+### 2026-08-02 — Sprint VRTX3-S-0004: Three Independent Health Check Endpoints
+
+Added three independent health check endpoints demonstrating parallel development without code sharing. Endpoints: `/api/healthz-smoke-680958919-a`, `/api/healthz-smoke-680958919-b`, `/api/healthz-smoke-680958919-c`. Each endpoint is a completely self-contained file returning `{ok:true,variant:"680958919"}`. Pattern: zero interdependencies, independent tests, independent commits. Demonstrates that multiple endpoints can be built concurrently with no coordination overhead. See [Adding Tests](./AGENT.md#adding-tests) for test pattern: integration test using real H3Event, no live server needed.
+
 ### 2026-08-02 — Sprint VRTX3-S-0003: Bugfix Sprint – Three Missing Health Check Endpoints
 
 Fixed three more missing health check endpoints that were returning 404 errors. Each endpoint is now available and returns HTTP 200 with a simple JSON response (`{ ok: true, variant: "<id>" }`). Endpoints: `/api/healthz-smoke-bugfix-26031336`, `/api/healthz-smoke-bugfix2-59156521`, `/api/healthz-smoke-bugfix3-200192357`. All endpoints follow the established H3Event integration test pattern with no external dependencies (no auth, no database, no code sharing). See [Adding Tests](./AGENT.md#adding-tests) for the test pattern.
