@@ -56,6 +56,6 @@ $ bun run verify
 ✓ bun run test (34 test files, 74 tests total)
 
 All gates passed with zero warnings.
+```
 
 TDD-RESULT: 74 passed, 0 failed
-```
