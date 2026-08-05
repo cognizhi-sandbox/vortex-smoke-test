@@ -62,3 +62,5 @@ $ NODE_ENV=test bun --bun vitest run
 
 Lint: zero warnings. Typecheck: clean. Full suite: 37 files / 80 tests, all
 passing, including every pre-existing `/api/healthz-smoke-*` test.
+
+TDD-RESULT: 80 passed, 0 failed
