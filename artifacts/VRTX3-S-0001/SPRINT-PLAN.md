@@ -1,160 +1,89 @@
-# VRTX3-S-0001 Bugfix Sprint Plan
+# VRTX3-S-0001 — Bugfix Sprint Plan (INDEX)
 
-**Sprint**: VRTX3-S-0001  
-**Planning Date**: 2026-08-02  
-**Defects**: 3 health check endpoint defects  
-**Regression Risk**: Low (net-new endpoints with no dependents)
+**Sprint goal**: `smoke-bugfix-1785889878831367` — restore three missing
+`/api/healthz-smoke-*` endpoints so each returns its `{ok, variant}` JSON.
 
----
+**Planned**: 2026-08-05 · base `94f7504` · Idea `VRTX3-I-0001`
+**Regression risk**: Low — three additive files + tests; nothing existing is modified.
 
-## Executive Summary
-
-Three health check endpoint variant routes are missing from the Nitro server, causing 404 responses where 200 OK with JSON responses are expected. These are minimal, self-contained endpoints following the pattern established by earlier sprints (SPRINT-0004, SPRINT-0005, SPRINT-0019). Each defect requires:
-
-1. A new route file under `routes/api/` with a trivial handler
-2. A corresponding H3Event-based integration test
-3. No shared code, no auth, no database access
-
-All three fixes follow the same pattern and can be parallelized.
+This file is an **index**. The RCA, fix, interface contract and Definition of
+Done for each defect live only in that defect's `PLAN.md`.
 
 ---
 
-## Defect Details & Root Causes
+## Defects
 
-### VRTX3-T-0001: Missing `/api/healthz-smoke-bugfix-508914715`
-
-**Defect**: GET `/api/healthz-smoke-bugfix-508914715` returns 404 instead of 200 with `{"ok":true,"variant":"508914715"}`
-
-**Root Cause**: No route handler exists for this endpoint in `routes/api/`. The file `routes/api/healthz-smoke-bugfix-508914715.ts` is missing.
-
-**Evidence**:
-
-- Grep on `routes/api/` finds no match for `508914715`
-- Similar endpoints exist (e.g., `healthz-smoke-cancel-407995880.ts`) proving the pattern
-- Reproduce: `curl http://localhost:5000/api/healthz-smoke-bugfix-508914715` → 404
-
-**Fix Plan**: Add `routes/api/healthz-smoke-bugfix-508914715.ts` with the same pattern as existing health endpoints. See `VRTX3-T-0001/PLAN.md`.
+| Ticket       | Endpoint                               | One-sentence root cause                                                                                                                         | Plan                                             |
+| ------------ | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| VRTX3-T-0001 | `/api/healthz-smoke-bugfix-868175391`  | The handler file `routes/api/healthz-smoke-bugfix-868175391.ts` was never added, and Nitro registers `/api/*` routes solely from files on disk. | [`VRTX3-T-0001/PLAN.md`](./VRTX3-T-0001/PLAN.md) |
+| VRTX3-T-0002 | `/api/healthz-smoke-bugfix2-101584827` | The handler file `routes/api/healthz-smoke-bugfix2-101584827.ts` was never added, so no route is registered for the path.                       | [`VRTX3-T-0002/PLAN.md`](./VRTX3-T-0002/PLAN.md) |
+| VRTX3-T-0003 | `/api/healthz-smoke-bugfix3-403022997` | The handler file `routes/api/healthz-smoke-bugfix3-403022997.ts` was never added, so no route is registered for the path.                       | [`VRTX3-T-0003/PLAN.md`](./VRTX3-T-0003/PLAN.md) |
 
 ---
 
-### VRTX3-T-0002: Missing `/api/healthz-smoke-bugfix2-473664326`
+## Cross-cutting notes for engineers
 
-**Defect**: GET `/api/healthz-smoke-bugfix2-473664326` returns 404 instead of 200 with `{"ok":true,"variant":"473664326"}`
+1. **⚠ The reported symptom "returns 404" is wrong — do not verify against it.**
+   Reproduced on `94f7504` in **both** `bun run dev` (Vite :5000) and the
+   production build (`bun .output/server/index.mjs`): an unmatched `/api/*` path
+   returns **`200` with `Content-Type: text/html`** — the SPA `index.html`
+   shell — not a 404. Behind `nginx.conf` the `/api/` location proxies straight
+   to Nitro with `proxy_intercept_errors` off, so nginx does not change this.
+   Consequence: **the status code is `200` before and after the fix**, so any
+   check of the form "was 404, now 200" passes vacuously. Assert on the
+   **response body and `Content-Type: application/json`**. This correction
+   supersedes the ticket descriptions and the `VRTX3-I-0001` canvas (including
+   its Fix-AC #1 and its Mermaid `404 Not Found` node).
 
-**Root Cause**: No route handler exists for this endpoint in `routes/api/`. The file `routes/api/healthz-smoke-bugfix2-473664326.ts` is missing.
+2. **No shared files; no ordering constraints.** Each fix creates two brand-new
+   files under `routes/api/` and modifies nothing else — not `vite.config.ts`,
+   not `middleware/`, not `db/`. No `depends_on` chain is warranted; the three
+   tickets are fully parallelisable. If an engineer finds themselves editing a
+   shared file, the plan has been misread.
 
-**Evidence**:
+3. **Follow the existing convention, do not refactor.** `routes/api/` holds ~30
+   near-identical self-contained healthz handlers. Copy the nearest sibling
+   verbatim. Do **not** extract a shared or parameterised healthz helper — that
+   would turn three low-risk additive fixes into a 30-file refactor.
 
-- Grep on `routes/api/` finds no match for `473664326`
-- Similar endpoints exist (e.g., `healthz-smoke-bugfix2-559758399.ts`) proving the pattern
-- Reproduce: `curl http://localhost:5000/api/healthz-smoke-bugfix2-473664326` → 404
+4. **Keep handlers context-free.** `middleware/auth.ts` runs before every route
+   and sets `event.context.user`. The healthz siblings deliberately never read
+   it; the new handlers must not either.
 
-**Fix Plan**: Add `routes/api/healthz-smoke-bugfix2-473664326.ts` with the same pattern as existing health endpoints. See `VRTX3-T-0002/PLAN.md`.
+5. **Gate**: `bun run verify` (lint + typecheck + test). Each new `.test.ts`
+   under `routes/api/` is picked up automatically by Vitest's `server` project
+   and excluded from the production bundle by `nitro({ ignore: ["**/*.test.ts"] })`.
 
----
-
-### VRTX3-T-0003: Missing `/api/healthz-smoke-bugfix3-429794134`
-
-**Defect**: GET `/api/healthz-smoke-bugfix3-429794134` returns 404 instead of 200 with `{"ok":true,"variant":"429794134"}`
-
-**Root Cause**: No route handler exists for this endpoint in `routes/api/`. The file `routes/api/healthz-smoke-bugfix3-429794134.ts` is missing.
-
-**Evidence**:
-
-- Grep on `routes/api/` finds no match for `429794134`
-- Similar endpoints exist (e.g., `healthz-smoke-bugfix3-428029175.ts`) proving the pattern
-- Reproduce: `curl http://localhost:5000/api/healthz-smoke-bugfix3-429794134` → 404
-
-**Fix Plan**: Add `routes/api/healthz-smoke-bugfix3-429794134.ts` with the same pattern as existing health endpoints. See `VRTX3-T-0003/PLAN.md`.
-
----
-
-## Implementation Strategy
-
-### Pattern & Template
-
-All three fixes follow the established Nitro file-based routing pattern:
-
-**Route File** (`routes/api/healthz-smoke-bugfix*-<variant>.ts`):
-
-```typescript
-import { defineHandler } from "nitro/h3";
-
-export default defineHandler(() => {
-  return {
-    ok: true,
-    variant: "<variant-id>",
-  };
-});
-```
-
-**Test File** (`routes/api/healthz-smoke-bugfix*-<variant>.test.ts`):
-
-```typescript
-import { H3Event } from "nitro/h3";
-import { describe, expect, it } from "vitest";
-
-import healthz from "./healthz-smoke-bugfix*-<variant>";
-
-describe("GET /api/healthz-smoke-bugfix*-<variant>", () => {
-  it("returns HTTP 200 with correct response body", async () => {
-    const event = new H3Event(new Request("http://localhost/api/healthz-smoke-bugfix*-<variant>"));
-    const result = await healthz(event);
-    expect(result).toEqual({ ok: true, variant: "<variant-id>" });
-  });
-
-  it("responds in under 100ms", async () => {
-    const event = new H3Event(new Request("http://localhost/api/healthz-smoke-bugfix*-<variant>"));
-    const start = Date.now();
-    await healthz(event);
-    const elapsed = Date.now() - start;
-    expect(elapsed).toBeLessThan(100);
-  });
-});
-```
-
-### Parallel Execution
-
-All three fixes are independent (different files, different variants, no shared state). They can be implemented and tested in parallel. Dependencies: none.
+6. **Stale artifacts removed.** This directory previously held planning and
+   execution artifacts from an earlier sprint that reused the key `VRTX3-S-0001`
+   (goal `smoke-bugfix-178564451025463`, variants `508914715` / `473664326` /
+   `429794134` — all three already shipped and present in `routes/api/`). Those
+   files described different endpoints under these same ticket keys and were
+   deleted in this commit to prevent engineers implementing the wrong variants.
+   They remain in git history at `a976259`.
 
 ---
 
-## Regression Analysis
+## Docs impact
 
-**Scope**: Adding 3 net-new endpoints; no modifications to existing routes.
-
-**Risk**: **Low**
-
-- No existing code depends on these endpoints (new)
-- File-based routing in Nitro means each endpoint is isolated
-- No database, auth, or shared utility access
-- Nitro router prioritizes exact matches; no shadowing risk
-
-**Testing Strategy**: Each route has its own H3Event-based test covering:
-
-- Response body format (JSON with `ok: true` and `variant` field)
-- HTTP status (implied 200 by handler return)
-- Performance (< 100ms)
-
-**Existing Tests**: Run `bun run verify` (lint + typecheck + test) to confirm no regressions.
+None. Observable behaviour changes only by adding three endpoints that follow an
+already-documented pattern; `AGENT.md` / `PRODUCT.md` / `ARCHITECTURE.md` /
+`DESIGN.md` need no edit at planning time. The `AGENT.md` changelog entry for
+this sprint belongs to sprint close, not to planning.
 
 ---
 
-## Follow-ups / Out of Scope
+## Follow-ups / out of scope
 
-None identified in this sprint.
-
----
-
-## Files to Commit
-
-- `routes/api/healthz-smoke-bugfix-508914715.ts`
-- `routes/api/healthz-smoke-bugfix-508914715.test.ts`
-- `routes/api/healthz-smoke-bugfix2-473664326.ts`
-- `routes/api/healthz-smoke-bugfix2-473664326.test.ts`
-- `routes/api/healthz-smoke-bugfix3-429794134.ts`
-- `routes/api/healthz-smoke-bugfix3-429794134.test.ts`
-- `artifacts/VRTX3-S-0001/SPRINT-PLAN.md`
-- `artifacts/VRTX3-S-0001/VRTX3-T-0001/PLAN.md`
-- `artifacts/VRTX3-S-0001/VRTX3-T-0002/PLAN.md`
-- `artifacts/VRTX3-S-0001/VRTX3-T-0003/PLAN.md`
+- **Unmatched `/api/*` paths return `200 text/html` instead of a JSON 404.**
+  Distinct from the three committed defects (which are missing files) — this is
+  a router/fallback-precedence issue affecting _every_ mistyped or missing API
+  path. It silently converts "endpoint does not exist" into "endpoint returned
+  an unparseable body", which is what made the original 404 reports inaccurate,
+  and it defeats any smoke test that probes for a 404. Suggested fix for a later
+  sprint: register an `/api/**` catch-all that returns a real `404` JSON error so
+  the SPA fallback never claims API paths. **Not filed as a ticket** — product
+  has no DEFECT-creation authority.
+- **~30 duplicated healthz handlers in `routes/api/`.** A parameterised route
+  (e.g. `routes/api/healthz/[variant].ts`) would collapse them, but this is a
+  refactor, not a defect, and must not ride along with a bugfix sprint.
