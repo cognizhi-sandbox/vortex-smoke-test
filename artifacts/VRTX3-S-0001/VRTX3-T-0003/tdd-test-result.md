@@ -1,62 +1,70 @@
-# VRTX3-T-0003 TDD Test Result
+# TDD Test Result: VRTX3-T-0003
 
-## Test Execution Summary
+## Test Design Matrix
 
-### Phase 1: RED (Before Fix)
+| Test                      | Location                                                        | Type        | Purpose                                                             |
+| ------------------------- | --------------------------------------------------------------- | ----------- | ------------------------------------------------------------------- |
+| Response body correctness | `routes/api/healthz-smoke-bugfix3-403022997.test.ts` line 6-13  | Integration | Verify handler returns exactly `{ ok: true, variant: "403022997" }` |
+| Latency bound             | `routes/api/healthz-smoke-bugfix3-403022997.test.ts` line 15-23 | Performance | Verify handler completes in under 100ms                             |
 
-Route file missing → endpoint returns 404:
+## RED Phase (Before Fix)
 
-```
-$ curl -s http://localhost:5000/api/healthz-smoke-bugfix3-429794134
-404 Not Found
-```
-
-The route file `routes/api/healthz-smoke-bugfix3-429794134.ts` did not exist at the start of this ticket.
-
-### Phase 2: GREEN (After Fix)
-
-Created route handler and integration tests. Test execution:
+Before creating the handler file, the route did not exist. Attempting a request returned HTTP 200 with SPA fallback HTML:
 
 ```
-$ bun run test -- healthz-smoke-bugfix3-429794134.test.ts
+$ curl -s -D- http://localhost:5000/api/healthz-smoke-bugfix3-403022997 | head -5
+HTTP/1.1 200 OK
+vary: sec-fetch-dest, accept
+content-length: 949
+content-type: text/html; charset=utf-8    ← bug: should be application/json
+```
+
+The test file could not run because the handler module did not exist.
+
+## GREEN Phase (After Fix)
+
+Created both handler and test files. Test execution:
+
+```
+$ bun --bun vitest run routes/api/healthz-smoke-bugfix3-403022997.test.ts
 
  RUN  v4.1.10 /workspace/repo
 
-
  Test Files  1 passed (1)
       Tests  2 passed (2)
-   Start at  04:27:51
-   Duration  119ms (transform 32ms, setup 0ms, import 54ms, tests 2ms, environment 0ms)
+   Start at  00:41:47
+   Duration  165ms (transform 33ms, setup 0ms, import 63ms, tests 5ms)
 ```
 
-## Test Cases
-
-| Test Case                                   | Status  | Details                                       |
-| ------------------------------------------- | ------- | --------------------------------------------- |
-| Returns HTTP 200 with correct response body | ✅ PASS | Verifies `{ ok: true, variant: "429794134" }` |
-| Responds in under 100ms                     | ✅ PASS | Performance assertion validated               |
-
-## Full Verification
+All tests pass. Full suite verification:
 
 ```
 $ bun run verify
-$ eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
-✓ lint passed
 
-$ node scripts/ensure-generated-files.mjs
-$ tsc --build
-✓ typecheck passed
-
-$ NODE_ENV=test bun --bun vitest run
- Test Files  22 passed (22)
-      Tests  50 passed (50)
-✓ all tests passed (no regressions)
+ Test Files  37 passed (37)
+      Tests  80 passed (80)
+   Start at  00:41:59
+   Duration  5.06s
 ```
 
-## Conclusion
+Endpoint now returns correct JSON:
 
-✅ **RED → GREEN transition confirmed**: Route file was missing (RED state), now created and all tests pass (GREEN state).  
-✅ **No regressions**: All 50 tests across 22 files passing.  
-✅ **Acceptance criteria met**: Handler returns correct JSON, HTTP 200 implicit via Nitro, performance < 100ms, no lint/typecheck errors.
+```
+$ curl -s http://localhost:5000/api/healthz-smoke-bugfix3-403022997
+{"ok":true,"variant":"403022997"}
 
-TDD-RESULT: 2 passed, 0 failed
+$ curl -s -D- http://localhost:5000/api/healthz-smoke-bugfix3-403022997 | grep content-type
+content-type: application/json;charset=UTF-8    ← fix verified
+```
+
+## Acceptance Criteria Met
+
+✅ Handler file exists at `routes/api/healthz-smoke-bugfix3-403022997.ts` with default-exported `defineHandler` from `"nitro/h3"`  
+✅ Endpoint returns HTTP 200 with `Content-Type: application/json` (not `text/html`)  
+✅ Response body is exactly `{"ok":true,"variant":"403022997"}` with correct types  
+✅ Test file exists at `routes/api/healthz-smoke-bugfix3-403022997.test.ts` using H3Event integration pattern  
+✅ Handler is context-free (no `event.context`, no `db/`, no shared modules)  
+✅ No existing files modified  
+✅ Full verification suite passes: lint + typecheck + all 80 tests
+
+TDD-RESULT: 80 passed, 0 failed

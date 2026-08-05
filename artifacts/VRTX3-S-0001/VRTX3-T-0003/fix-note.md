@@ -1,28 +1,27 @@
-# VRTX3-T-0003 Fix Note
+# Fix Note: VRTX3-T-0003
 
 ## Root Cause
 
-GET `/api/healthz-smoke-bugfix3-429794134` returned 404 because the route file `routes/api/healthz-smoke-bugfix3-429794134.ts` was missing from the Nitro server. Nitro uses file-based routing, so the route must exist as a physical file to be registered.
+Nitro 3 registers routes from files present on disk under `routes/api/`. The file `routes/api/healthz-smoke-bugfix3-403022997.ts` did not exist, so no handler was registered for the path. The unmatched request fell through to the static/SPA fallback, returning HTTP 200 with `Content-Type: text/html` (the SPA shell) instead of the expected JSON response.
 
 ## Minimal Fix
 
-Added two files following the established pattern from SPRINT-0004/SPRINT-0005/SPRINT-0019:
+Created two new files, copying the sibling pattern from `routes/api/healthz-smoke-bugfix3-331988924.ts` and `.test.ts`:
 
-1. **Route handler** (`routes/api/healthz-smoke-bugfix3-429794134.ts`): Self-contained Nitro endpoint returning `{ ok: true, variant: "429794134" }` with no external dependencies, auth, or database access.
+1. **`routes/api/healthz-smoke-bugfix3-403022997.ts`**: Default-exported `defineHandler` from `"nitro/h3"` returning `{ ok: true, variant: "403022997" }`
+2. **`routes/api/healthz-smoke-bugfix3-403022997.test.ts`**: Integration test using `H3Event` over the request URL, asserting the response body and latency bound
 
-2. **Integration test** (`routes/api/healthz-smoke-bugfix3-429794134.test.ts`): H3Event-based tests verifying correct JSON response body and sub-100ms performance.
+No existing files were modified.
 
 ## Files Touched
 
-- **Created**: `routes/api/healthz-smoke-bugfix3-429794134.ts` (7 lines)
-- **Created**: `routes/api/healthz-smoke-bugfix3-429794134.test.ts` (24 lines)
-
-## Regression Risk
-
-**Low**. The new endpoint is isolated, has no dependents, and follows an established pattern. All existing tests pass (22 test files, 50 total tests).
+- **Created**: `routes/api/healthz-smoke-bugfix3-403022997.ts`
+- **Created**: `routes/api/healthz-smoke-bugfix3-403022997.test.ts`
+- **Modified**: none
 
 ## Verification
 
-✅ Target test passes: `bun run test -- healthz-smoke-bugfix3-429794134.test.ts` (2/2)  
-✅ Full suite passes: `bun run verify` (lint, typecheck, test)  
-✅ No regressions: All 50 tests passing
+- `GET /api/healthz-smoke-bugfix3-403022997` now returns HTTP 200 with `Content-Type: application/json`
+- Response body: `{"ok":true,"variant":"403022997"}` (exactly as specified)
+- All tests pass: 37 test files, 80 tests
+- Full verification suite clean: lint + typecheck + tests

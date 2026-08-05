@@ -1,28 +1,41 @@
-# VRTX3-T-0001 Fix Note
+# VRTX3-T-0001 — Fix Note
 
-## Root Cause
+## Root cause
 
-GET `/api/healthz-smoke-bugfix-508914715` returned 404 because the route file `routes/api/healthz-smoke-bugfix-508914715.ts` was missing from the Nitro server. Nitro's file-based routing convention requires the handler file to exist for the endpoint to be registered.
+Nitro 3 registers `/api/*` routes purely from files present on disk under
+`routes/api/` (`vite.config.ts:29` — `nitro({ serverDir: "./", ignore: ["**/*.test.ts"] })`).
+`routes/api/healthz-smoke-bugfix-868175391.ts` did not exist, so no handler
+was ever registered for that path. The request fell through to the SPA
+fallback, which serves `index.html` with **HTTP 200** and
+`Content-Type: text/html` — not a 404 as the ticket title claimed. Reproduced
+on `94f7504` in both `bun run dev` and the production build
+(`.output/server/index.mjs`); nginx does not alter this since
+`proxy_intercept_errors` is off.
 
-## Minimal Fix
+Ruled out: directory scanning disabled (30 sibling routes resolve fine);
+handler hidden by the `**/*.test.ts` ignore glob (no file of any extension
+carried this variant); handler present but throwing (nothing existed to
+throw). The fix is purely additive — the file's presence _is_ the route
+registration.
 
-Added two files following the established pattern from other health check endpoints (SPRINT-0004, SPRINT-0005, SPRINT-0019):
+## Fix
 
-1. **routes/api/healthz-smoke-bugfix-508914715.ts** — Route handler returning `{ ok: true, variant: "508914715" }`
-2. **routes/api/healthz-smoke-bugfix-508914715.test.ts** — H3Event integration test with response body and performance assertions
+Added exactly two new files, copying the sibling
+`routes/api/healthz-smoke-bugfix-26031336.ts` / `.test.ts` pattern verbatim:
 
-## Files Touched
+- `routes/api/healthz-smoke-bugfix-868175391.ts` — default-exports a
+  `defineHandler` from `"nitro/h3"` returning
+  `{ ok: true, variant: "868175391" }`. No auth, no `event.context`, no `db/`
+  import, no shared helper module.
+- `routes/api/healthz-smoke-bugfix-868175391.test.ts` — constructs an
+  `H3Event` over `new Request("http://localhost/api/healthz-smoke-bugfix-868175391")`,
+  invokes the default export, and asserts `toEqual({ ok: true, variant: "868175391" })`
+  plus a <100ms latency bound.
 
-- **Created**: `routes/api/healthz-smoke-bugfix-508914715.ts` (8 lines)
-- **Created**: `routes/api/healthz-smoke-bugfix-508914715.test.ts` (25 lines)
+No existing file was modified.
 
-## Verification
+## Files touched
 
-- ✅ New endpoint test passes: 2 tests (response body, < 100ms)
-- ✅ Full verification suite passes: `bun run verify` (lint, typecheck, test all 50 tests)
-- ✅ No regression in existing endpoints
-- ✅ HTTP 200 + correct JSON body returned by handler
-
-## Regression Risk
-
-**Low** — Isolated, self-contained endpoint with no dependents. Only adds new functionality; no existing code modified.
+- Created: `routes/api/healthz-smoke-bugfix-868175391.ts`
+- Created: `routes/api/healthz-smoke-bugfix-868175391.test.ts`
+- Modified: none

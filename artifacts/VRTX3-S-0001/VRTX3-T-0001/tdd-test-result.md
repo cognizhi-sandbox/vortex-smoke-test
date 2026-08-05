@@ -1,77 +1,66 @@
-# VRTX3-T-0001 TDD Test Result
+# VRTX3-T-0001 — TDD Test Result (Red → Green)
 
-## Test Design
+## RED — before the fix
 
-Two integration tests using H3Event (Nitro's integration test pattern):
+Regression test file `routes/api/healthz-smoke-bugfix-868175391.test.ts` was
+created first, importing the not-yet-existing handler module. Run:
 
-1. **Response body correctness**: Verifies handler returns `{ ok: true, variant: "508914715" }`
-2. **Performance**: Verifies handler responds in under 100ms
+```console
+$ bun --bun vitest run routes/api/healthz-smoke-bugfix-868175391.test.ts
+ RUN  v4.1.10 /workspace/repo
 
-Pattern: matches all existing health check endpoint tests (healthz-smoke-cancel-407995880.test.ts, etc.)
+ ❯ |server| routes/api/healthz-smoke-bugfix-868175391.test.ts (0 test)
 
-Test file: `routes/api/healthz-smoke-bugfix-508914715.test.ts`
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
 
----
+ FAIL  |server| routes/api/healthz-smoke-bugfix-868175391.test.ts [ routes/api/healthz-smoke-bugfix-868175391.test.ts ]
+Error: Cannot find module './healthz-smoke-bugfix-868175391' imported from /workspace/repo/routes/api/healthz-smoke-bugfix-868175391.test.ts
 
-## RED Phase (Before Fix)
-
-Before creating `routes/api/healthz-smoke-bugfix-508914715.ts`, the test file would fail at import:
-
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  00:41:12
+   Duration  165ms (transform 33ms, setup 0ms, import 0ms, tests 0ms, environment 0ms)
+error: "vitest" exited with code 1
 ```
-error: Cannot find module "./healthz-smoke-bugfix-508914715"
-  at Module._load (internal/modules/commonjs/loader.js)
-```
 
-The missing handler is why the endpoint returns 404 in the live API.
+Confirmed real RED — the suite fails to even collect because the handler
+module does not exist on disk (matches the root cause: no file → no route).
 
----
+## GREEN — after the fix
 
-## GREEN Phase (After Fix)
+Added `routes/api/healthz-smoke-bugfix-868175391.ts` (default-exported
+`defineHandler` from `nitro/h3` returning
+`{ ok: true, variant: "868175391" }`). Re-ran the same test file:
 
-After adding the handler file:
-
-```
-$ bun run test -- healthz-smoke-bugfix-508914715.test.ts
-
+```console
+$ bun --bun vitest run routes/api/healthz-smoke-bugfix-868175391.test.ts
  RUN  v4.1.10 /workspace/repo
 
  Test Files  1 passed (1)
       Tests  2 passed (2)
-   Start at  04:28:13
-   Duration  64ms (transform 16ms, setup 0ms, import 24ms, tests 2ms, environment 0ms)
+   Start at  00:41:19
+   Duration  170ms (transform 39ms, setup 0ms, import 67ms, tests 6ms, environment 0ms)
 ```
 
-### Full Verification Suite (All Endpoints)
+Both assertions pass: exact body `{ ok: true, variant: "868175391" }` and
+<100ms latency bound.
 
-```
+## Full gate
+
+```console
 $ bun run verify
-
+$ eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
+$ tsc --build
+$ NODE_ENV=test bun --bun vitest run
  RUN  v4.1.10 /workspace/repo
 
- Test Files  22 passed (22)
-      Tests  50 passed (50)
-   Start at  04:28:18
-   Duration  1.41s (transform 172ms, setup 228ms, import 372ms, tests 465ms, environment 814ms)
+ Test Files  37 passed (37)
+      Tests  80 passed (80)
+   Start at  00:41:29
+   Duration  6.37s (transform 705ms, setup 1.25s, import 1.91s, tests 1.24s, environment 4.19s)
 ```
 
-✅ All 50 tests pass (48 before + 2 new)
-✅ Zero lint warnings
-✅ Zero type errors
-✅ No regression in existing endpoints
+Lint: zero warnings. Typecheck: clean. Full suite: 37 files / 80 tests, all
+passing, including every pre-existing `/api/healthz-smoke-*` test.
 
----
-
-## Acceptance Criteria Met
-
-- ✅ Route file created at `routes/api/healthz-smoke-bugfix-508914715.ts`
-- ✅ Handler returns `{ ok: true, variant: "508914715" }`
-- ✅ Nitro auto-registers route to `/api/healthz-smoke-bugfix-508914715`
-- ✅ Test file created with response body and performance assertions
-- ✅ Test passes: 2/2 tests passing
-- ✅ No lint or type errors
-- ✅ HTTP 200 returned by handler (implicit via defineHandler)
-- ✅ No regression: all 50 tests in suite pass (22 test files)
-
----
-
-TDD-RESULT: 50 passed, 0 failed
+TDD-RESULT: 80 passed, 0 failed

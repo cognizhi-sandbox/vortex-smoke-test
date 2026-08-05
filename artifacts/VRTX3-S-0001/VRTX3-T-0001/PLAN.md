@@ -1,125 +1,122 @@
-# VRTX3-T-0001 Implementation Plan
+# VRTX3-T-0001 — PLAN
 
-**Defect**: GET `/api/healthz-smoke-bugfix-508914715` returns 404, should return 200 + `{"ok":true,"variant":"508914715"}`
-
-**Root Cause**: Route file `routes/api/healthz-smoke-bugfix-508914715.ts` missing from the Nitro server.
-
-**Risk**: Low — isolated, self-contained endpoint with no dependents.
+**Defect**: `GET /api/healthz-smoke-bugfix-868175391` does not return `{"ok":true,"variant":"868175391"}`.
+**Sprint**: VRTX3-S-0001 (`smoke-bugfix-1785889878831367`)
+**Risk**: Low — additive only; no existing file is modified.
 
 ---
 
-## Definition of Done
+## 1. Reproduction (performed, not assumed)
 
-1. ✅ Route file created at `routes/api/healthz-smoke-bugfix-508914715.ts`
-2. ✅ Handler returns `{ ok: true, variant: "508914715" }` for all requests
-3. ✅ Nitro server auto-registers route to `/api/healthz-smoke-bugfix-508914715` via file-based routing
-4. ✅ Test file created at `routes/api/healthz-smoke-bugfix-508914715.test.ts` with:
-   - Correct JSON response body assertion
-   - Performance assertion (< 100ms)
-5. ✅ Test passes: `bun run test -- healthz-smoke-bugfix-508914715.test.ts`
-6. ✅ No lint or type errors: `bun run lint && bun run typecheck` pass
-7. ✅ HTTP 200 returned (implicit via defineHandler)
-8. ✅ No regression in existing health endpoints: `bun run verify`
+Branch @ `94f7504`, 2026-08-05. Dev server (`bun run dev`, Vite 8 on :5000):
 
----
+```console
+$ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5000/api/healthz-smoke-bugfix-868175391
+200                                        # <-- NOT 404
+$ curl -sD- http://localhost:5000/api/healthz-smoke-bugfix-868175391 | head -3
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8     # <-- the SPA index.html shell
+```
 
-## Implementation Steps
+Production build (`bun run build` && `bun .output/server/index.mjs`) — same result:
 
-### Step 1: Create Route Handler
+```console
+$ curl -sD- http://localhost:3111/api/healthz-smoke-bugfix-868175391 | head -2
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+```
 
-File: `routes/api/healthz-smoke-bugfix-508914715.ts`
+Control (an existing sibling) behaves correctly in both:
 
-```typescript
+```console
+$ curl -s http://localhost:5000/api/healthz-smoke-bugfix3-331988924
+{"ok":true,"variant":"331988924"}
+```
+
+> **⚠ The ticket's and canvas's stated symptom is wrong.** Both claim the
+> endpoint "returns 404". It does not — in **dev and production alike** the
+> unmatched `/api/*` path is answered by the SPA fallback with **`200` and
+> `text/html`**. The observable defect is _"HTML shell instead of the expected
+> JSON"_. **Assert on the response body, never on a 404 status.** A
+> fix-verification or QA step that waits for a 404-before / 200-after transition
+> will report a false pass, because the status is 200 both before and after.
+> This applies to all three defects — see `../SPRINT-PLAN.md`.
+
+## 2. Root cause
+
+Nitro 3 registers `/api/*` routes purely from files present on disk under
+`routes/api/` (`vite.config.ts:29` — `nitro({ serverDir: "./", ignore: ["**/*.test.ts"] })`).
+`routes/api/healthz-smoke-bugfix-868175391.ts` **does not exist**, so no handler
+is registered for the path; the request falls past the API router into the
+static/SPA fallback.
+
+```console
+$ ls routes/api | grep 868175391
+(no output)
+```
+
+Ruled out: (a) scanning disabled — 30 sibling routes resolve fine; (b) handler
+excluded by the `**/*.test.ts` ignore glob — no file of any extension carries
+this variant; (c) handler present but throwing — nothing exists to throw.
+
+**The fix is additive**: create the file. Its presence _is_ the registration.
+
+## 3. Fix
+
+Create exactly two new files, copying the sibling pattern verbatim
+(`routes/api/healthz-smoke-bugfix-26031336.ts` / `.test.ts`).
+
+`routes/api/healthz-smoke-bugfix-868175391.ts`:
+
+```ts
 import { defineHandler } from "nitro/h3";
 
 export default defineHandler(() => {
   return {
     ok: true,
-    variant: "508914715",
+    variant: "868175391",
   };
 });
 ```
 
-### Step 2: Create Test File
+`routes/api/healthz-smoke-bugfix-868175391.test.ts`: construct an `H3Event` over
+`new Request("http://localhost/api/healthz-smoke-bugfix-868175391")`, invoke the
+default export, assert the body and a `<100ms` latency bound — mirroring
+`routes/api/healthz-smoke-bugfix-26031336.test.ts`.
 
-File: `routes/api/healthz-smoke-bugfix-508914715.test.ts`
+**Do not** introduce a shared/parameterised healthz helper. The repo convention
+is 30 independent self-contained handlers; refactoring them is out of scope.
 
-```typescript
-import { H3Event } from "nitro/h3";
-import { describe, expect, it } from "vitest";
+## 4. Interface contract (fixed)
 
-import healthz from "./healthz-smoke-bugfix-508914715";
+| Item          | Value                                                                                              |
+| ------------- | -------------------------------------------------------------------------------------------------- |
+| Method + path | `GET /api/healthz-smoke-bugfix-868175391`                                                          |
+| Status        | `200`                                                                                              |
+| Content-Type  | `application/json` (**not** `text/html` — that is the bug)                                         |
+| Body          | exactly `{"ok":true,"variant":"868175391"}` — two keys, no more                                    |
+| `ok`          | boolean `true`                                                                                     |
+| `variant`     | string `"868175391"` (quoted, not a number)                                                        |
+| Handler file  | `routes/api/healthz-smoke-bugfix-868175391.ts`, default-exported `defineHandler` from `"nitro/h3"` |
+| Test file     | `routes/api/healthz-smoke-bugfix-868175391.test.ts`                                                |
+| Dependencies  | `nitro/h3` only — no auth, no `event.context`, no `db/`, no shared module                          |
 
-describe("GET /api/healthz-smoke-bugfix-508914715", () => {
-  it("returns HTTP 200 with correct response body", async () => {
-    const event = new H3Event(new Request("http://localhost/api/healthz-smoke-bugfix-508914715"));
+## 5. Verification
 
-    const result = await healthz(event);
-
-    expect(result).toEqual({ ok: true, variant: "508914715" });
-  });
-
-  it("responds in under 100ms", async () => {
-    const event = new H3Event(new Request("http://localhost/api/healthz-smoke-bugfix-508914715"));
-
-    const start = Date.now();
-    await healthz(event);
-    const elapsed = Date.now() - start;
-
-    expect(elapsed).toBeLessThan(100);
-  });
-});
+```console
+$ bun --bun vitest run routes/api/healthz-smoke-bugfix-868175391.test.ts   # 2 passed
+$ bun run verify                                                           # lint + typecheck + full suite
 ```
 
-### Step 3: Verify Tests Pass
+Dev hand-check — assert the **body and Content-Type**, not the status:
 
-```bash
-bun run test -- healthz-smoke-bugfix-508914715.test.ts
+```console
+$ curl -s http://localhost:5000/api/healthz-smoke-bugfix-868175391
+{"ok":true,"variant":"868175391"}
 ```
 
-Expected output: 2 passing tests.
+## 6. Files touched
 
-### Step 4: Run Full Verification
-
-```bash
-bun run verify
-```
-
-Expected: all checks pass (lint, typecheck, test suite).
-
----
-
-## Edge Cases Handled
-
-- **Variant extraction**: Hardcoded in response (no parsing needed for this single endpoint)
-- **Request method**: Nitro's `defineHandler` accepts GET by default
-- **Response type**: JSON is auto-serialized by Nitro
-- **Performance**: Simple object return, no async I/O, easily < 100ms
-
----
-
-## Testing Rationale
-
-Tests use H3Event (Nitro integration test pattern) to simulate HTTP requests without a live server. This matches all existing health-check endpoint tests in the codebase.
-
-The two test cases cover:
-
-1. **Correctness**: response body format and content
-2. **Performance**: endpoint responds quickly (< 100ms)
-
----
-
-## Files Modified
-
-- **Created**: `routes/api/healthz-smoke-bugfix-508914715.ts`
-- **Created**: `routes/api/healthz-smoke-bugfix-508914715.test.ts`
-
-## Commit Message
-
-```
-Add /api/healthz-smoke-bugfix-508914715 health check endpoint
-
-- Adds missing route handler returning {ok: true, variant: "508914715"}
-- Includes H3Event-based integration test with response body and performance assertions
-- Pattern matches existing health check endpoints (SPRINT-0004+)
-```
+- **Created**: `routes/api/healthz-smoke-bugfix-868175391.ts`
+- **Created**: `routes/api/healthz-smoke-bugfix-868175391.test.ts`
+- **Modified**: none.

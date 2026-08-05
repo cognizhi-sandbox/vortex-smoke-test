@@ -233,6 +233,12 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 
 ## Changelog
 
+### 2026-08-05 — Sprint VRTX3-S-0001: Bugfix Sprint – Three Missing Health Check Endpoints
+
+Added three missing health check endpoints, each returning HTTP 200 with `Content-Type: application/json` and a body of `{ ok: true, variant: "<id>" }`: `/api/healthz-smoke-bugfix-868175391`, `/api/healthz-smoke-bugfix2-101584827`, `/api/healthz-smoke-bugfix3-403022997`. Purely additive — 6 new files, 0 existing files modified. Each is a self-contained handler following the established H3Event integration test pattern (no auth, no database, no code sharing).
+
+**Gotcha worth knowing (applies beyond this sprint):** these endpoints were reported as "returning 404". They were not. An unmatched `/api/*` path is answered by the **SPA `index.html` fallback with `200 text/html`** — in `bun run dev` and in the production build alike (nginx does not change this; `/api/` proxies straight to Nitro with `proxy_intercept_errors` off). So a missing API route is indistinguishable from a working one by status code alone. When adding or verifying an API route, **assert on the response body and `Content-Type`, never on a 404→200 transition** — such a check passes whether or not the route exists.
+
 ### 2026-08-02 — Sprint VRTX3-S-0004: Three Independent Health Check Endpoints
 
 Added three independent health check endpoints demonstrating parallel development without code sharing. Endpoints: `/api/healthz-smoke-680958919-a`, `/api/healthz-smoke-680958919-b`, `/api/healthz-smoke-680958919-c`. Each endpoint is a completely self-contained file returning `{ok:true,variant:"680958919"}`. Pattern: zero interdependencies, independent tests, independent commits. Demonstrates that multiple endpoints can be built concurrently with no coordination overhead. See [Adding Tests](./AGENT.md#adding-tests) for test pattern: integration test using real H3Event, no live server needed.

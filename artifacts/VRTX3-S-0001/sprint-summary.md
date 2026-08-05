@@ -1,164 +1,117 @@
-# VRTX3-S-0001 Sprint Summary
+# Sprint Summary — VRTX3-S-0001
 
-**Sprint:** VRTX3-S-0001  
-**Goal:** [smoke] Bugfix sprint smoke-bugfix-178564451025463  
-**Dates:** 2026-08-02 (Planning) → 2026-08-02 (Close)  
-**Status:** ✅ **SHIPPED**
+**Goal**: `[smoke] Bugfix sprint smoke-bugfix-1785889878831367` — restore three
+missing `/api/healthz-smoke-*` endpoints so each returns its `{ok, variant}` JSON.
 
----
-
-## What Shipped
-
-Three independent health check endpoint bugfixes, delivering net-new API endpoints with zero regressions.
-
-### Defects Fixed
-
-| Ticket       | Endpoint                               | Issue        | Fix                         |
-| ------------ | -------------------------------------- | ------------ | --------------------------- |
-| VRTX3-T-0001 | `/api/healthz-smoke-bugfix-508914715`  | 404 response | Added route handler + tests |
-| VRTX3-T-0002 | `/api/healthz-smoke-bugfix2-473664326` | 404 response | Added route handler + tests |
-| VRTX3-T-0003 | `/api/healthz-smoke-bugfix3-429794134` | 404 response | Added route handler + tests |
-
-### Deliverables
-
-- ✅ 3 route files (`routes/api/healthz-smoke-bugfix*-*.ts`)
-- ✅ 3 integration test files (`routes/api/healthz-smoke-bugfix*-*.test.ts`)
-- ✅ Planning artifacts: SPRINT-PLAN.md + per-ticket PLAN.md
-- ✅ Execution artifacts: per-ticket fix-note.md + tdd-test-result.md
-- ✅ QA artifacts: qa-test-report.md + integration-test-result.md
-
-### Key Metrics
-
-| Metric              | Value                               |
-| ------------------- | ----------------------------------- |
-| **Tests Passed**    | 54/54 (100%)                        |
-| **Type Errors**     | 0                                   |
-| **Lint Warnings**   | 0                                   |
-| **Code Coverage**   | 100% for new code                   |
-| **Regression Risk** | Very Low (net-new endpoints)        |
-| **Build Status**    | ✅ Passed                           |
-| **Build Size**      | +0.12 KB (gzipped, for 3 endpoints) |
+**Type**: Bugfix · **Idea**: VRTX3-I-0001
+**Base**: `94f7504` → **sprint tip at close**: `af35b75`
+**Dates**: planned, executed, QA'd and closed 2026-08-05
+**Outcome**: **PASS** — all three committed defects fixed, zero defects logged, zero rework cycles.
 
 ---
 
-## What Changed
+## What shipped
 
-### Observable Behavior
+| Ticket       | Endpoint                                   | Status  |
+| ------------ | ------------------------------------------ | ------- |
+| VRTX3-T-0001 | `GET /api/healthz-smoke-bugfix-868175391`  | ✅ Done |
+| VRTX3-T-0002 | `GET /api/healthz-smoke-bugfix2-101584827` | ✅ Done |
+| VRTX3-T-0003 | `GET /api/healthz-smoke-bugfix3-403022997` | ✅ Done |
 
-**New Endpoints:**
+Each now returns `200` / `application/json` with exactly `{"ok":true,"variant":"<id>"}`.
 
-- GET `/api/healthz-smoke-bugfix-508914715` → 200 + `{"ok": true, "variant": "508914715"}`
-- GET `/api/healthz-smoke-bugfix2-473664326` → 200 + `{"ok": true, "variant": "473664326"}`
-- GET `/api/healthz-smoke-bugfix3-429794134` → 200 + `{"ok": true, "variant": "429794134"}`
+Supporting tickets: VRTX3-T-0004 (bugfix plan), VRTX3-T-0005 (integration QA),
+VRTX3-T-0006 (this close bundle).
 
-**Breaking Changes:** None
+**Diff**: 6 new files, **0 existing files modified**.
 
-**Performance Impact:** Negligible (+0.12 KB bundle gzip)
+```
+routes/api/healthz-smoke-bugfix-868175391.ts   + .test.ts
+routes/api/healthz-smoke-bugfix2-101584827.ts  + .test.ts
+routes/api/healthz-smoke-bugfix3-403022997.ts  + .test.ts
+```
 
-### Code Quality
+Each handler is a self-contained `defineHandler` from `"nitro/h3"` returning a
+static literal — no auth, no `event.context`, no `db/`, no shared helper. Each
+test drives a real `H3Event` and asserts the exact body plus a <100ms bound.
 
-- All new code follows established health-check endpoint pattern (SPRINT-0004, SPRINT-0005, SPRINT-0019)
-- Zero technical debt introduced
-- No existing code paths modified
-- Full integration test coverage for all three endpoints
+## Root cause (common to all three)
 
-### Documentation
+Nitro 3 registers `/api/*` routes purely from files present on disk under
+`routes/api/`. All three handler files were simply absent, so no route was ever
+registered. The fix was additive in every case — the file's presence _is_ the
+registration. No config, middleware or router change was needed.
 
-Root docs (AGENT.md, PRODUCT.md, ARCHITECTURE.md, DESIGN.md) remain unchanged — no observable behavior change to end users required updates.
+## Verification at close
 
----
+Re-run independently on the integrated sprint branch during this close ticket,
+not taken on trust from the QA report:
 
-## Quality Gates Summary
-
-✅ **Planning Phase** (VRTX3-T-0004)
-
-- RCA completed for all 3 defects
-- Fix strategy documented with PLAN.md files for each ticket
-- Regression risk assessed as Low
-
-✅ **Execution Phase** (VRTX3-T-0001, T-0002, T-0003)
-
-- All 3 route handlers implemented following established pattern
-- All 3 test files created with integration tests
-- Fix notes documenting minimal changes
-- Test results: 54/54 passed, zero warnings
-
-✅ **Integration QA Phase** (VRTX3-T-0005)
-
-- Build passes without errors
-- All 54 tests pass (including 6 new endpoint integration tests)
-- Type checking: 100% compliant (TypeScript strict mode)
-- Linting: 100% compliant (ESLint 9, Prettier)
-- Code review: All implementations approved
-- E2E: Skipped due to test environment infrastructure issue (Chromium version mismatch), but not a code defect; all endpoints fully verified via integration tests
-- **Verdict: PASS — Ready to ship**
-
----
+- `bun run verify` — **exit 0**; 39 test files, 84 tests passed.
+- `bun run build` — succeeded; all three routes registered in the compiled server.
+- Live checks against the built server (`bun .output/server/index.mjs`): all
+  three return `200` + `Content-Type: application/json` + the exact expected body.
+- Playwright chromium suite (per QA): 5/5 passed, no regressions.
 
 ## Retrospective
 
-### What Went Well ✅
+**What went well**
 
-1. **Pattern Reuse:** All three implementations perfectly matched the established health-check endpoint pattern. Zero ambiguity, zero planning friction.
+- **Reproducing before planning caught a wrong premise.** All three tickets — and
+  the VRTX3-I-0001 canvas, including its Fix-AC #1 and its Mermaid `404 Not Found`
+  node — stated the endpoints "return 404". They did not. Unmatched `/api/*` paths
+  are answered by the SPA `index.html` fallback with `200 text/html`, in dev _and_
+  in the production build. Had planning trusted the ticket text, the ACs would
+  have been written as a 404→200 status transition, which is **true before and
+  after the fix** — every endpoint would have "passed" without being fixed. ACs
+  were rewritten to assert response body and `Content-Type` instead.
+- **QA re-verified rather than echoing.** QA independently reproduced the
+  fallback behaviour against the built server and included a still-missing
+  control route, confirming the correction instead of restating it.
+- **Strict no-refactor discipline.** With ~33 near-identical healthz handlers,
+  the temptation to parameterise was real; keeping three additive fixes additive
+  held blast radius at zero and needed no rework.
+- **Clean pipeline.** Three parallel fixes, no shared files, no `depends_on`
+  chains, no rework cycles, first-pass QA PASS.
 
-2. **Clear Scope:** The defects were well-defined with specific endpoint names and expected responses. No scope creep or interpretation issues.
+**What could improve**
 
-3. **Parallel Execution:** All three fixes were completely independent (separate files, no shared code). Could be worked on in parallel without coordination overhead.
+- **Defect reports assert symptoms nobody measured.** The "404" claim propagated
+  from the idea into the canvas into all three ticket descriptions unchallenged.
+  Cheap guard: require the reporter to paste real `curl -D-` output (status _and_
+  `Content-Type`) into the Repro Steps section.
+- **The SPA fallback silently swallows API mistakes.** It converts "this endpoint
+  does not exist" into "this endpoint returned an unparseable body" — the direct
+  cause of the bad reports above, and it defeats any smoke test probing for 404.
+  This remains open (see below).
+- **Sprint-key reuse left landmines.** `artifacts/VRTX3-S-0001/` already held a
+  previous sprint's artifacts under these same ticket keys but for _different_
+  endpoint variants (`508914715`/`473664326`/`429794134`). They were deleted
+  during planning to prevent engineers implementing the wrong variants, but a
+  fresh key — or a namespaced artifacts path — would avoid the hazard entirely.
+- **No coverage instrumentation.** Coverage is reported by file accounting
+  (33/33 route handlers have a matching test) rather than measured lines.
 
-4. **Testing Strategy:** H3Event-based integration tests proved more direct and reliable than E2E for simple stateless endpoints. Tests caught zero regressions.
+## Carried-forward / open items
 
-5. **Minimal Footprint:** Each fix adds only 8 lines of code (handler) + 25 lines of test. No boilerplate or complexity.
+No defects were left open by this sprint, and QA logged no issues in scope.
+Two out-of-scope items are carried forward so they are not lost with the sprint:
 
-### What Could Improve 📈
+1. **Unmatched `/api/*` returns `200 text/html` instead of a JSON `404`.**
+   Re-confirmed at close: `GET /api/healthz-smoke-does-not-exist-999` on the
+   built server still yields `200` + `text/html`. A router/fallback-precedence
+   issue affecting every mistyped or nonexistent API path. Suggested fix: an
+   `/api/**` catch-all returning a real JSON `404` so the SPA fallback never
+   claims API paths. Not filed as a ticket — product has no DEFECT-creation
+   authority; recorded in `SPRINT-PLAN.md` Follow-ups and concurred by QA.
+2. **~33 near-duplicated healthz handlers in `routes/api/`.** A parameterised
+   route (e.g. `routes/api/healthz/[variant].ts`) would collapse them. A
+   refactor, not a defect — deliberately excluded from a bugfix sprint.
 
-1. **E2E Infrastructure:** The Chromium version mismatch in the test environment blocked E2E runs. Consider:
-   - Pinning Playwright to a stable version with broad Chromium support
-   - Using CI/CD for E2E tests instead of local environment
-   - For simple endpoints like these, integration tests are sufficient
+## Artifacts
 
-2. **Defect Batching:** While the sprint was efficient, grouping related defects with consistent naming (e.g., `bugfix`, `bugfix2`, `bugfix3`) could signal to future maintainers that these are thematically related. Consider adding a comment in the first endpoint linking to the others.
-
-3. **Variant ID Semantics:** The variant IDs (508914715, 473664326, 429794134) appear to be randomly generated. If these are smoke-test IDs meant to track test runs, consider documenting the ID generation scheme in CLAUDE.md.
-
-### Lessons Learned 🎓
-
-- **Health check endpoints are lightweight first-class citizens** in the codebase. Adding three of them had near-zero integration complexity.
-- **File-based routing pays off** — no manual router registration, no middleware coordination, minimal mental load.
-- **Integration tests are the MVP for API endpoints** — they run fast, require no browser, and provide more direct verification than E2E for stateless handlers.
-
----
-
-## Deployment Notes
-
-### Ready for Production ✅
-
-- All acceptance criteria met
-- QA verdict: PASS
-- No regressions detected
-- Build artifacts verified
-
-### Deployment Checklist
-
-- [ ] Merge sprint branch to main/dev
-- [ ] Deploy `.output/server/index.mjs` to production
-- [ ] Monitor endpoints for availability and latency (target: < 100ms)
-- [ ] Verify Prometheus/monitoring is tracking the three new endpoints
-
-### Rollback Plan
-
-If needed, simply omit the three route files; the Nitro router will automatically un-register them with no configuration changes needed.
-
----
-
-## Next Steps
-
-1. ✅ Close sprint (this ticket, VRTX3-T-0006)
-2. ⏭️ Merge sprint branch to main
-3. ⏭️ Deploy to production
-4. ⏭️ Monitor endpoint performance and error rates
-
----
-
-**Sprint Closed By:** Product (Sprint Close Bundle)  
-**Closed At:** 2026-08-02  
-**Commit:** See VRTX3-S-0001 sprint branch for merged artifacts
+- `SPRINT-PLAN.md` — sprint index (goal, defect table, cross-cutting notes, follow-ups)
+- `VRTX3-T-000{1,2,3}/PLAN.md` — per-defect RCA, fix, interface contract
+- `VRTX3-T-000{1,2,3}/fix-note.md`, `tdd-test-result.md` — engineer execution records
+- `qa-test-report.md`, `integration-test-result.md` — integration QA (VRTX3-T-0005)
+- `sprint-summary.md`, `release-notes.md` — this close bundle (VRTX3-T-0006)

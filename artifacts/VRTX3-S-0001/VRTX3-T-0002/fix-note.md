@@ -1,37 +1,32 @@
-# VRTX3-T-0002 Fix Note
+# VRTX3-T-0002 — Fix Note
 
 ## Root Cause
 
-GET `/api/healthz-smoke-bugfix2-473664326` returned 404 because the route handler file `routes/api/healthz-smoke-bugfix2-473664326.ts` was missing from the Nitro server. The route was never registered due to Nitro's file-based routing requiring the handler file to exist.
+Nitro 3 registers `/api/*` routes purely from files present on disk under `routes/api/` (via `vite.config.ts:29` — `nitro({ serverDir: "./", ignore: ["**/*.test.ts"] })`). The file `routes/api/healthz-smoke-bugfix2-101584827.ts` did not exist, so no handler was registered for the endpoint. When a request arrived at `/api/healthz-smoke-bugfix2-101584827`, it fell past the API router and was answered by the SPA fallback with HTTP 200 and `text/html` (the `index.html` shell).
+
+**Important**: The ticket's stated symptom ("returns 404") was incorrect. The actual symptom was HTTP 200 with `Content-Type: text/html` instead of `application/json` + the correct JSON body. The status code remained 200 both before and after the fix.
 
 ## Minimal Fix
 
-Added two files following the established pattern from SPRINT-0004, SPRINT-0005, and SPRINT-0019:
+Created exactly two new files:
 
-1. **Route handler** (`routes/api/healthz-smoke-bugfix2-473664326.ts`):
-   - Simple `defineEventHandler` returning `{ok: true, variant: "473664326"}`
-   - No auth, no database, no shared code — isolated endpoint
+1. **`routes/api/healthz-smoke-bugfix2-101584827.ts`** — default-exported `defineHandler` from `"nitro/h3"` returning `{ ok: true, variant: "101584827" }`
+2. **`routes/api/healthz-smoke-bugfix2-101584827.test.ts`** — H3Event integration test asserting the body and a <100ms latency bound
 
-2. **Integration test** (`routes/api/healthz-smoke-bugfix2-473664326.test.ts`):
-   - H3Event-based regression test (same pattern as all existing health endpoints)
-   - Verifies correct JSON response body
-   - Verifies performance < 100ms
+No existing files were modified. No shared/parameterised helper was introduced — the handler remains self-contained and context-free, matching the convention of sibling endpoints.
 
 ## Files Touched
 
-- **Created**: `routes/api/healthz-smoke-bugfix2-473664326.ts`
-- **Created**: `routes/api/healthz-smoke-bugfix2-473664326.test.ts`
+- **Created**: `routes/api/healthz-smoke-bugfix2-101584827.ts`
+- **Created**: `routes/api/healthz-smoke-bugfix2-101584827.test.ts`
+- **Modified**: none
 
-## Regression Risk
+## Verification
 
-**Low** — Net-new endpoint, no existing dependents. Nitro file-based routing is isolated per file; no shadowing or conflict risk.
-
-## Testing
-
-All tests pass (2 passing for this endpoint, 50 total):
-
-- Correct JSON response: ✓
-- Performance < 100ms: ✓
-- No lint errors: ✓
-- No typecheck errors: ✓
-- No regression in existing endpoints: ✓ (verified via `bun run verify`)
+- ✅ Regression test written and committed
+- ✅ Test failed before fix (RED phase: import error, module not found)
+- ✅ Fix applied (route handler created)
+- ✅ Test passes after fix (GREEN phase: 2 tests passed in 221ms)
+- ✅ Full test suite passes: 37 files, 80 tests
+- ✅ Lint and typecheck: zero warnings
+- ✅ Endpoint responds with correct `Content-Type: application/json` and body `{"ok":true,"variant":"101584827"}`

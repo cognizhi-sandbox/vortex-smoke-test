@@ -1,240 +1,63 @@
 # Release Notes — VRTX3-S-0001
 
-**Release:** VRTX3-S-0001  
-**Build Date:** 2026-08-02  
-**Type:** Bugfix  
-**Status:** Ready for Production
+**Release type**: Bugfix
+**Date**: 2026-08-05
+**Sprint goal**: `[smoke] Bugfix sprint smoke-bugfix-1785889878831367`
+**Sprint branch tip**: `af35b75` (base `94f7504`)
 
 ---
 
-## Overview
+## Fixed
 
-VRTX3-S-0001 delivers three independent health check endpoints as bugfix solutions to missing API routes. All endpoints return HTTP 200 with JSON responses and are fully tested.
+Three health check endpoints were unreachable because their route handlers had
+never been added to the server. All three are now live and return HTTP `200`
+with `Content-Type: application/json`:
 
----
+| Endpoint                                   | Response body                       | Ticket       |
+| ------------------------------------------ | ----------------------------------- | ------------ |
+| `GET /api/healthz-smoke-bugfix-868175391`  | `{"ok":true,"variant":"868175391"}` | VRTX3-T-0001 |
+| `GET /api/healthz-smoke-bugfix2-101584827` | `{"ok":true,"variant":"101584827"}` | VRTX3-T-0002 |
+| `GET /api/healthz-smoke-bugfix3-403022997` | `{"ok":true,"variant":"403022997"}` | VRTX3-T-0003 |
 
-## New Endpoints
+Each is a self-contained Nitro route handler with its own `H3Event` integration
+test — no auth, no database, no shared code between them.
 
-### 1. GET `/api/healthz-smoke-bugfix-508914715`
+## Correction to the reported symptom
 
-Health check endpoint for smoke test variant 508914715.
+The original reports stated these endpoints "returned 404". **They did not.**
+An unmatched `/api/*` path is answered by the SPA `index.html` fallback with
+`200 text/html`, in the dev server _and_ in the production build. The real
+symptom was an HTML shell where JSON was expected.
 
-**Response (HTTP 200 OK):**
+This matters for anyone verifying the fix: **the status code was `200` before
+and after**. Check the response body and `Content-Type: application/json` — a
+"was 404, now 200" check passes whether or not the endpoint exists.
 
-```json
-{
-  "ok": true,
-  "variant": "508914715"
-}
-```
+## Changed
 
-**Performance:** < 100ms  
-**Dependencies:** None (no database, auth, or middleware required)  
-**Test Coverage:** ✅ 2 integration tests (response body, performance)
+Nothing. This release is purely additive: 6 new files, 0 existing files modified.
+No configuration, middleware, database, schema, dependency or frontend change.
 
----
+## Upgrade / deployment notes
 
-### 2. GET `/api/healthz-smoke-bugfix2-473664326`
+None. No migrations, no environment variables, no nginx or process-manager
+changes. The new paths are served through the existing `/api/` proxy like every
+other route. Standard deploy: `bun run build`, then run `.output/server/index.mjs`
+under Bun.
 
-Health check endpoint for smoke test variant 473664326.
+## Verification
 
-**Response (HTTP 200 OK):**
+- `bun run verify` (lint + typecheck + tests): **pass** — 39 files, 84 tests
+- `bun run build`: **pass** — all three routes registered in the compiled server
+- Live checks against the built server: correct status, content-type and body
+- Playwright chromium E2E: 5/5 passed, no regressions
 
-```json
-{
-  "ok": true,
-  "variant": "473664326"
-}
-```
+## Known limitations
 
-**Performance:** < 100ms  
-**Dependencies:** None (no database, auth, or middleware required)  
-**Test Coverage:** ✅ 2 integration tests (response body, performance)
-
----
-
-### 3. GET `/api/healthz-smoke-bugfix3-429794134`
-
-Health check endpoint for smoke test variant 429794134.
-
-**Response (HTTP 200 OK):**
-
-```json
-{
-  "ok": true,
-  "variant": "429794134"
-}
-```
-
-**Performance:** < 100ms  
-**Dependencies:** None (no database, auth, or middleware required)  
-**Test Coverage:** ✅ 2 integration tests (response body, performance)
-
----
-
-## Changes Summary
-
-### Files Added
-
-| Path                                                 | Lines | Purpose                          |
-| ---------------------------------------------------- | ----- | -------------------------------- |
-| `routes/api/healthz-smoke-bugfix-508914715.ts`       | 8     | Route handler for endpoint 1     |
-| `routes/api/healthz-smoke-bugfix-508914715.test.ts`  | 25    | Integration tests for endpoint 1 |
-| `routes/api/healthz-smoke-bugfix2-473664326.ts`      | 8     | Route handler for endpoint 2     |
-| `routes/api/healthz-smoke-bugfix2-473664326.test.ts` | 25    | Integration tests for endpoint 2 |
-| `routes/api/healthz-smoke-bugfix3-429794134.ts`      | 8     | Route handler for endpoint 3     |
-| `routes/api/healthz-smoke-bugfix3-429794134.test.ts` | 25    | Integration tests for endpoint 3 |
-
-### Files Modified
-
-None. All changes are additions; no existing code was modified.
-
-### Breaking Changes
-
-None. These are net-new endpoints with no impact on existing API contracts.
-
----
-
-## Quality Assurance
-
-### Test Results
-
-```
-Test Files:  24 passed
-Tests:       54 passed (6 new, 48 regression)
-Duration:    1.52s
-Coverage:    100% for new code
-```
-
-### Verification Status
-
-| Check                  | Status                                               |
-| ---------------------- | ---------------------------------------------------- |
-| Unit/Integration Tests | ✅ 54/54 passed                                      |
-| Type Checking          | ✅ Zero errors (TypeScript strict mode)              |
-| Linting                | ✅ Zero warnings (ESLint 9 + Prettier)               |
-| Build                  | ✅ Successful                                        |
-| Code Review            | ✅ Approved (all 3 implementations)                  |
-| Regression Testing     | ✅ No breakage in existing endpoints                 |
-| E2E Tests              | ⚠️ Skipped (test environment issue, not code defect) |
-
-### Known Issues
-
-None. All acceptance criteria met. E2E tests could not run due to Chromium version mismatch in test environment (not a code quality issue); all endpoints are fully verified via integration tests.
-
----
-
-## Deployment Instructions
-
-### Prerequisites
-
-- Bun runtime (required for `bun:sqlite` in db/client.ts)
-- Node.js 18+ (for compatibility)
-
-### Build
-
-```bash
-bun install
-bun run build
-```
-
-Output:
-
-- `dist/` — Frontend SPA bundle
-- `.output/server/index.mjs` — Nitro server with three new endpoints included
-
-### Run
-
-```bash
-bun .output/server/index.mjs
-```
-
-The server starts on the configured PORT (default 3000). All three endpoints are automatically registered via Nitro's file-based routing.
-
-### Verify Deployment
-
-After deployment, verify the three endpoints are responding:
-
-```bash
-curl http://<server>:3000/api/healthz-smoke-bugfix-508914715
-# Expected: {"ok":true,"variant":"508914715"}
-
-curl http://<server>:3000/api/healthz-smoke-bugfix2-473664326
-# Expected: {"ok":true,"variant":"473664326"}
-
-curl http://<server>:3000/api/healthz-smoke-bugfix3-429794134
-# Expected: {"ok":true,"variant":"429794134"}
-```
-
----
-
-## Performance Impact
-
-| Metric               | Impact                         |
-| -------------------- | ------------------------------ |
-| **Bundle Size**      | +0.12 KB (gzipped)             |
-| **Startup Time**     | Negligible (no initialization) |
-| **Runtime Memory**   | Negligible (trivial handlers)  |
-| **Endpoint Latency** | < 100ms (verified by tests)    |
-
----
-
-## Rollback Plan
-
-If rollback is needed, remove the three route files:
-
-```bash
-rm routes/api/healthz-smoke-bugfix-508914715.ts
-rm routes/api/healthz-smoke-bugfix-508914715.test.ts
-rm routes/api/healthz-smoke-bugfix2-473664326.ts
-rm routes/api/healthz-smoke-bugfix2-473664326.test.ts
-rm routes/api/healthz-smoke-bugfix3-429794134.ts
-rm routes/api/healthz-smoke-bugfix3-429794134.test.ts
-```
-
-Rebuild and redeploy. Nitro's file-based router will automatically unregister the endpoints with no configuration changes.
-
----
-
-## Support & Monitoring
-
-### Monitoring Recommendations
-
-Track these metrics in your observability system:
-
-- **Endpoint Availability:** Percentage of requests returning HTTP 200
-- **Latency:** p50, p95, p99 response times (target: < 100ms)
-- **Error Rate:** Count of non-200 responses
-- **Request Volume:** Total requests per endpoint (for load planning)
-
-### Alerting Recommendations
-
-- Alert if any endpoint latency exceeds 500ms
-- Alert if any endpoint error rate exceeds 1%
-- Alert if the server fails to start (check Nitro logs for route registration errors)
-
-### Troubleshooting
-
-| Issue                        | Cause              | Resolution                                                                                   |
-| ---------------------------- | ------------------ | -------------------------------------------------------------------------------------------- |
-| 404 responses from endpoints | Routes not loaded  | Verify `routes/api/` contains all three `.ts` files; check Nitro server logs for load errors |
-| Slow responses (> 100ms)     | Unexpected latency | These handlers have no I/O; if slow, check system load or network latency                    |
-| Type errors after deployment | Version mismatch   | Ensure TypeScript and Nitro versions match package.json; run `bun install`                   |
-
----
-
-## Sprint Info
-
-- **Sprint:** VRTX3-S-0001
-- **Sprint Goal:** [smoke] Bugfix sprint smoke-bugfix-178564451025463
-- **Planning Ticket:** VRTX3-T-0004
-- **Defect Tickets:** VRTX3-T-0001, VRTX3-T-0002, VRTX3-T-0003
-- **QA Ticket:** VRTX3-T-0005
-- **Close Ticket:** VRTX3-T-0006
-- **Artifacts:** `artifacts/VRTX3-S-0001/`
-
----
-
-**Release Date:** 2026-08-02  
-**Prepared By:** Product (Sprint Close)  
-**Status:** ✅ Ready for Deployment
+No defects remain open against this sprint. One pre-existing behaviour is
+unchanged and worth knowing about: **requests to a nonexistent `/api/*` path
+return `200` with the HTML SPA shell rather than a JSON `404`.** Clients that
+`JSON.parse` an API response will fail confusingly on a typo'd path, and health
+probes that test for `404` will not detect a missing endpoint. Tracked as a
+follow-up in `SPRINT-PLAN.md`; not addressed here as it is outside this bugfix
+sprint's committed scope.
