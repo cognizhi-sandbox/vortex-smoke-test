@@ -233,6 +233,12 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 
 ## Changelog
 
+### 2026-08-06 — Sprint VRTX3-S-0007: Bugfix Sprint – Three Missing Health Check Endpoints
+
+Added three missing health check endpoints, each returning HTTP 200 with `Content-Type: application/json` and body `{ ok: true, variant: "<id>" }`: `/api/healthz-smoke-bugfix-534542341`, `/api/healthz-smoke-bugfix2-279986033`, `/api/healthz-smoke-bugfix3-605591646`. Purely additive — 6 new files, 0 existing files modified. Each is a self-contained handler following the established H3Event integration test pattern (no auth, no database, no code sharing).
+
+**Reconfirms the VRTX3-S-0001 gotcha, with measurements.** All three were reported as "returning 404". They were not: on `bun run dev`, each missing path returned `200` with `Content-Type: text/html` (the SPA `index.html` fallback), while the working control `/api/healthz-smoke-bugfix3-764107669` returned `200 application/json;charset=UTF-8`. A status-code assertion therefore passes whether or not the route exists — **when adding or verifying an API route, assert on the response body and `Content-Type`, never on a 404→200 transition.**
+
 ### 2026-08-05 — Sprint VRTX3-S-0006: Three Independent Health Check Endpoints
 
 Added three completely independent health-check endpoints (`/api/healthz-smoke-913793173-a`, `/api/healthz-smoke-913793173-b`, `/api/healthz-smoke-913793173-c`), each returning `{ok:true,variant:"913793173"}`. Demonstrates parallel endpoint development pattern with zero interdependencies and no shared code. Each endpoint is self-contained with integration tests using H3Event pattern. Reference implementation for adding multiple endpoints without coordination overhead.
