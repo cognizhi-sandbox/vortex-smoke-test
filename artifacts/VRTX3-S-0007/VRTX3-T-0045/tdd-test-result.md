@@ -70,3 +70,5 @@ $ NODE_ENV=test bun --bun vitest run
 
 Lint (zero-warning policy), typecheck, and the full Vitest suite (all 43 files / 92 tests,
 including all pre-existing sibling health-check tests) pass with no regressions.
+
+TDD-RESULT: 92 passed, 0 failed
