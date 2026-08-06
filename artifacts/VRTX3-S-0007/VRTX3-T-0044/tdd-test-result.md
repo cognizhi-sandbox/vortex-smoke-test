@@ -92,3 +92,5 @@ STATUS:200 CT:application/json;charset=UTF-8
 Matches the control endpoint's shape exactly — `200`, `application/json;charset=UTF-8`, exact
 body. Confirms the route is now registered and serving JSON, not falling through to the SPA
 `index.html` fallback.
+
+TDD-RESULT: 2 passed, 0 failed
