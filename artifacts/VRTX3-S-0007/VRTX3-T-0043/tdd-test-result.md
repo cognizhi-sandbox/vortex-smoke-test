@@ -85,3 +85,5 @@ $ NODE_ENV=test bun --bun vitest run
 ```
 
 Lint zero-warning, typecheck clean, full Vitest suite (43 files / 92 tests) passing.
+
+TDD-RESULT: 2 passed, 0 failed
