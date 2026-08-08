@@ -233,6 +233,17 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 
 ## Changelog
 
+### 2026-08-08 — Sprint VRTX3-S-0008: Bugfix Sprint – Three Missing Health Check Endpoints
+
+Added three missing health check endpoints, each returning HTTP 200 with `Content-Type: application/json` and body `{ ok: true, variant: "<id>" }`: `/api/healthz-smoke-bugfix-739648350`, `/api/healthz-smoke-bugfix2-901895284`, `/api/healthz-smoke-bugfix3-221117839`. Purely additive — 6 new files, 0 existing files modified. Each is a self-contained handler following the established H3Event integration test pattern (no auth, no database, no code sharing).
+
+**Third consecutive sprint to re-confirm the SPA-fallback gotcha.** All three were again reported as "returning 404". They were not: on `bun run dev`, each missing path returned `200` with `Content-Type: text/html` (the SPA `index.html` shell), while the working control `/api/healthz-smoke-bugfix3-605591646` returned `200 application/json;charset=UTF-8`. A status-code assertion passes whether or not the route exists — **when adding or verifying an API route, assert on the response body and `Content-Type`, never on a 404→200 transition.**
+
+Two further details measured this sprint, both previously assumed rather than checked:
+
+- **The handlers are method-agnostic.** `POST`/`PUT`/`DELETE` against a `healthz-smoke-*` route return the same `200` JSON body as `GET`, not a 405 or 500. None of the siblings declare a method guard; don't add one.
+- **Route → build-output naming.** `bun run build` emits one module per route under `.output/server/_routes/api/`, with dashes converted to underscores — e.g. `/api/healthz-smoke-bugfix3-605591646` → `.output/server/_routes/api/healthz_smoke_bugfix3_605591646.mjs`. Useful for confirming a route actually compiled into the production server.
+
 ### 2026-08-06 — Sprint VRTX3-S-0007: Bugfix Sprint – Three Missing Health Check Endpoints
 
 Added three missing health check endpoints, each returning HTTP 200 with `Content-Type: application/json` and body `{ ok: true, variant: "<id>" }`: `/api/healthz-smoke-bugfix-534542341`, `/api/healthz-smoke-bugfix2-279986033`, `/api/healthz-smoke-bugfix3-605591646`. Purely additive — 6 new files, 0 existing files modified. Each is a self-contained handler following the established H3Event integration test pattern (no auth, no database, no code sharing).
