@@ -101,3 +101,5 @@ $ NODE_ENV=test bun --bun vitest run
 
 Lint (zero-warning), typecheck, and the full test suite (46 files / 98 tests, including the new
 regression test) all pass.
+
+TDD-RESULT: 2 passed, 0 failed
