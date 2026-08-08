@@ -90,3 +90,5 @@ STATUS:200 CT:application/json;charset=UTF-8
 
 Fixed endpoint now matches the control exactly: `200`, `application/json;charset=UTF-8`,
 correct body — no longer the SPA `text/html` fallback.
+
+TDD-RESULT: 98 passed, 0 failed
