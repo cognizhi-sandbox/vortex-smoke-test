@@ -81,3 +81,5 @@ Re-measured, the reported symptom does not reproduce as a 404. Before the fix, a
 `200 text/html`, not `404`. This regression test therefore intentionally asserts on the response
 **body** (`toEqual({ ok: true, variant: "901895284" })`), never on a status-code transition,
 since a status-only assertion would pass identically before and after the fix.
+
+TDD-RESULT: 2 passed, 0 failed
