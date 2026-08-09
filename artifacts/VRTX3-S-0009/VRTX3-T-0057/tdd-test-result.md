@@ -69,3 +69,5 @@ GET /api/healthz-smoke-bugfix3-221117839 (control) → 200 application/json;char
 GET /api/healthz-smoke-bugfix3-000000000 (missing) → 200 text/html; charset=utf-8 (<!doctype html> SPA shell)
 POST /api/healthz-smoke-bugfix3-993514120          → 200 application/json;charset=UTF-8 {"ok":true,"variant":"993514120"} (method-agnostic, as expected)
 ```
+
+TDD-RESULT: 104 passed, 0 failed
