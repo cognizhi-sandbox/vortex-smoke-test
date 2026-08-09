@@ -20,9 +20,10 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 
 - **Frontend**: React 19 SPA with file-based routing, auto-imports for hooks/components, TypeScript strict mode
 - **Backend**: Nitro 3 server with file-based API routes, SQLite persistence via Drizzle ORM, middleware support
+- **Health probes**: a growing family of `/api/healthz-smoke-*` GET endpoints, each returning `{ ok: true, variant: "<id>" }`. Each is self-contained — no auth, no database, no code shared with any sibling — so it proves two things at once: that the deployed build is actually serving the Nitro API, and that independent units of work can be picked up, built and merged in parallel without conflicting
 - **Testing**: Vitest + React Testing Library (unit/component/API integration tests), Playwright for E2E and smoke tests — all working examples, all scripts in `package.json`
 - **Styling**: Tailwind CSS v4 (CSS-first, no config files), shadcn/ui-style component primitives, custom design tokens
-- **DevEx**: ESLint 9 + typescript-eslint, Prettier, Husky pre-commit hooks, hot module reload, sourcemaps
+- **DevEx**: ESLint 10 + typescript-eslint, Prettier, Husky pre-commit hooks, hot module reload, sourcemaps
 - **Deployment**: Bun-based production server (`.output/server/index.mjs`), Docker/docker-compose for containerization
 - **CI/CD**: GitHub Actions workflow triggering on `vortex/**` branches
 
@@ -33,6 +34,27 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - Component library beyond shadcn-style primitives
 - Custom visualization/charting framework
 - Mobile-specific optimization
+
+## Features
+
+### Health probe endpoints (`/api/healthz-smoke-*`)
+
+**User stories**
+
+- As a **sprint owner**, I want small independent GET endpoints added without a planning cycle, so low-risk additive work is not queued behind process overhead.
+- As an **operator of the build pipeline**, I want each probe to return its own `{ ok: true, variant: "<id>" }`, so I have an independent check that the deployed build is serving the Nitro API.
+- As an **engineer picking up one probe**, I want it to share no code with its siblings, so I can build, test and merge it without waiting on or conflicting with anyone else.
+
+**Acceptance criteria** (per probe)
+
+- `GET /api/<probe-name>` responds with HTTP 200, `Content-Type: application/json`, and a body deep-equal to `{ "ok": true, "variant": "<id>" }` — `variant` is a string, not a number.
+- The probe is a single file under `routes/api/`, with a colocated `<probe-name>.test.ts` asserting on the handler's returned object.
+- The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
+- Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
+
+**Current probes:** 47 across the family, the most recent being the `528856326` set (`-a`, `-b`, `-c`) added in VRTX3-S-0011.
+
+**Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
 ## Success Criteria
 
@@ -45,6 +67,12 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-09 — Sprint VRTX3-S-0011: Three Independent Health Check Endpoints (528856326)
+
+Added `/api/healthz-smoke-528856326-a`, `-b` and `-c`, each returning `{ok:true,variant:"528856326"}` — three separate leaf units of work with no shared code, built and merged in parallel. Purely additive: 6 new files, 0 modified, no new dependency, nothing in `src/`.
+
+The probe family is now described once, as a first-class product feature with its own user stories and per-probe acceptance criteria, in the new [Features](#features) section — previous sprints only recorded it here in the changelog. Also corrected: DevEx lint is ESLint 10, not ESLint 9.
 
 ### 2026-08-05 — Sprint VRTX3-S-0006: Three Independent Health Check Endpoints
 
