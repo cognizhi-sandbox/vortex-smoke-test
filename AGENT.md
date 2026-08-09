@@ -152,7 +152,9 @@ middleware/
 
 ### Health Probe Routes
 
-`routes/api/healthz-smoke-*.ts` is a family of ~50 near-identical GET probes, each returning `{ ok: true, variant: "<id>" }`. Adding one: copy `routes/api/healthz-smoke-302960562-a.ts` and its `.test.ts` sibling, change the variant string, change nothing else.
+`routes/api/healthz-smoke-*.ts` is a family of 53 near-identical GET probes, each returning `{ ok: true, variant: "<id>" }`. Adding one: copy `routes/api/healthz-smoke-528856326-a.ts` and its `.test.ts` sibling, change the variant string, change nothing else.
+
+**Copy that pair, not an older one.** Probe tests written before VRTX3-S-0011 (e.g. `healthz-smoke-913793173-a.test.ts`) carry a second `responds in under 100ms` case. Wall-clock assertions on a shared CI runner are flaky and prove nothing about the contract, so the current pattern is a single body assertion. Don't propagate the timing case into new probes.
 
 **The duplication is deliberate — do not factor out a shared handler, factory, constants file or barrel export.** Independence is the point: each probe must be buildable and mergeable without touching any file another probe owns. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions).
 
@@ -251,6 +253,16 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 ---
 
 ## Changelog
+
+### 2026-08-09 — Sprint VRTX3-S-0013: Three Independent Health Check Endpoints (841017405)
+
+Added `/api/healthz-smoke-841017405-a`, `-b` and `-c`, each returning HTTP 200 with `Content-Type: application/json` and body `{ ok: true, variant: "841017405" }`. Purely additive — 6 new files, 0 existing files modified, no new dependency, nothing in `src/`. Probe family count 50 → 53.
+
+**One correction to the recipe in [Health Probe Routes](#health-probe-routes), and it matters.** The copy-source named there was `healthz-smoke-302960562-a`, whose `.test.ts` carries a second `expect(elapsed).toBeLessThan(100)` case. That assertion is machine-dependent, is a known CI-flake source, and was already dropped once — VRTX3-S-0011 deliberately omitted it and produced the single-assertion shape in `healthz-smoke-528856326-a.test.ts`. Because the recipe still pointed at the old file, the flaky case was one copy-paste away from coming back every sprint. The named source is now the `528856326` pair, with an explicit note not to propagate the timing case.
+
+No change to routing, the test harness or CI: `nitro({ serverDir: "./" })` registers a new `routes/api/*.ts` by filename alone, the Vitest `server` project picks up its colocated `*.test.ts` with no configuration, and `.github/workflows/ci.yml` already triggers on `push` and `pull_request` to `vortex/**`.
+
+Stack facts re-checked against `package.json` this sprint and confirmed already accurate here: ESLint `^10.7.0`, Playwright `~1.60.0`, Vitest `^4.1.10`, Nitro `^3.0.260610-beta`.
 
 ### 2026-08-09 — Sprint VRTX3-S-0012: Bugfix Sprint – Three Missing Health Probes
 
