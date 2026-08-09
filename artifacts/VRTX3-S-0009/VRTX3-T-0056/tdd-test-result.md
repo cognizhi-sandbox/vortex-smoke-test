@@ -87,3 +87,5 @@ $ cat /tmp/body2.json
 All acceptance criteria confirmed: HTTP 200, `Content-Type: application/json`, exact body
 `{"ok":true,"variant":"192341379"}`, method-agnostic behavior, and discrimination from the SPA
 fallback via a live control request.
+
+TDD-RESULT: 2 passed, 0 failed
