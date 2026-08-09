@@ -215,7 +215,18 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 
 ## Gotchas
 
+- **A missing `/api/*` route returns `200 text/html`, NOT `404`.** An unmatched API path falls through to the SPA `index.html` shell, in `bun run dev` and in the production build alike (nginx does not change this — `location /api/` proxies straight to Nitro with `proxy_intercept_errors` off). So **status code alone cannot tell a working endpoint from a missing one**, and a `404 → 200` check proves nothing. When adding or verifying an API route, assert on the **response body and `Content-Type`**:
+
+  ```bash
+  # missing route  → 200 text/html; charset=utf-8       (the SPA shell)
+  # working route  → 200 application/json;charset=UTF-8 {"ok":true,...}
+  curl -s -o /dev/null -w '%{http_code} %{content_type}\n' http://localhost:5000/api/<route>
+  ```
+
+  Four consecutive sprints (VRTX3-S-0001, -0007, -0008, -0009) each re-discovered this after acting on a bug report that claimed `404`. Note also that a route's **unit test imports the handler module directly**, so it passes even if Nitro never registered the path — only a live request proves the route is wired.
+
 - **Nitro's `serverDir`**: Defaults to `false` — must be `"./"` in `vite.config.ts` or `routes/` and `middleware/` never load. Ours is set correctly; don't change it.
+- **API route handlers are method-agnostic**: none of the `healthz-smoke-*` handlers declare a method guard, so `POST`/`PUT`/`DELETE` return the same `200` JSON body as `GET`. Don't add a `405` to one route in isolation — it would make it inconsistent with the other 44.
 - **Page tests**: `Pages()` needs `exclude: ["**/*.test.tsx"]` or the build breaks on the first page test. Our `vite.config.ts` has this.
 - **Route tests**: `nitro()` needs `ignore: ["**/*.test.ts"]` or route tests get bundled into the prod server. Our `vite.config.ts` has this.
 - **Auto-imports**: `auto-imports.d.ts` doesn't exist on a fresh clone — `prebuild` and `pretypecheck` scripts generate it. If `tsc` fails on a new machine, run `node scripts/ensure-generated-files.mjs` first.
@@ -232,6 +243,14 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 ---
 
 ## Changelog
+
+### 2026-08-09 — Sprint VRTX3-S-0009: Bugfix Sprint – Three Missing Health Check Endpoints
+
+Added three missing health check endpoints, each returning HTTP 200 with `Content-Type: application/json` and body `{ ok: true, variant: "<id>" }`: `/api/healthz-smoke-bugfix-755467473`, `/api/healthz-smoke-bugfix2-192341379`, `/api/healthz-smoke-bugfix3-993514120`. Purely additive — 6 new files, 0 existing files modified. Each is a self-contained handler following the established H3Event integration test pattern (no auth, no database, no code sharing).
+
+**Fourth consecutive sprint to hit the SPA-fallback trap — so the lesson has been promoted out of this changelog into [Gotchas](#gotchas), where the next agent will actually find it.** All three endpoints were again reported as "returning 404". Measured during planning on `bun run dev`: each missing path returned `200 text/html; charset=utf-8` (the SPA `index.html` shell), while the working controls (`...-739648350`, `...-901895284`, `...-221117839`) returned `200 application/json;charset=UTF-8`. Prior sprints cited this from earlier records; this sprint re-measured it directly and confirmed it.
+
+The method-agnostic behaviour of these handlers (previously recorded here for VRTX3-S-0008) has likewise moved to Gotchas, re-verified by direct measurement against a control route.
 
 ### 2026-08-08 — Sprint VRTX3-S-0008: Bugfix Sprint – Three Missing Health Check Endpoints
 
