@@ -53,9 +53,9 @@ Concrete versions are read from `package.json`: React 19.2, Vite 8.1, Nitro 3.0 
 
 ### Health probe route contract
 
-`routes/api/healthz-smoke-*.ts` (50 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENT.md](./AGENT.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
+`routes/api/healthz-smoke-*.ts` (53 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENT.md](./AGENT.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
 
-`bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-528856326-a` → `.output/server/_routes/api/healthz_smoke_528856326_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
+`bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-841017405-a` → `.output/server/_routes/api/healthz_smoke_841017405_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
 
 ## Data Flow Example
 
@@ -98,6 +98,12 @@ Four tiers, one worked example each. Commands and how to extend: [README.md](./R
 ---
 
 ## Changelog
+
+### 2026-08-09 — Sprint VRTX3-S-0013: Three Independent Health Check Endpoints (841017405)
+
+Added `routes/api/healthz-smoke-841017405-a.ts`, `-b.ts`, `-c.ts` and their colocated tests — 6 new files, 0 modified, no dependency change. Probe-family count under [Routing](#routing) updated 50 → 53, and the build-output naming example refreshed to a route from this sprint.
+
+No architectural change. Nothing in the stack, data model, deployment path or [Key Decisions](#key-decisions) moved; the no-shared-helper decision recorded in VRTX3-S-0011 already governs this sprint and was applied as written. Versions were re-read from `package.json` rather than carried forward and match what is documented under [Stack](#stack) — ESLint 10.7, Playwright `~1.60.0`, Vitest 4.1, Nitro `^3.0.260610-beta`.
 
 ### 2026-08-09 — Sprint VRTX3-S-0012: Bugfix Sprint – Three Missing Health Probes
 
