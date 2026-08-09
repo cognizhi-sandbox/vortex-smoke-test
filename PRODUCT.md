@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 47 across the family, the most recent being the `528856326` set (`-a`, `-b`, `-c`) added in VRTX3-S-0011.
+**Current probes:** 50 across the family, the most recent being the `smoke-bugfix-178627381829942` set (`healthz-smoke-bugfix-6202295`, `healthz-smoke-bugfix2-433928318`, `healthz-smoke-bugfix3-196651982`) added in VRTX3-S-0012.
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,10 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-09 — Sprint VRTX3-S-0012: Bugfix Sprint – Three Missing Health Probes
+
+Added `/api/healthz-smoke-bugfix-6202295`, `/api/healthz-smoke-bugfix2-433928318` and `/api/healthz-smoke-bugfix3-196651982`, each returning `{ok:true,variant:"<id>"}`. Purely additive: 6 new files, 0 modified. Probe count 47 → 50. Scope and per-probe acceptance criteria are unchanged; only the count and the most-recent set moved.
 
 ### 2026-08-09 — Sprint VRTX3-S-0011: Three Independent Health Check Endpoints (528856326)
 
