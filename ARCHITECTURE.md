@@ -15,7 +15,7 @@ See [PRODUCT.md](./PRODUCT.md) for what this is, [DESIGN.md](./DESIGN.md) for th
 - **Auto-imports**: `unplugin-auto-import` — `react` + `react-router` need no import
 - **Fonts**: `unplugin-fonts` (config in `configs/fonts.config.ts`)
 - **Tests**: Vitest + Testing Library (unit/integration/UI), Playwright (E2E/smoke)
-- **Lint/format**: ESLint 9 + typescript-eslint, Prettier, Husky + lint-staged
+- **Lint/format**: ESLint 10 + typescript-eslint, Prettier, Husky + lint-staged
 
 ## Directory Structure
 
@@ -49,6 +49,8 @@ See [PRODUCT.md](./PRODUCT.md) for what this is, [DESIGN.md](./DESIGN.md) for th
 
 **Backend**: `routes/api/*.ts` → `/api/*`, `middleware/*.ts` runs first and can set `event.context`. Requires `nitro({ serverDir: "./" })` in `vite.config.ts` — default is `false` (no scanning). `*.test.ts` excluded via `nitro({ ignore })`.
 
+The pattern currently carries **48 handlers**, the bulk of them self-contained `healthz-smoke-*` routes that share no code with each other. Adding one is a single new file plus its colocated test — no registration, no config edit. An unmatched `/api/*` path is answered by the SPA `index.html` shell with `200 text/html`, so a route's presence is proven by its response body and `Content-Type`, never by a status code (see [AGENT.md](./AGENT.md#gotchas)).
+
 ## Data Flow Example
 
 `GET /api/hello`: `middleware/auth.ts` sets `event.context.user` → `routes/api/hello.ts` reads it and responds. `routes/api/users/[id].ts` shows the dynamic-route + `createError()` 404 pattern, backed by a real query against `db/client.ts`'s Drizzle instance.
@@ -75,20 +77,30 @@ Four tiers, one worked example each. Commands and how to extend: [README.md](./R
 
 ## Key Decisions
 
-| Decision                    | Rationale                                                                                                                                                          |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **React 19**                | Latest stable, ESM-first, better hooks ergonomics, Suspense for data fetching                                                                                      |
-| **Vite 8**                  | Industry-standard bundler, HMR speed, first-class TypeScript support, ESM-native config                                                                            |
-| **Nitro 3**                 | Full-stack with React SPA in same repo, zero-config routing, H3 middleware system                                                                                  |
-| **SQLite + Drizzle**        | SQLite needs no separate database server (file-local), Drizzle provides type-safe ORM without runtime overhead, migrations committed alongside code                |
-| **Bun runtime**             | `bun:sqlite` is the Bun native driver; Bun's speed and TypeScript support reduce dev/prod friction. Requirement: dev, test, and production must all run under Bun. |
-| **Tailwind CSS v4**         | CSS-first design (no JS config file), performance, design tokens via custom properties, ecosystem of plugins                                                       |
-| **shadcn-style primitives** | Radix + CVA patterns decouple styled primitives from app logic, supports composition + polymorphism, smaller bundle than full component library                    |
-| **Playwright**              | Cross-browser E2E, pinned to `~1.50.0` to match QA container Chromium, snapshot testing support, fast iteration                                                    |
+| Decision                                              | Rationale                                                                                                                                                                                                                                                                       |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **React 19**                                          | Latest stable, ESM-first, better hooks ergonomics, Suspense for data fetching                                                                                                                                                                                                   |
+| **Vite 8**                                            | Industry-standard bundler, HMR speed, first-class TypeScript support, ESM-native config                                                                                                                                                                                         |
+| **Nitro 3**                                           | Full-stack with React SPA in same repo, zero-config routing, H3 middleware system                                                                                                                                                                                               |
+| **SQLite + Drizzle**                                  | SQLite needs no separate database server (file-local), Drizzle provides type-safe ORM without runtime overhead, migrations committed alongside code                                                                                                                             |
+| **Bun runtime**                                       | `bun:sqlite` is the Bun native driver; Bun's speed and TypeScript support reduce dev/prod friction. Requirement: dev, test, and production must all run under Bun.                                                                                                              |
+| **Tailwind CSS v4**                                   | CSS-first design (no JS config file), performance, design tokens via custom properties, ecosystem of plugins                                                                                                                                                                    |
+| **shadcn-style primitives**                           | Radix + CVA patterns decouple styled primitives from app logic, supports composition + polymorphism, smaller bundle than full component library                                                                                                                                 |
+| **Playwright**                                        | Cross-browser E2E, pinned to `~1.60.0` to match QA container Chromium, snapshot testing support, fast iteration                                                                                                                                                                 |
+| **No shared code between `healthz-smoke-*` handlers** | Deliberate duplication. Each is a leaf unit with a disjoint file set, so endpoints can be built concurrently in separate worktrees with no coordination and no merge conflicts; a shared factory or registry would reintroduce exactly the coupling these routes exist to avoid |
+| **Method-agnostic route handlers**                    | No `healthz-smoke-*` handler declares a method guard, so every verb returns the same body. Adding a `405` to one route in isolation would make it inconsistent with the other 47                                                                                                |
 
 ---
 
 ## Changelog
+
+### 2026-08-09 — Sprint VRTX3-S-0010: Three Independent Health Check Endpoints (46132092)
+
+Added `/api/healthz-smoke-46132092-a`, `-b` and `-c` to `routes/api/` — three standalone handlers with colocated H3Event integration tests, no shared imports, no config change. Handler count in the file-based backend routing pattern is now 48, and that count plus the SPA-fallback caveat is now recorded in the Routing section rather than being re-derived each sprint.
+
+Two decisions promoted into **Key Decisions**, where they were previously only implicit in the changelog history: _no shared code between `healthz-smoke-_`handlers* (deliberate duplication buys parallelism) and *method-agnostic route handlers* (no`405` guard on any one route in isolation).
+
+Two stale version facts corrected against `package.json`: ESLint is **10** (documented as 9), and Playwright is pinned **`~1.60.0`** (documented as `~1.50.0`).
 
 ### 2026-08-05 — Sprint VRTX3-S-0006: Three Independent Health Check Endpoints
 

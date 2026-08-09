@@ -25,6 +25,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - **DevEx**: ESLint 9 + typescript-eslint, Prettier, Husky pre-commit hooks, hot module reload, sourcemaps
 - **Deployment**: Bun-based production server (`.output/server/index.mjs`), Docker/docker-compose for containerization
 - **CI/CD**: GitHub Actions workflow triggering on `vortex/**` branches
+- **Health-check endpoints**: a growing family of self-contained, variant-tagged `GET /api/healthz-smoke-*` routes. Each returns `{ ok: true, variant: "<id>" }` and shares no code with its siblings, so a post-deploy smoke check can prove a route is genuinely wired (a variant-tagged JSON body distinguishes a live route from the SPA `index.html` fallback, which also answers 200). They double as the project's worked example of adding independent endpoints in parallel.
 
 ### Not in Scope
 
@@ -45,6 +46,10 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-09 — Sprint VRTX3-S-0010: Three Independent Health Check Endpoints (46132092)
+
+Added `/api/healthz-smoke-46132092-a`, `-b` and `-c`, each returning `{ok:true,variant:"46132092"}`. Serves the sprint owner who needs three concurrent, non-conflicting units of work; the engineer who wants a task touching only its own two files; and the smoke-check operator who needs a variant-tagged body to tell a wired route from the SPA fallback. Delivered as three file-disjoint TASKs under a single STORY with no dependencies between them — the parallelism, not the endpoints, is what this sprint measures. No shared helper, no new dependency, no config change. The health-check endpoint family is now recorded under Scope as delivered capability rather than only in this changelog.
 
 ### 2026-08-05 — Sprint VRTX3-S-0006: Three Independent Health Check Endpoints
 
