@@ -44,6 +44,10 @@ Dark-mode tokens exist (`.dark` class) but no toggle is wired up — nothing set
 
 ## Changelog
 
+### 2026-08-09 — Sprint VRTX3-S-0010: Three Independent Health Check Endpoints (46132092)
+
+No design system changes. This sprint is backend-only: three JSON API endpoints with no UI surface — nothing renders them, and no page, navigation, component, token or layout changes. The only "interface" is the response contract, which lives in [ARCHITECTURE.md](./ARCHITECTURE.md#routing) and the ticket acceptance criteria.
+
 ### 2026-08-05 — Sprint VRTX3-S-0006: Three Independent Health Check Endpoints
 
 No design system changes for this sprint (backend-only API endpoint additions). Three new endpoints added to demonstrate parallel development pattern without code sharing.

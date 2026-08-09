@@ -68,7 +68,7 @@ Runs `tsc --build` on the full project (src + server files). TypeScript strict m
 bun run lint
 ```
 
-Runs ESLint 9 + typescript-eslint, Prettier. Zero-warning policy — the build fails if any warnings exist.
+Runs ESLint 10 + typescript-eslint, Prettier. Zero-warning policy — the build fails if any warnings exist.
 
 ### Full Verification (Core Gate, No Browser)
 
@@ -223,10 +223,10 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
   curl -s -o /dev/null -w '%{http_code} %{content_type}\n' http://localhost:5000/api/<route>
   ```
 
-  Four consecutive sprints (VRTX3-S-0001, -0007, -0008, -0009) each re-discovered this after acting on a bug report that claimed `404`. Note also that a route's **unit test imports the handler module directly**, so it passes even if Nitro never registered the path — only a live request proves the route is wired.
+  Five consecutive sprints (VRTX3-S-0001, -0007, -0008, -0009, -0010) each re-measured this, four of them after acting on a bug report that claimed `404`. Note also that a route's **unit test imports the handler module directly**, so it passes even if Nitro never registered the path — only a live request proves the route is wired.
 
 - **Nitro's `serverDir`**: Defaults to `false` — must be `"./"` in `vite.config.ts` or `routes/` and `middleware/` never load. Ours is set correctly; don't change it.
-- **API route handlers are method-agnostic**: none of the `healthz-smoke-*` handlers declare a method guard, so `POST`/`PUT`/`DELETE` return the same `200` JSON body as `GET`. Don't add a `405` to one route in isolation — it would make it inconsistent with the other 44.
+- **API route handlers are method-agnostic**: none of the `healthz-smoke-*` handlers declare a method guard, so `POST`/`PUT`/`DELETE` return the same `200` JSON body as `GET`. Don't add a `405` to one route in isolation — it would make it inconsistent with the other 47.
 - **Page tests**: `Pages()` needs `exclude: ["**/*.test.tsx"]` or the build breaks on the first page test. Our `vite.config.ts` has this.
 - **Route tests**: `nitro()` needs `ignore: ["**/*.test.ts"]` or route tests get bundled into the prod server. Our `vite.config.ts` has this.
 - **Auto-imports**: `auto-imports.d.ts` doesn't exist on a fresh clone — `prebuild` and `pretypecheck` scripts generate it. If `tsc` fails on a new machine, run `node scripts/ensure-generated-files.mjs` first.
@@ -243,6 +243,14 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 ---
 
 ## Changelog
+
+### 2026-08-09 — Sprint VRTX3-S-0010: Three Independent Health Check Endpoints (46132092)
+
+Added three independent health check endpoints, each returning HTTP 200 with `Content-Type: application/json` and body `{ ok: true, variant: "46132092" }`: `/api/healthz-smoke-46132092-a`, `-b`, `-c`. Purely additive — 6 new files, 0 existing files modified, no shared helper between the three. Built as three file-disjoint TASKs with no `depends_on` between them, to demonstrate parallel endpoint development with zero merge conflicts and zero cross-task coordination.
+
+**Fifth consecutive sprint to measure the SPA-fallback behaviour recorded in [Gotchas](#gotchas) — and the first to measure it _before_ writing the plan rather than after acting on a bad report.** During planning on `bun run dev`: all three target paths returned `200 text/html; charset=utf-8` (the SPA `index.html` shell) while the working control `/api/healthz-smoke-913793173-a` returned `200 application/json;charset=UTF-8 {"ok":true,"variant":"913793173"}`. A `POST` to that control returned the identical `200` JSON body, re-confirming the method-agnostic behaviour. No sprint acceptance criterion asserts on a status code alone.
+
+Two stale facts corrected against `package.json`: ESLint is **10** (was documented as 9), and the count of sibling `healthz-smoke-*` handlers in the method-agnostic gotcha is now 47.
 
 ### 2026-08-09 — Sprint VRTX3-S-0009: Bugfix Sprint – Three Missing Health Check Endpoints
 
