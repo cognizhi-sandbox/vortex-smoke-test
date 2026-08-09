@@ -152,7 +152,7 @@ middleware/
 
 ### Health Probe Routes
 
-`routes/api/healthz-smoke-*.ts` is a family of ~47 near-identical GET probes, each returning `{ ok: true, variant: "<id>" }`. Adding one: copy `routes/api/healthz-smoke-302960562-a.ts` and its `.test.ts` sibling, change the variant string, change nothing else.
+`routes/api/healthz-smoke-*.ts` is a family of ~50 near-identical GET probes, each returning `{ ok: true, variant: "<id>" }`. Adding one: copy `routes/api/healthz-smoke-302960562-a.ts` and its `.test.ts` sibling, change the variant string, change nothing else.
 
 **The duplication is deliberate — do not factor out a shared handler, factory, constants file or barrel export.** Independence is the point: each probe must be buildable and mergeable without touching any file another probe owns. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions).
 
@@ -231,7 +231,7 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
   curl -s -o /dev/null -w '%{http_code} %{content_type}\n' http://localhost:5000/api/<route>
   ```
 
-  Four consecutive sprints (VRTX3-S-0001, -0007, -0008, -0009) each re-discovered this after acting on a bug report that claimed `404`. Note also that a route's **unit test imports the handler module directly**, so it passes even if Nitro never registered the path — only a live request proves the route is wired.
+  Five consecutive sprints (VRTX3-S-0001, -0007, -0008, -0009, -0012) each re-discovered this after acting on a bug report that claimed `404`. **Treat a `404` in an incoming defect report for an `/api/*` path as a mis-transcription by default** — the defect is usually real, but its stated status code is not; re-measure before planning any verification around it. Note also that a route's **unit test imports the handler module directly**, so it passes even if Nitro never registered the path — only a live request proves the route is wired.
 
 - **Nitro's `serverDir`**: Defaults to `false` — must be `"./"` in `vite.config.ts` or `routes/` and `middleware/` never load. Ours is set correctly; don't change it.
 - **API route handlers are method-agnostic**: none of the `healthz-smoke-*` handlers declare a method guard, so `POST`/`PUT`/`DELETE` return the same `200` JSON body as `GET`. Don't add a `405` to one route in isolation — it would make it inconsistent with every other `healthz-smoke-*` route. If an idea's acceptance criteria claim a non-`GET` request "does not return the 200 body", that claim is wrong for this stack: check whether the same idea also puts custom method handling out of scope (it usually does), and plan to the out-of-scope line, not the claim.
@@ -251,6 +251,12 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 ---
 
 ## Changelog
+
+### 2026-08-09 — Sprint VRTX3-S-0012: Bugfix Sprint – Three Missing Health Probes
+
+Added three missing health probes, each returning HTTP 200 with `Content-Type: application/json` and body `{ ok: true, variant: "<id>" }`: `/api/healthz-smoke-bugfix-6202295`, `/api/healthz-smoke-bugfix2-433928318`, `/api/healthz-smoke-bugfix3-196651982`. Purely additive — 6 new files, 0 existing files modified. Probe family count ~47 → ~50.
+
+**Fifth consecutive sprint to hit the SPA-fallback trap.** All three were again reported as returning `404`. Re-measured directly on `bun run dev` during planning rather than cited from prior records: each missing path returned `200 text/html; charset=utf-8` (the SPA `index.html` shell), while the working control `/api/healthz-smoke-bugfix3-993514120` returned `200 application/json;charset=UTF-8`. The [Gotchas](#gotchas) entry now says to treat a reported `404` on an `/api/*` path as a mis-transcription by default — the defect is real, the status code in the report is not.
 
 ### 2026-08-09 — Sprint VRTX3-S-0011: Three Independent Health Check Endpoints (528856326)
 
