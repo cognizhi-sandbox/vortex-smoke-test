@@ -83,3 +83,5 @@ $ NODE_ENV=test bun --bun vitest run
 
 All green — lint, typecheck, and the full test suite (including the new
 regression test) pass.
+
+TDD-RESULT: 104 passed, 0 failed
