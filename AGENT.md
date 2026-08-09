@@ -68,7 +68,7 @@ Runs `tsc --build` on the full project (src + server files). TypeScript strict m
 bun run lint
 ```
 
-Runs ESLint 9 + typescript-eslint, Prettier. Zero-warning policy — the build fails if any warnings exist.
+Runs ESLint 10 + typescript-eslint, Prettier. Zero-warning policy (`--max-warnings 0`) — the build fails if any warnings exist.
 
 ### Full Verification (Core Gate, No Browser)
 
@@ -150,6 +150,14 @@ middleware/
   auth.ts               → sets event.context.user
 ```
 
+### Health Probe Routes
+
+`routes/api/healthz-smoke-*.ts` is a family of ~47 near-identical GET probes, each returning `{ ok: true, variant: "<id>" }`. Adding one: copy `routes/api/healthz-smoke-302960562-a.ts` and its `.test.ts` sibling, change the variant string, change nothing else.
+
+**The duplication is deliberate — do not factor out a shared handler, factory, constants file or barrel export.** Independence is the point: each probe must be buildable and mergeable without touching any file another probe owns. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions).
+
+A probe must not read `event.context.user` (unlike `routes/api/hello.ts`) and must not import from `db/`, so it stays answerable when auth and the database are unavailable.
+
 ### Auto-Imports
 
 No `import React from 'react'` or `import { useState } from 'react'` needed — auto-imported via `unplugin-auto-import`:
@@ -226,7 +234,7 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
   Four consecutive sprints (VRTX3-S-0001, -0007, -0008, -0009) each re-discovered this after acting on a bug report that claimed `404`. Note also that a route's **unit test imports the handler module directly**, so it passes even if Nitro never registered the path — only a live request proves the route is wired.
 
 - **Nitro's `serverDir`**: Defaults to `false` — must be `"./"` in `vite.config.ts` or `routes/` and `middleware/` never load. Ours is set correctly; don't change it.
-- **API route handlers are method-agnostic**: none of the `healthz-smoke-*` handlers declare a method guard, so `POST`/`PUT`/`DELETE` return the same `200` JSON body as `GET`. Don't add a `405` to one route in isolation — it would make it inconsistent with the other 44.
+- **API route handlers are method-agnostic**: none of the `healthz-smoke-*` handlers declare a method guard, so `POST`/`PUT`/`DELETE` return the same `200` JSON body as `GET`. Don't add a `405` to one route in isolation — it would make it inconsistent with every other `healthz-smoke-*` route. If an idea's acceptance criteria claim a non-`GET` request "does not return the 200 body", that claim is wrong for this stack: check whether the same idea also puts custom method handling out of scope (it usually does), and plan to the out-of-scope line, not the claim.
 - **Page tests**: `Pages()` needs `exclude: ["**/*.test.tsx"]` or the build breaks on the first page test. Our `vite.config.ts` has this.
 - **Route tests**: `nitro()` needs `ignore: ["**/*.test.ts"]` or route tests get bundled into the prod server. Our `vite.config.ts` has this.
 - **Auto-imports**: `auto-imports.d.ts` doesn't exist on a fresh clone — `prebuild` and `pretypecheck` scripts generate it. If `tsc` fails on a new machine, run `node scripts/ensure-generated-files.mjs` first.
@@ -243,6 +251,14 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 ---
 
 ## Changelog
+
+### 2026-08-09 — Sprint VRTX3-S-0011: Three Independent Health Check Endpoints (528856326)
+
+Added three independent health-probe endpoints, each returning HTTP 200 with `Content-Type: application/json` and body `{ ok: true, variant: "528856326" }`: `/api/healthz-smoke-528856326-a`, `-b`, `-c`. Purely additive — 6 new files, 0 existing files modified, no new dependency. Each is a self-contained handler with a colocated `H3Event` integration test; no shared helper, no cross-import.
+
+The probe pattern has been promoted out of this changelog into [Conventions → Health Probe Routes](#health-probe-routes), so the next agent finds the "don't factor out a shared handler" rule before writing code rather than after.
+
+Two corrections to this guide, both measured against the repo rather than carried forward: **lint is ESLint 10** (`^10.7.0` in `package.json`), not ESLint 9 as previously documented here; and the method-agnostic gotcha now says what to do when an idea's acceptance criteria contradict it — this sprint's idea asserted that `POST`/`PUT`/`DELETE` "does not return the 200 success body", which is false for these handlers. Planned to the idea's own out-of-scope line ("no non-GET methods", no custom method handling) instead.
 
 ### 2026-08-09 — Sprint VRTX3-S-0009: Bugfix Sprint – Three Missing Health Check Endpoints
 
