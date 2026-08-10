@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 56 across the family, the most recent being the `178637543331085` bugfix set (`healthz-smoke-bugfix-174694844`, `healthz-smoke-bugfix2-754372119`, `healthz-smoke-bugfix3-404580234`) added in VRTX3-S-0014.
+**Current probes:** 59 across the family, the most recent being the `178637870663710` bugfix set (`healthz-smoke-bugfix-406186407`, `healthz-smoke-bugfix2-487405332`, `healthz-smoke-bugfix3-418626414`) added in VRTX3-S-0015.
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,12 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-10 — Sprint VRTX3-S-0015: Bugfix Sprint – Three Missing Health Probes
+
+Added `/api/healthz-smoke-bugfix-406186407`, `/api/healthz-smoke-bugfix2-487405332` and `/api/healthz-smoke-bugfix3-418626414`, each returning `{ok:true,variant:"<id>"}`. Purely additive: 6 new files, 0 modified. Probe count 56 → 59. Scope and per-probe acceptance criteria are unchanged; only the count and the most-recent-set pointer moved.
+
+All three were reported as returning `404`; re-measured during planning against a live dev server, all three returned `200 text/html` (the SPA shell) instead — the seventh sprint in a row to find this. The defects were real, the status codes were not — see [AGENT.md § Gotchas](./AGENT.md#gotchas).
 
 ### 2026-08-10 — Sprint VRTX3-S-0014: Bugfix Sprint – Three Missing Health Probes
 
