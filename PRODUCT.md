@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 62 across the family, the most recent being the `756246354` set (`healthz-smoke-756246354-a`, `-b`, `-c`) added in VRTX3-S-0016.
+**Current probes:** 65 across the family, the most recent being the `238855431` set (`healthz-smoke-238855431-a`, `-b`, `-c`) added in VRTX3-S-0017.
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,12 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-10 — Sprint VRTX3-S-0017: Three Independent Health Check Endpoints (238855431)
+
+Added `/api/healthz-smoke-238855431-a`, `-b` and `-c`, each returning `{ok:true,variant:"238855431"}` — three separate leaf units of work with no shared code, built and merged in parallel. Purely additive: 6 new files, 0 modified source files, no new dependency, nothing in `src/`. Probe count 62 → 65, and the "most recent set" pointer under [Features](#features) moves to this family.
+
+Scope, non-goals, user stories and the per-probe acceptance criteria are unchanged — this sprint adds instances of an existing feature, not a new one. The deliverable users actually care about is the second-order one: the three tasks carry disjoint file-ownership maps and no `depends_on` edge, so they prove again that independent leaf work needs no coordination.
 
 ### 2026-08-10 — Sprint VRTX3-S-0016: Three Independent Health Check Endpoints (756246354)
 
