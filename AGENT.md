@@ -152,9 +152,9 @@ middleware/
 
 ### Health Probe Routes
 
-`routes/api/healthz-smoke-*.ts` is a family of 62 near-identical GET probes, each returning `{ ok: true, variant: "<id>" }`. Adding one: copy `routes/api/healthz-smoke-528856326-a.ts` and its `.test.ts` sibling, change the variant string, change nothing else.
+`routes/api/healthz-smoke-*.ts` is a family of 65 near-identical GET probes, each returning `{ ok: true, variant: "<id>" }`. Adding one: copy `routes/api/healthz-smoke-528856326-a.ts` and its `.test.ts` sibling, change the variant string, change nothing else.
 
-**Copy that pair, not an older one.** Probe tests written before VRTX3-S-0011 (e.g. `healthz-smoke-913793173-a.test.ts`) carry a second `responds in under 100ms` case. Wall-clock assertions on a shared CI runner are flaky and prove nothing about the contract, so the current pattern is a single body assertion. Don't propagate the timing case into new probes.
+**Copy that pair, not an older one — and not one an idea names.** 47 of the probe tests, all written before VRTX3-S-0011 (e.g. `healthz-smoke-913793173-a.test.ts`, `healthz-smoke-126862920-c.test.ts`), carry a second `responds in under 100ms` case. Wall-clock assertions on a shared CI runner are flaky and prove nothing about the contract, so the current pattern is a single body assertion. Don't propagate the timing case into new probes. Ideas and defect reports occasionally name one of those older files as the template — VRTX3-I-0026 named `healthz-smoke-126862920-c.test.ts` — because they sample the directory rather than read this line. **This pointer outranks the pointer in an idea canvas:** copy the `528856326` pair, keep the single body assertion, and note the substitution in the work log.
 
 **The duplication is deliberate — do not factor out a shared handler, factory, constants file or barrel export.** Independence is the point: each probe must be buildable and mergeable without touching any file another probe owns. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions).
 
@@ -235,7 +235,7 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 
   Seven consecutive sprints (VRTX3-S-0001, -0007, -0008, -0009, -0012, -0014, -0015) each re-discovered this after acting on a bug report that claimed `404`. The mis-transcription originates upstream in defect capture, not in this repo, so it will keep arriving — **treat a `404` in an incoming defect report for an `/api/*` path as a mis-transcription by default** — the defect is usually real, but its stated status code is not; re-measure before planning any verification around it. Note also that a route's **unit test imports the handler module directly**, so it passes even if Nitro never registered the path — only a live request proves the route is wired.
 
-  **This is not only a bugfix-sprint trap.** VRTX3-S-0016 was an additive enhancement with no `404` claim to debunk, and the three not-yet-written paths still answered `200 text/html` while the control answered `200 application/json`. Whenever you need to know whether an `/api/*` route exists — adding one, verifying one, or triaging one — measure the body and `Content-Type`. There is no sprint shape in which the status code answers the question.
+  **This is not only a bugfix-sprint trap.** VRTX3-S-0016 and VRTX3-S-0017 were additive enhancements with no `404` claim to debunk, and in both the not-yet-written paths still answered `200 text/html` while the control answered `200 application/json` — nine consecutive confirmations across both sprint shapes. Whenever you need to know whether an `/api/*` route exists — adding one, verifying one, or triaging one — measure the body and `Content-Type`. There is no sprint shape in which the status code answers the question.
 
 - **Nitro's `serverDir`**: Defaults to `false` — must be `"./"` in `vite.config.ts` or `routes/` and `middleware/` never load. Ours is set correctly; don't change it.
 - **API route handlers are method-agnostic**: none of the `healthz-smoke-*` handlers declare a method guard, so `POST`/`PUT`/`DELETE` return the same `200` JSON body as `GET`. Don't add a `405` to one route in isolation — it would make it inconsistent with every other `healthz-smoke-*` route. If an idea's acceptance criteria claim a non-`GET` request "does not return the 200 body", that claim is wrong for this stack: check whether the same idea also puts custom method handling out of scope (it usually does), and plan to the out-of-scope line, not the claim.
@@ -255,6 +255,16 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 ---
 
 ## Changelog
+
+### 2026-08-10 — Sprint VRTX3-S-0017: Three Independent Health Check Endpoints (238855431)
+
+Added `/api/healthz-smoke-238855431-a`, `-b` and `-c`, each returning HTTP 200 with `Content-Type: application/json` and body `{ ok: true, variant: "238855431" }`. Purely additive — 6 new files, 0 existing source files modified, no new dependency, nothing in `src/`. Probe family count 62 → 65, re-derived from the filesystem and bumped in all three docs that carry it (`AGENT.md`, `ARCHITECTURE.md`, `PRODUCT.md`) in the same pass.
+
+**The copy-source pointer in [Health Probe Routes](#health-probe-routes) now outranks the idea canvas, and says so.** VRTX3-I-0026 named `routes/api/healthz-smoke-126862920-c.test.ts` as the test template. That file is one of the 47 pre-VRTX3-S-0011 probe tests carrying the flaky `responds in under 100ms` case — the exact assertion this guide has told three sprints running not to propagate. The idea was not wrong about the shape it wanted (its own risk register says "prefer body assertions… or omit"), it just sampled the directory instead of reading this line. Ideas will keep doing that as long as 47 of 65 tests carry the old shape, so the rule is now explicit: the `528856326` pair wins over any file an idea names.
+
+**Ninth consecutive confirmation of the SPA-fallback trap, second on an enhancement.** Re-measured on a live dev server during planning: all three target paths returned `200 text/html; charset=utf-8` (the SPA shell), the control `/api/healthz-smoke-528856326-a` returned `200 application/json;charset=UTF-8`. Note the dev server binds `5005` in the planning container when `5000` is taken — check the Vite banner rather than assuming the port.
+
+No change to routing, the test harness or CI. `nitro({ serverDir: "./" })` registers a new `routes/api/*.ts` by filename alone; the Vitest `server` project collects its colocated `*.test.ts` with no configuration; `.github/workflows/ci.yml` already triggers on `push` and `pull_request` to `vortex/**`.
 
 ### 2026-08-10 — Sprint VRTX3-S-0016: Three Independent Health Check Endpoints (756246354)
 
