@@ -105,9 +105,12 @@ conditionally approved — nothing is being carried past close.
   -0014, -0015). The defect is always real; the status code never is. The root fix belongs upstream in
   defect capture, not in this repository. `AGENT.md § Gotchas` records the seventh occurrence so
   planners re-measure by default.
-- **This family's growth is still unmanaged, and the question is now a sprint older.** 59
-  near-identical probes added across 15 sprints, with no retirement policy — raised in VRTX3-S-0014's
-  retro and unanswered since. Each is individually trivial; collectively they are a growing share of
-  the route table and the test suite (the probe tests are now the substantial majority of the 126-test
-  suite). The no-sharing convention is a sound decision and is not what needs revisiting; "when do
-  probes get retired?" is, and it needs a product decision, not another sprint of accretion.
+- **Stop re-raising the probe-retention question — it has been answered by decision, twice.** 59
+  near-identical probes now exist across 15 sprints with no retirement policy, and each sprint's retro
+  reaches for it again. But the backlog record is unambiguous: **VRTX3-T-0074** (raised in
+  VRTX3-S-0011) and **VRTX3-T-0089** (raised in VRTX3-S-0013) both asked for exactly this policy and
+  both were **CANCELLED**. Two cancellations is a decision, not an oversight — the implicit answer is
+  "probes are kept indefinitely, and that is acceptable." A third ticket would be noise. If the growth
+  genuinely becomes a problem, the thing to escalate is the _cancellation rationale_ (which was never
+  recorded), not another duplicate request. Noted here so the next close bundle doesn't spend the
+  effort a fourth time.
