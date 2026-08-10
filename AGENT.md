@@ -152,7 +152,7 @@ middleware/
 
 ### Health Probe Routes
 
-`routes/api/healthz-smoke-*.ts` is a family of 53 near-identical GET probes, each returning `{ ok: true, variant: "<id>" }`. Adding one: copy `routes/api/healthz-smoke-528856326-a.ts` and its `.test.ts` sibling, change the variant string, change nothing else.
+`routes/api/healthz-smoke-*.ts` is a family of 56 near-identical GET probes, each returning `{ ok: true, variant: "<id>" }`. Adding one: copy `routes/api/healthz-smoke-528856326-a.ts` and its `.test.ts` sibling, change the variant string, change nothing else.
 
 **Copy that pair, not an older one.** Probe tests written before VRTX3-S-0011 (e.g. `healthz-smoke-913793173-a.test.ts`) carry a second `responds in under 100ms` case. Wall-clock assertions on a shared CI runner are flaky and prove nothing about the contract, so the current pattern is a single body assertion. Don't propagate the timing case into new probes.
 
@@ -233,7 +233,7 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
   curl -s -o /dev/null -w '%{http_code} %{content_type}\n' http://localhost:5000/api/<route>
   ```
 
-  Five consecutive sprints (VRTX3-S-0001, -0007, -0008, -0009, -0012) each re-discovered this after acting on a bug report that claimed `404`. **Treat a `404` in an incoming defect report for an `/api/*` path as a mis-transcription by default** — the defect is usually real, but its stated status code is not; re-measure before planning any verification around it. Note also that a route's **unit test imports the handler module directly**, so it passes even if Nitro never registered the path — only a live request proves the route is wired.
+  Six consecutive sprints (VRTX3-S-0001, -0007, -0008, -0009, -0012, -0014) each re-discovered this after acting on a bug report that claimed `404`. The mis-transcription originates upstream in defect capture, not in this repo, so it will keep arriving — **treat a `404` in an incoming defect report for an `/api/*` path as a mis-transcription by default** — the defect is usually real, but its stated status code is not; re-measure before planning any verification around it. Note also that a route's **unit test imports the handler module directly**, so it passes even if Nitro never registered the path — only a live request proves the route is wired.
 
 - **Nitro's `serverDir`**: Defaults to `false` — must be `"./"` in `vite.config.ts` or `routes/` and `middleware/` never load. Ours is set correctly; don't change it.
 - **API route handlers are method-agnostic**: none of the `healthz-smoke-*` handlers declare a method guard, so `POST`/`PUT`/`DELETE` return the same `200` JSON body as `GET`. Don't add a `405` to one route in isolation — it would make it inconsistent with every other `healthz-smoke-*` route. If an idea's acceptance criteria claim a non-`GET` request "does not return the 200 body", that claim is wrong for this stack: check whether the same idea also puts custom method handling out of scope (it usually does), and plan to the out-of-scope line, not the claim.
@@ -253,6 +253,14 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 ---
 
 ## Changelog
+
+### 2026-08-10 — Sprint VRTX3-S-0014: Bugfix Sprint – Three Missing Health Probes
+
+Added three missing health probes, each returning HTTP 200 with `Content-Type: application/json` and body `{ ok: true, variant: "<id>" }`: `/api/healthz-smoke-bugfix-174694844`, `/api/healthz-smoke-bugfix2-754372119`, `/api/healthz-smoke-bugfix3-404580234`. Purely additive — 6 new files, 0 existing files modified. Probe family count 53 → 56.
+
+**Sixth consecutive sprint to hit the SPA-fallback trap**, and this time the idea canvas itself carried the wrong status code through a full evidence section. Re-measured on `bun run dev` during planning rather than cited from prior records: each missing path returned `200 text/html; charset=utf-8` (the SPA `index.html` shell), while the working control `/api/healthz-smoke-841017405-a` returned `200 application/json;charset=UTF-8`. Repo-wide grep for each variant id returned zero matches, confirming a never-written file rather than a typo'd filename. The [Gotchas](#gotchas) entry now records that the mis-transcription originates upstream in defect capture and will keep arriving.
+
+The single-assertion probe-test shape held: the `528856326` copy-source pointer added in VRTX3-S-0013 did its job, and the flaky `responds in under 100ms` case was kept out of all three new tests.
 
 ### 2026-08-09 — Sprint VRTX3-S-0013: Three Independent Health Check Endpoints (841017405)
 
