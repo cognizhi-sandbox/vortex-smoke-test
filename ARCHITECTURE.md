@@ -53,7 +53,7 @@ Concrete versions are read from `package.json`: React 19.2, Vite 8.1, Nitro 3.0 
 
 ### Health probe route contract
 
-`routes/api/healthz-smoke-*.ts` (71 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENT.md](./AGENT.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
+`routes/api/healthz-smoke-*.ts` (74 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENT.md](./AGENT.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
 
 `bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-472035881-a` → `.output/server/_routes/api/healthz_smoke_472035881_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
 
@@ -98,6 +98,12 @@ Four tiers, one worked example each. Commands and how to extend: [README.md](./R
 ---
 
 ## Changelog
+
+### 2026-08-11 — Sprint VRTX3-S-0020: Bugfix Sprint – Three Missing Health Probes
+
+Added `routes/api/healthz-smoke-bugfix-1060413982.ts`, `healthz-smoke-bugfix2-521525844.ts`, `healthz-smoke-bugfix3-287868165.ts` and their colocated tests — 6 new files, 0 modified source files, no dependency change. Probe-family count under [Routing](#routing) updated 71 → 74, re-counted from the filesystem rather than incremented.
+
+The filename-is-the-URL contract was re-measured live before implementation for the twelfth consecutive sprint: all three unwritten paths returned `200 text/html` (the SPA shell) rather than `404`, while a written control returned `200 application/json`. That is the contract working as designed — an unresolved path is handed to the SPA — but it means the route table cannot be probed by status code. Confirm a route compiled by looking for its module under `.output/server/_routes/api/`.
 
 ### 2026-08-11 — Sprint VRTX3-S-0019: Three Independent Health Check Endpoints (472035881)
 
