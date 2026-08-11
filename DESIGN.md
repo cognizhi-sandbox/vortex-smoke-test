@@ -44,6 +44,10 @@ Dark-mode tokens exist (`.dark` class) but no toggle is wired up — nothing set
 
 ## Changelog
 
+### 2026-08-11 — Sprint VRTX3-S-0021: Three Independent Health Check Endpoints (568557289)
+
+No design-system change. The sprint is backend-only (three `routes/api/` handlers plus their tests); nothing in `src/`, no token, component, icon or animation touched, and no UI surface links to the new endpoints. The light-mode `--destructive-foreground` issue noted under [Tokens](#tokens) remains open and unclaimed, as does the missing dark-mode toggle under [Theming](#theming).
+
 ### 2026-08-11 — Sprint VRTX3-S-0019: Three Independent Health Check Endpoints (472035881)
 
 No design-system change. The sprint is backend-only (three `routes/api/` handlers plus their tests); nothing in `src/`, no token, component, icon or animation touched, and no UI surface links to the new endpoints. The light-mode `--destructive-foreground` issue noted under [Tokens](#tokens) remains open and unclaimed, as does the missing dark-mode toggle under [Theming](#theming).
