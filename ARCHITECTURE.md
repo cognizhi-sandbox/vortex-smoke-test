@@ -105,7 +105,7 @@ Added `routes/api/healthz-smoke-568557289-a.ts`, `-b.ts`, `-c.ts` and their colo
 
 The filename-is-the-URL contract was re-measured live before implementation for the thirteenth consecutive sprint: all three unwritten paths returned `200 text/html` (the 949-byte SPA shell) rather than `404`, while the control `/api/healthz-smoke-528856326-a` returned `200 application/json` (33 bytes). That is the contract working as designed — an unresolved path is handed to the SPA — but it means the route table cannot be probed by status code. Confirm a route compiled by looking for its module under `.output/server/_routes/api/`.
 
-`## Key Decisions` is unchanged: the "Health probes duplicate, on purpose" entry already governs this sprint, and at 77 probes (153 files under `routes/api/`) its cost/benefit reads the same — the files never change after they land, and the ownership map for each new probe still overlaps nothing.
+`## Key Decisions` is unchanged: the "Health probes duplicate, on purpose" entry already governs this sprint, and at 77 probes (156 `.ts` files under `routes/api/`, counted at sprint close) its cost/benefit reads the same — the files never change after they land, and the ownership map for each new probe still overlaps nothing.
 
 ### 2026-08-11 — Sprint VRTX3-S-0020: Bugfix Sprint – Three Missing Health Probes
 
