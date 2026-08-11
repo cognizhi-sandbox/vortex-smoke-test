@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 65 across the family, the most recent being the `238855431` set (`healthz-smoke-238855431-a`, `-b`, `-c`) added in VRTX3-S-0017.
+**Current probes:** 68 across the family, the most recent being the `smoke-bugfix-178640575450999` set (`healthz-smoke-bugfix-699186705`, `healthz-smoke-bugfix2-502272230`, `healthz-smoke-bugfix3-850084489`) added in VRTX3-S-0018.
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,10 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-10 — Sprint VRTX3-S-0018: Bugfix Sprint – Three Missing Health Probes
+
+Added `/api/healthz-smoke-bugfix-699186705`, `/api/healthz-smoke-bugfix2-502272230` and `/api/healthz-smoke-bugfix3-850084489`, each returning `{ok:true,variant:"<id>"}`. All three were reported missing and confirmed never written. Purely additive: 6 new files, 0 modified source files, no new dependency, nothing in `src/`. Probe count 65 → 68, and the "most recent set" pointer under [Features](#features) moves to this family. Scope, per-probe acceptance criteria and the "deliberately not covered" list are unchanged.
 
 ### 2026-08-10 — Sprint VRTX3-S-0017: Three Independent Health Check Endpoints (238855431)
 
