@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 74 across the family, the most recent being the `smoke-bugfix-178646960271853` set (`healthz-smoke-bugfix-1060413982`, `healthz-smoke-bugfix2-521525844`, `healthz-smoke-bugfix3-287868165`) added in VRTX3-S-0020.
+**Current probes:** 77 across the family, the most recent being the `568557289` set (`healthz-smoke-568557289-a`, `-b`, `-c`) added in VRTX3-S-0021.
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,12 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-11 — Sprint VRTX3-S-0021: Three Independent Health Check Endpoints (568557289)
+
+Added `/api/healthz-smoke-568557289-a`, `-b` and `-c`, each returning `{ok:true,variant:"568557289"}` — three separate leaf units of work with no shared code, built and merged in parallel. Purely additive: 6 new files, 0 modified source files, no new dependency, nothing in `src/`. Probe count 74 → 77, and the "most recent set" pointer under [Features](#features) moves to this family.
+
+Scope, non-goals, user stories and the per-probe acceptance criteria are unchanged — this sprint adds instances of an existing feature, not a new one. The user-visible deliverable is three URLs; the deliverable the sprint exists to prove is the second-order one, that three tickets with disjoint file-ownership maps and no `depends_on` edge need no coordination to land.
 
 ### 2026-08-11 — Sprint VRTX3-S-0020: Bugfix Sprint – Three Missing Health Probes
 
