@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 83 across the family, the most recent being the `1065915107` set (`healthz-smoke-1065915107-a`, `-b`, `-c`) added in VRTX3-S-0023.
+**Current probes:** 86 across the family, the most recent being the three added in VRTX3-S-0024 (`healthz-smoke-bugfix-27681476`, `healthz-smoke-bugfix2-107364458`, `healthz-smoke-bugfix3-351014898`).
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,12 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-16 — Sprint VRTX3-S-0024: Bugfix Sprint – Three Missing Health Probes
+
+Added `/api/healthz-smoke-bugfix-27681476`, `/api/healthz-smoke-bugfix2-107364458` and `/api/healthz-smoke-bugfix3-351014898`, each returning `{ok:true,variant:"<id>"}`. All three were reported as missing; each was a never-written route file rather than a broken one, so the fix is purely additive: 6 new files, 0 modified source files, no new dependency, nothing in `src/`. Probe count 83 → 86, and the "most recent set" pointer under [Features](#features) moves to this trio.
+
+Scope and the per-probe acceptance criteria are unchanged. Non-`GET` method handling stays deliberately out of scope, as it has been since the family was introduced — these handlers answer every verb with the same body by design.
 
 ### 2026-08-14 — Sprint VRTX3-S-0023: Three Independent Health Check Endpoints (1065915107)
 
