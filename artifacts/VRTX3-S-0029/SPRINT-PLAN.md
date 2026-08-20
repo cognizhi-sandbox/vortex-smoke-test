@@ -32,6 +32,12 @@ Serve the two missing health probes, each answering `GET` with HTTP 200,
 | VRTX3-T-0203 | `/api/healthz-smoke-bugfix-ha-971401638`  | Handler file was never written; Nitro registers by filename, so the path never existed. | `artifacts/VRTX3-S-0029/VRTX3-T-0203/PLAN.md` |
 | VRTX3-T-0204 | `/api/healthz-smoke-bugfix-ha2-649579386` | Same — never-written file, not a regression and not a typo'd filename.                  | `artifacts/VRTX3-S-0029/VRTX3-T-0204/PLAN.md` |
 
+**Reviewer note (operator, 2026-08-20):** both defects' regression tests must assert the **exact
+JSON shape** `{"ok":true,"variant":"<id>"}` — a whole-object deep-equal, not a check that `ok` is
+truthy or that `variant` merely appears. Each `PLAN.md` carries this as DoD-2 (live response body)
+and DoD-4 (`toEqual` in the colocated test), and each ticket's acceptance criteria repeat it; the
+requirement is restated here so it is not missed.
+
 ## Cross-cutting notes
 
 **1. The tickets report the paths WITHOUT the `/api/` prefix. Build them under `routes/api/`
