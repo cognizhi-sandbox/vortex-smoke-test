@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 92 across the family, the most recent being the three added in VRTX3-S-0027 (`healthz-smoke-868033827-a`, `healthz-smoke-868033827-b`, `healthz-smoke-868033827-c`).
+**Current probes:** 95 across the family, the most recent being the three added in VRTX3-S-0028 (`healthz-smoke-458730798-a`, `healthz-smoke-458730798-b`, `healthz-smoke-458730798-c`).
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,14 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-20 — Sprint VRTX3-S-0028: Three Independent Health Check Endpoints (458730798)
+
+Added `/api/healthz-smoke-458730798-a`, `-b` and `-c`, each returning `{ok:true,variant:"458730798"}`. Purely additive: 6 new files, 0 modified source files, no new dependency, nothing in `src/`. Probe count 92 → 95, and the "most recent set" pointer under [Features](#features) moves to this trio.
+
+Scope and the per-probe acceptance criteria are unchanged. Non-`GET` method handling stays deliberately out of scope, as it has been since the family was introduced — these handlers answer every verb with the same body by design.
+
+One correction worth recording against the per-probe acceptance criteria: the idea behind this sprint asked for a per-handler "returns in under 100 ms" assertion inside each unit test. That is not a product criterion and it is not carried here — the probes' guarantee is the response contract (`200`, `application/json`, the exact body) plus the structural promise that a probe touches no auth, database or sibling module. Response latency follows from that structure rather than being asserted with a wall-clock check on a shared CI runner.
 
 ### 2026-08-19 — Sprint VRTX3-S-0027: Three Independent Health Check Endpoints (868033827)
 
