@@ -152,9 +152,9 @@ middleware/
 
 ### Health Probe Routes
 
-`routes/api/healthz-smoke-*.ts` is a family of 95 near-identical GET probes, each returning `{ ok: true, variant: "<id>" }`. Adding one: copy `routes/api/healthz-smoke-528856326-a.ts` and its `.test.ts` sibling, change the variant string, change nothing else.
+`routes/api/healthz-smoke-*.ts` is a family of 97 near-identical GET probes, each returning `{ ok: true, variant: "<id>" }`. Adding one: copy `routes/api/healthz-smoke-528856326-a.ts` and its `.test.ts` sibling, change the variant string, change nothing else.
 
-**Copy that pair, not an older one — and not one an idea names.** 47 of the 95 probe tests, all written before VRTX3-S-0011 (e.g. `healthz-smoke-913793173-a.test.ts`, `healthz-smoke-126862920-c.test.ts`, `healthz-smoke-302960562-a.test.ts`), carry a second `responds in under 100ms` case. Wall-clock assertions on a shared CI runner are flaky and prove nothing about the contract, so the current pattern is a single body assertion. Don't propagate the timing case into new probes. Ideas and defect reports occasionally name one of those older files as the template — VRTX3-I-0026 named `healthz-smoke-126862920-c.test.ts` — because they sample the directory rather than read this line. **This pointer outranks the pointer in an idea canvas:** copy the `528856326` pair, keep the single body assertion, and note the substitution in the work log.
+**Copy that pair, not an older one — and not one an idea names.** 47 of the 97 probe tests, all written before VRTX3-S-0011 (e.g. `healthz-smoke-913793173-a.test.ts`, `healthz-smoke-126862920-c.test.ts`, `healthz-smoke-302960562-a.test.ts`), carry a second `responds in under 100ms` case. Wall-clock assertions on a shared CI runner are flaky and prove nothing about the contract, so the current pattern is a single body assertion. Don't propagate the timing case into new probes. Ideas and defect reports occasionally name one of those older files as the template — VRTX3-I-0026 named `healthz-smoke-126862920-c.test.ts` — because they sample the directory rather than read this line. **This pointer outranks the pointer in an idea canvas:** copy the `528856326` pair, keep the single body assertion, and note the substitution in the work log.
 
 **Substitute even when the named file looks fine — and expect the sampling to bite eventually.** VRTX3-I-0027 through VRTX3-I-0035 each named the `528856326` pair themselves, so nine sprints running had nothing to substitute. VRTX3-I-0036 broke that streak by naming `healthz-smoke-1065915107-c.test.ts`, a file _shape-identical_ to the pinned one because it postdates VRTX3-S-0011 and carries no timing case. That was recorded here as the more dangerous version of the drift, not the safer one: the substitution cost nothing, so nothing went wrong to teach the rule, and the next canvas to sample the directory had a 47-in-92 chance of landing on a file where it mattered.
 
@@ -263,6 +263,20 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
 ---
 
 ## Changelog
+
+### 2026-08-20 — Sprint VRTX3-S-0030: Bugfix Sprint – Two Missing Health Probes (`-ha` family)
+
+Added two missing health probes, each returning HTTP 200 with `Content-Type: application/json` and body `{ ok: true, variant: "<id>" }`: `/api/healthz-smoke-bugfix-ha-853006542`, `/api/healthz-smoke-bugfix-ha2-165600260`. Purely additive — 4 new files, 0 existing source files modified. Probe family count 95 → 97, re-derived from the filesystem and bumped in all three docs that carry it (`AGENT.md`, `ARCHITECTURE.md`, `PRODUCT.md`) in the same pass.
+
+**Twentieth consecutive confirmation of the SPA-fallback trap.** Re-measured on a live dev server during planning rather than cited: both target paths returned `200 text/html; charset=utf-8` (the SPA shell, 949 bytes), the control `/api/healthz-smoke-528856326-a` returned `200 application/json;charset=UTF-8` (33 bytes). A repo-wide grep for `853006542` and `165600260` returned zero matches, confirming never-written files rather than typo'd filenames. Neither ticket has an idea linked — this is the first sprint in the series where _no_ defect had a canvas behind it, so nothing upstream sanity-checked either `404` and there was no counter-claim to weigh; the measurement was the only evidence available.
+
+**Both defect reports dropped the `/api/` prefix from the path, and the same measurement settles it.** The tickets name `/healthz-smoke-bugfix-ha-853006542` and `/healthz-smoke-bugfix-ha2-165600260`; all 95 existing probes serve under `/api/`. Requesting the _working_ control without the prefix (`/healthz-smoke-528856326-a`) also returned the 949-byte SPA shell — so a prefix-less probe path is unreachable by construction, and the fixes land under `routes/api/` like every sibling. This is the same one curl that debunks the `404`: it answers both questions at once, which is worth knowing because the prefix slip is easy to read as a second, routing-shaped defect. Older changelog entries (SPRINT-0004/-0005/-0007) write probe paths without the prefix too — that is report shorthand, not a second route family.
+
+**A new infix, `-ha` / `-ha2`, entered the family.** No prior filename carries it, so there is no neighbour to pattern-match a name against and no collision risk. `-ha-` and `-ha2-` are distinct routes with distinct variants, not a typo for one another.
+
+**Vite bound `:5002`** this sprint (`5000` and `5001` both in use). Twelve sprints have now produced `:5005`, `:5006`, `:5007`, `:5000`, `:5001`, `:5002`, `:5000`, `:5000`, `:5000`, `:5000`, `:5000` and `:5002` — read the banner.
+
+The `528856326` copy-source pointer had nothing to substitute this sprint: with no canvas behind either defect, no template file was named at all. The flaky `responds in under 100ms` case remains confined to the 47 pre-VRTX3-S-0011 tests, now 47 of 97. No change to routing, the test harness or CI.
 
 ### 2026-08-20 — Sprint VRTX3-S-0028: Three Independent Health Check Endpoints (458730798)
 
