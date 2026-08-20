@@ -53,9 +53,9 @@ Concrete versions are read from `package.json`: React 19.2, Vite 8.1, Nitro 3.0 
 
 ### Health probe route contract
 
-`routes/api/healthz-smoke-*.ts` (92 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENT.md](./AGENT.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
+`routes/api/healthz-smoke-*.ts` (95 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENT.md](./AGENT.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
 
-`bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-868033827-a` → `.output/server/_routes/api/healthz_smoke_868033827_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
+`bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-458730798-a` → `.output/server/_routes/api/healthz_smoke_458730798_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
 
 ## Data Flow Example
 
@@ -98,6 +98,14 @@ Four tiers, one worked example each. Commands and how to extend: [README.md](./R
 ---
 
 ## Changelog
+
+### 2026-08-20 — Sprint VRTX3-S-0028: Three Independent Health Check Endpoints (458730798)
+
+Added `routes/api/healthz-smoke-458730798-a.ts`, `-b.ts`, `-c.ts` and their colocated tests — 6 new files, 0 modified source files, no dependency change. Probe-family count under [Routing](#routing) updated 92 → 95, re-counted from the filesystem rather than incremented. The build-output example under [Routing](#routing) now uses this sprint's route rather than VRTX3-S-0027's, so the illustration names a file that exists.
+
+The filename-is-the-URL contract was re-measured live before implementation for the nineteenth consecutive sprint: all three unwritten paths returned `200 text/html` (the 949-byte SPA shell) rather than `404`, while the control `/api/healthz-smoke-528856326-a` returned `200 application/json` (33 bytes). That is the contract working as designed — an unresolved path is handed to the SPA — but it means the route table cannot be probed by status code. Confirm a route compiled by looking for its module under `.output/server/_routes/api/`.
+
+`## Key Decisions` is unchanged: the "Health probes duplicate, on purpose" entry already governs this sprint, and at 95 probes (193 `.ts` files under `routes/api/` once this sprint lands, from 187 at planning) its cost/benefit reads the same — the files never change after they land, and the ownership map for each new probe still overlaps nothing. The consequence of family size recorded against that entry last sprint came due this sprint, which is worth noting because it bounds the decision rather than reopening it. VRTX3-S-0027 observed that a directory this large invites an idea canvas to sample a neighbour instead of the documented copy source, and that the sampled neighbour happened to be harmless; VRTX3-I-0037 sampled `healthz-smoke-302960562-a.test.ts`, which carries the flaky wall-clock assertion, and propagated it as far as one of its own acceptance criteria. The mitigation stays documentary (see [AGENT.md](./AGENT.md#health-probe-routes)) and the decision stands: the realized cost is a copy-source ambiguity that a pinned pointer resolves in one line of a plan, whereas factoring the family into a shared handler would convert every future probe into a shared-file edit — the exact coupling the probes exist to disprove, and a cost paid on every sprint rather than occasionally.
 
 ### 2026-08-19 — Sprint VRTX3-S-0027: Three Independent Health Check Endpoints (868033827)
 
