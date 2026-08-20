@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 95 across the family, the most recent being the three added in VRTX3-S-0028 (`healthz-smoke-458730798-a`, `healthz-smoke-458730798-b`, `healthz-smoke-458730798-c`).
+**Current probes:** 97 across the family, the most recent being the two added in VRTX3-S-0030 (`healthz-smoke-bugfix-ha-853006542`, `healthz-smoke-bugfix-ha2-165600260`).
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,12 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-20 — Sprint VRTX3-S-0030: Bugfix Sprint – Two Missing Health Probes (`-ha` family)
+
+Added `/api/healthz-smoke-bugfix-ha-853006542` and `/api/healthz-smoke-bugfix-ha2-165600260`, each returning `{ok:true,variant:"<id>"}`. Purely additive: 4 new files, 0 modified source files, no new dependency, nothing in `src/`. Probe count 95 → 97, and the "most recent set" pointer under [Features](#features) moves to this pair.
+
+Scope and the per-probe acceptance criteria are unchanged. One clarification recorded against them: both defect reports named their endpoint without the `/api/` prefix. The criteria say `GET /api/<probe-name>` and that remains the product contract — a probe is reachable at `/api/…` and nowhere else, which was re-confirmed by measurement during planning against a probe that already exists.
 
 ### 2026-08-20 — Sprint VRTX3-S-0028: Three Independent Health Check Endpoints (458730798)
 
