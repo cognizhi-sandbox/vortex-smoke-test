@@ -28,13 +28,13 @@ executed as corrected to the documented probe path.
 
 ## Tickets
 
-| Ticket       | Type   | Title                                     | Outcome                                       |
-| ------------ | ------ | ----------------------------------------- | --------------------------------------------- |
-| VRTX3-T-0208 | TASK   | Bugfix plan — VRTX3-S-0030                | DONE — sprint plan, two PLAN.md, root docs    |
-| VRTX3-T-0206 | DEFECT | `/api/healthz-smoke-bugfix-ha-853006542`  | DONE — merged in `9bffc78` (#245)             |
-| VRTX3-T-0207 | DEFECT | `/api/healthz-smoke-bugfix-ha2-165600260` | DONE — merged in `95fa4d7` (#244)             |
-| VRTX3-T-0209 | TASK   | Integration QA report — VRTX3-S-0030      | DONE — PASS verdict, no defects found         |
-| —            | —      | Sprint close bundle                       | This artifact (authored on operator's reject) |
+| Ticket       | Type   | Title                                     | Outcome                                    |
+| ------------ | ------ | ----------------------------------------- | ------------------------------------------ |
+| VRTX3-T-0208 | TASK   | Bugfix plan — VRTX3-S-0030                | DONE — sprint plan, two PLAN.md, root docs |
+| VRTX3-T-0206 | DEFECT | `/api/healthz-smoke-bugfix-ha-853006542`  | DONE — merged in `9bffc78` (#245)          |
+| VRTX3-T-0207 | DEFECT | `/api/healthz-smoke-bugfix-ha2-165600260` | DONE — merged in `95fa4d7` (#244)          |
+| VRTX3-T-0209 | TASK   | Integration QA report — VRTX3-S-0030      | DONE — PASS verdict, no defects found      |
+| VRTX3-T-0210 | TASK   | Sprint close bundle — VRTX3-S-0030        | This artifact and `release-notes.md`       |
 
 ## What shipped
 
@@ -92,9 +92,11 @@ no `## Known Issues` section.
   both plans and criteria 2/4 on both tickets. That is a visibility gap, not a coverage gap: the
   requirement is buried in per-ticket artifacts the reviewer does not read. Surfacing the response
   contract once, prominently, in the sprint-level artifact is cheaper than restating it per reject.
-- **The close bundle was not produced before the sprint reached `SPRINT_CLOSE` with `completed_at`
-  set.** This summary was written in response to the operator's reject, not by a close dispatch. If
-  a human gate can be reached with no summary on disk, the gate has nothing to read.
+- **The human approval gate was reachable before any close artifact existed.** The sprint sat in
+  `SPRINT_CLOSE` with `completed_at` set and nothing for a reviewer to read; this summary was written
+  in response to the operator's reject, and the close dispatch (VRTX3-T-0210) arrived afterwards and
+  added `release-notes.md`. The work came out in the right order in the end, but the gate opened
+  before the record it gates on was on disk.
 
 ## Compliance evidence
 
