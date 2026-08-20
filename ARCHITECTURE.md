@@ -53,9 +53,9 @@ Concrete versions are read from `package.json`: React 19.2, Vite 8.1, Nitro 3.0 
 
 ### Health probe route contract
 
-`routes/api/healthz-smoke-*.ts` (97 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENT.md](./AGENT.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
+`routes/api/healthz-smoke-*.ts` (100 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENT.md](./AGENT.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
 
-`bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-458730798-a` → `.output/server/_routes/api/healthz_smoke_458730798_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
+`bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-189360772-a` → `.output/server/_routes/api/healthz_smoke_189360772_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
 
 ## Data Flow Example
 
@@ -98,6 +98,14 @@ Four tiers, one worked example each. Commands and how to extend: [README.md](./R
 ---
 
 ## Changelog
+
+### 2026-08-20 — Sprint VRTX3-S-0033: Three Independent Health Check Endpoints (189360772)
+
+Added `routes/api/healthz-smoke-189360772-a.ts`, `-b.ts`, `-c.ts` and their colocated tests — 6 new files, 0 modified source files, no dependency change. Probe-family count under [Routing](#routing) updated 97 → 100, re-counted from the filesystem rather than incremented. The build-output example under [Routing](#routing) now uses this sprint's route rather than VRTX3-S-0028's, so the illustration names a file that exists.
+
+The filename-is-the-URL contract was re-measured live before implementation for the twenty-first consecutive sprint: all three unwritten paths returned `200 text/html` (the 949-byte SPA shell), while the control `/api/healthz-smoke-528856326-a` returned `200 application/json` (33 bytes). Nothing about routing, the Vitest projects or CI changed — `nitro({ serverDir: "./", ignore: ["**/*.test.ts"] })` registers each new handler by filename and keeps its colocated test out of the server bundle, and the `server` Vitest project collects `routes/**/*.test.ts` with no configuration.
+
+`## Key Decisions` is unchanged: the "Health probes duplicate, on purpose" entry already governs this sprint, and at 100 probes (203 `.ts` files under `routes/api/` once this sprint lands, from 197 at planning) its cost/benefit reads the same — the files never change after they land, and the ownership map for each new probe still overlaps nothing. Two observations bound the entry rather than reopen it. First, the copy-source ambiguity recorded against it since VRTX3-S-0027 did not bite: VRTX3-I-0040 named the pinned `528856326` pair itself and restated the reasoning behind the pointer, which is the first time an upstream document has carried the rationale rather than the instruction. That is the mitigation working, not the risk retiring — the 47 legacy tests carrying the flaky wall-clock case are never rewritten, so the ratio dilutes (47 of 100) while the per-sample odds stay near even. Second, the decision's stated benefit is again what the decomposition was built on: three TASKs with two-file ownership maps, no `depends_on` edge between any pair, and the only file set they could have collided on — the three root docs carrying the probe count — held exclusively by the planning ticket and moved 97 → 100 once for the sprint rather than 97 → 98 three times.
 
 ### 2026-08-20 — Sprint VRTX3-S-0030: Bugfix Sprint – Two Missing Health Probes (`-ha` family)
 
