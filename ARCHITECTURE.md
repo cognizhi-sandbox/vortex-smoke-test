@@ -53,9 +53,9 @@ Concrete versions are read from `package.json`: React 19.2, Vite 8.1, Nitro 3.0 
 
 ### Health probe route contract
 
-`routes/api/healthz-smoke-*.ts` (95 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENT.md](./AGENT.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
+`routes/api/healthz-smoke-*.ts` (97 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENT.md](./AGENT.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
 
-`bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-458730798-a` → `.output/server/_routes/api/healthz_smoke_458730798_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
+`bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-bugfix-ha-971401638` → `.output/server/_routes/api/healthz_smoke_bugfix_ha_971401638.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
 
 ## Data Flow Example
 
@@ -98,6 +98,14 @@ Four tiers, one worked example each. Commands and how to extend: [README.md](./R
 ---
 
 ## Changelog
+
+### 2026-08-20 — Sprint VRTX3-S-0029: Bugfix Sprint – Two Missing Health Probes
+
+Added `routes/api/healthz-smoke-bugfix-ha-971401638.ts` and `routes/api/healthz-smoke-bugfix-ha2-649579386.ts` with their colocated tests — 4 new files, 0 modified source files, no dependency change. Probe-family count under [Routing](#routing) updated 95 → 97, re-counted from the filesystem rather than incremented. The build-output example under [Routing](#routing) now uses this sprint's route rather than VRTX3-S-0028's, so the illustration names a file that exists.
+
+**The filename-is-the-URL contract cut both ways this sprint, and that is the entry worth keeping.** It was re-measured live before implementation for the twentieth consecutive sprint: every unwritten path returned `200 text/html` (the 949-byte SPA shell) rather than `404`, while the control `/api/healthz-smoke-528856326-a` returned `200 application/json` (33 bytes) — the contract working as designed, an unresolved path handed to the SPA. But both defect reports named their probe at the URL root rather than under `/api/`, and because the fallback answers identically at both spellings, **the measurement that debunks the status code cannot adjudicate the path.** The contract itself decided it: `routes/` contains only `api/`, `serverDir: "./"` maps `routes/api/x.ts` → `/api/x`, and there is no root-level route directory to make the bare spelling meaningful. A route table you cannot probe by status code is also one you cannot probe for the right prefix; read the contract, not the response.
+
+`## Key Decisions` is unchanged: the "Health probes duplicate, on purpose" entry already governs this sprint, and at 97 probes (197 `.ts` files under `routes/api/` once this sprint lands, from 193 at planning) its cost/benefit reads the same — the files never change after they land, and the ownership map for each new probe still overlaps nothing. This sprint supplies a small piece of positive evidence for the entry rather than a new cost against it. The two probes share the stem `-ha`/`-ha2`, the first time the family's naming has suggested a subgroup, and under the decision that suggestion is inert: each is still one file with one owner, so the tickets were sequenced in parallel with no `depends_on` and nothing to coordinate. Had the family been factored behind a shared handler or a constants file, a shared stem would have been an invitation to give the pair a shared module — and the sprint's two tickets would have been serialized on it.
 
 ### 2026-08-20 — Sprint VRTX3-S-0028: Three Independent Health Check Endpoints (458730798)
 
