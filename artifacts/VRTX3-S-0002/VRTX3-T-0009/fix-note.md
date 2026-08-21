@@ -1,28 +1,62 @@
-# Fix Note: VRTX3-T-0009
+---
+artifact: fix-note
+spec: 1
+status: complete
+author_role: implementation
+sprint: VRTX3-S-0002
+ticket: VRTX3-T-0009
+branch: vortex/fix/VRTX3-T-0009-smoke-bugfix-17873246012078034-api-healt-4ef9bcab
+upstream: [artifacts/VRTX3-S-0002/VRTX3-T-0009/PLAN.md]
+downstream: [artifacts/VRTX3-S-0002/qa-test-report.md]
+---
 
-## Root Cause
+# Fix note — VRTX3-T-0009: `/api/healthz-smoke-bugfix3-834560860` returns the SPA shell, not its probe body
 
-The route handler file `routes/api/healthz-smoke-bugfix3-764107669.ts` did not exist. When requests arrived at `/api/healthz-smoke-bugfix3-764107669`, Nitro's file-based router could not find the handler and fell back to serving the frontend SPA or returning a 404 error instead of the expected JSON response.
+> This file replaces stale content from a prior sprint that recycled this ticket key (variant
+> `764107669`, committed in `e167bb8`). See `PLAN.md`'s banner.
 
-## Minimal Fix
+## Root cause
 
-Created two new self-contained files:
+`routes/api/healthz-smoke-bugfix3-834560860.ts` was never written. Nitro registers `/api/*` routes
+by filename alone (`nitro({ serverDir: "./", ignore: ["**/*.test.ts"] })`, no route table), so a
+missing file means an unmatched path falls through to the SPA `index.html` shell (`200 text/html`),
+not a `404`. This confirms `PLAN.md`'s RCA exactly: a missing-file gap, not a regression — no
+middleware, routing config, or existing route was touched or misbehaving. A repo-wide grep for
+`834560860` returned zero matches before the fix, confirming a never-written file rather than a
+typo'd filename.
 
-1. **`routes/api/healthz-smoke-bugfix3-764107669.ts`** — Nitro route handler that returns `{ ok: true, variant: "764107669" }`
-2. **`routes/api/healthz-smoke-bugfix3-764107669.test.ts`** — H3Event integration test with two test cases
+The ticket's reported `404` is a mis-transcription, as VRTX3-I-0005 itself predicted. Measured live
+against `bun run dev` on `:5000` before the fix: the target path returned `200 text/html;
+charset=utf-8` (949-byte SPA shell); the control `/api/healthz-smoke-528856326-a` returned `200
+application/json;charset=UTF-8` (33-byte probe body).
 
-Both files follow the established pattern from existing health check endpoints (e.g., `routes/api/healthz-smoke-302960562-a.ts`).
+## Fix
 
-## Files Touched
+Added the missing handler, copied from the pinned template `routes/api/healthz-smoke-528856326-a.ts`
+with only the variant string changed to `"834560860"`. Minimal by construction: one `defineHandler`
+from `nitro/h3`, no event parameter, no method guard, no import beyond `nitro/h3`, no shared
+handler/factory/constants file. This is the same layer every sibling probe is fixed at — the family's
+whole design is that each variant is an independent file.
 
-- ✅ **Created** `routes/api/healthz-smoke-bugfix3-764107669.ts` (7 lines)
-- ✅ **Created** `routes/api/healthz-smoke-bugfix3-764107669.test.ts` (25 lines)
+## Regression test
 
-No other files modified. This is a self-contained, independent endpoint with no shared code changes required.
+`routes/api/healthz-smoke-bugfix3-834560860.test.ts › returns HTTP 200 with correct response body`
+— constructs a real `H3Event`, imports the handler directly, asserts
+`toEqual({ ok: true, variant: "834560860" })`. Red→green recorded in `tdd-test-result.md`.
 
-## Verification
+Also verified live (not part of the automated regression test, since the colocated unit test imports
+the handler module directly and would pass even if Nitro never registered the path): `GET
+/api/healthz-smoke-bugfix3-834560860` against a running dev server on `:5000` now returns `200
+application/json;charset=UTF-8` with body `{"ok":true,"variant":"834560860"}`; the control route
+returned `200 application/json;charset=UTF-8` in the same session, confirming the harness was live.
+The production build emits `.output/server/_routes/api/healthz_smoke_bugfix3_834560860.mjs`, and no
+`*.test.ts` file appears anywhere under `.output/`.
 
-- ✅ Specific test file passes: `bun run test routes/api/healthz-smoke-bugfix3-764107669.test.ts` → 2 passed
-- ✅ Full verification passes: `bun run verify` → 25 test files, 56 tests passed, lint OK, typecheck OK
-- ✅ Response payload correct: `{ ok: true, variant: "764107669" }`
-- ✅ Response time baseline confirmed: well under 100ms
+## Files touched
+
+- `routes/api/healthz-smoke-bugfix3-834560860.ts` — new handler, returns `{ ok: true, variant:
+"834560860" }`.
+- `routes/api/healthz-smoke-bugfix3-834560860.test.ts` — new colocated integration test, single
+  body assertion (no wall-clock case, per `AGENT.md` § Health Probe Routes).
+
+No existing file modified or deleted; no new dependency.
