@@ -1,49 +1,47 @@
-# TDD Test Result: VRTX3-T-0015
+---
+artifact: tdd-test-result
+spec: 1
+status: complete
+author_role: implementation
+sprint: VRTX3-S-0003
+ticket: VRTX3-T-0015
+branch: vortex/fix/VRTX3-T-0015-smoke-bugfix-17873270732264355-api-healt-072b9c01
+upstream: [artifacts/VRTX3-S-0003/VRTX3-T-0015/PLAN.md]
+---
 
-## Test Matrix
+# TDD result — VRTX3-T-0015
 
-| Test Case                                    | File                                                 | Status  |
-| -------------------------------------------- | ---------------------------------------------------- | ------- |
-| GET returns `{ok:true, variant:"200192357"}` | `routes/api/healthz-smoke-bugfix3-200192357.test.ts` | ✅ PASS |
-| Response latency < 100ms                     | `routes/api/healthz-smoke-bugfix3-200192357.test.ts` | ✅ PASS |
+## Test cases
 
-## RED Phase (Before Fix)
+| Test                                                                                               | Covers     | Intent                                      |
+| -------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------- |
+| `routes/api/healthz-smoke-bugfix3-267063007.test.ts › returns HTTP 200 with correct response body` | AC-2, AC-3 | handler returns exact body and is reachable |
 
-The route file did not exist, so the endpoint returned HTTP 404. No test file was present; testing was impossible without the handler.
+## Red run
 
-## GREEN Phase (After Fix)
+Before implementation: test file exists but handler file does not. The module import fails.
 
 ```
-$ bun run test routes/api/healthz-smoke-bugfix3-200192357.test.ts
+$ NODE_ENV=test bun --bun vitest run "routes/api/healthz-smoke-bugfix3-267063007.test.ts"
+ ERROR  /workspace/repo/routes/api/healthz-smoke-bugfix3-267063007.test.ts:4:27: Cannot find module "./healthz-smoke-bugfix3-267063007"
+```
+
+## Green run
+
+`bun run verify` — the project's full pre-commit validation gate (lint, typecheck, test).
+
+```
+$ bun run verify
+$ eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
+$ tsc --build
+$ NODE_ENV=test bun --bun vitest run
 
  RUN  v4.1.10 /workspace/repo
 
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  07:08:10
-   Duration  72ms (transform 15ms, setup 0ms, import 25ms, tests 2ms, environment 0ms)
+ Test Files  111 passed (111)
+      Tests  171 passed (171)
+   Start at  15:57:24
+   Duration  14.76s (transform 3.24s, setup 2.25s, import 8.94s, tests 4.73s, environment 7.29s)
 ```
 
-### Full Test Suite Results
-
-```
-$ bun run test
-
- RUN  v4.1.10 /workspace/repo
-
- Test Files  28 passed (28)
-      Tests  62 passed (62)
-   Start at  07:08:22
-   Duration  1.76s (transform 184ms, setup 277ms, import 460ms, tests 410ms, environment 1.23s)
-```
-
-All tests pass, including the two new tests for the fixed endpoint and all 26 existing test files (no regressions).
-
-## Quality Gates
-
-- ✅ **Lint**: `bun run lint` passes (no ESLint or Prettier warnings)
-- ✅ **Typecheck**: `bun run typecheck` passes (full TypeScript strict mode)
-- ✅ **Tests**: All 62 tests pass (2 new + 60 existing)
-- ✅ **Regression-free**: No changes to other endpoints or shared code
-
-TDD-RESULT: 2 passed, 0 failed
+TDD-RESULT: 171 passed, 0 failed
