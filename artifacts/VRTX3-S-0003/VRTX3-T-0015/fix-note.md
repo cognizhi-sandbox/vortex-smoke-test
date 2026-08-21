@@ -1,35 +1,39 @@
-# Fix Note: VRTX3-T-0015 — /api/healthz-smoke-bugfix3-200192357 Returns 404
+---
+artifact: fix-note
+spec: 1
+status: complete
+author_role: implementation
+sprint: VRTX3-S-0003
+ticket: VRTX3-T-0015
+branch: vortex/fix/VRTX3-T-0015-smoke-bugfix-17873270732264355-api-healt-072b9c01
+upstream: [artifacts/VRTX3-S-0003/VRTX3-T-0015/PLAN.md]
+downstream: [artifacts/VRTX3-S-0003/qa-test-report.md]
+---
 
-## Root Cause
+# Fix note — VRTX3-T-0015: Add the missing `/api/healthz-smoke-bugfix3-267063007` probe
 
-The route file `routes/api/healthz-smoke-bugfix3-200192357.ts` did not exist. Nitro's file-based router had no handler for this endpoint, causing all GET requests to return HTTP 404 Not Found.
+## Root cause
 
-## Minimal Fix
+The route handler file for `/api/healthz-smoke-bugfix3-267063007` was never created. Nitro's file-based routing via `nitro({ serverDir: "./", ignore: ["**/*.test.ts"] })` means that a route exists if and only if its corresponding handler file exists under `routes/`. A repo-wide grep for `267063007` returned zero matches, confirming the file was never written rather than a typo or broken logic.
 
-Created two self-contained files following the established healthz endpoint pattern:
+## Fix
 
-### Files Created
+Created two new files:
 
-1. **`routes/api/healthz-smoke-bugfix3-200192357.ts`**
-   - Simple H3 handler returning `{ok:true, variant:"200192357"}`
-   - No middleware, auth, or database dependencies
-   - Self-contained; no shared code with other endpoints
+1. `routes/api/healthz-smoke-bugfix3-267063007.ts` — a handler that returns `{ ok: true, variant: "267063007" }`.
+2. `routes/api/healthz-smoke-bugfix3-267063007.test.ts` — a unit test that validates the handler via direct invocation with an H3Event.
 
-2. **`routes/api/healthz-smoke-bugfix3-200192357.test.ts`**
-   - Integration test using H3Event (no live server required)
-   - Two test cases: response body verification + latency verification
-   - Follows the exact pattern from existing working endpoints (e.g., `healthz-smoke-bugfix-106285986`)
+The fix is the minimal addition: two standalone files with no changes to existing code, following the established pattern for health probes. No shared helpers, no interdependencies — each probe is self-contained so they can be merged independently.
 
-## Verification
+## Regression test
 
-✅ Tests pass: 2/2 (response body + latency)  
-✅ Lint passes: no warnings  
-✅ Typecheck passes: no type errors  
-✅ Full test suite passes: 28 files, 62 tests  
-✅ No changes to other files
+`routes/api/healthz-smoke-bugfix3-267063007.test.ts` — one `it()` case that creates an H3Event, calls the handler, and asserts the exact response body. Red→green recorded in `tdd-test-result.md`.
 
-## Impact
+## Files touched
 
-- **Observable behavior**: Endpoint now responds with HTTP 200 and correct JSON
-- **No breaking changes**: Self-contained handler, no shared code altered
-- **No config changes**: File-based routing automatically picks up the new handler
+- `routes/api/healthz-smoke-bugfix3-267063007.ts` — new handler returning `{ ok: true, variant: "267063007" }`.
+- `routes/api/healthz-smoke-bugfix3-267063007.test.ts` — new test that validates the handler.
+
+## Notes
+
+Copied from `routes/api/healthz-smoke-528856326-a.*` per the documented pattern. The idea canvas (VRTX3-I-0006) named `healthz-smoke-bugfix3-834560860.test.ts` as the template; the pinned pair was substituted because 47 of the 103 probe tests carry a flaky wall-clock assertion that was deliberately dropped in VRTX3-S-0011, and sampling the directory has close to even odds of landing on one of those legacy files.
