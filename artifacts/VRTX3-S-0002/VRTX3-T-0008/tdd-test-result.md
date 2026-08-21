@@ -1,72 +1,47 @@
-# VRTX3-T-0008 TDD Test Result
-
-## Red Phase (Before Fix)
-
-Before creating the route handler, the endpoint did not exist:
-
-```
-$ ls -la /workspace/repo/routes/api/healthz-smoke-bugfix2-524723214.ts
-ls: cannot access '/workspace/repo/routes/api/healthz-smoke-bugfix2-524723214.ts': No such file or directory
-```
-
-Making a request to the endpoint would fail with 404 or return HTML from the frontend SPA.
-
-## Green Phase (After Fix)
-
-### Test Execution
-
-```
-$ bun run test routes/api/healthz-smoke-bugfix2-524723214.test.ts
-
- RUN  v4.1.10 /workspace/repo
-
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  05:32:35
-   Duration  75ms (transform 16ms, setup 0ms, import 27ms, tests 2ms, environment 0ms)
-```
-
-### Test Details
-
-**Test 1: Returns HTTP 200 with correct response body**
-
-- Creates H3Event for GET request to `/api/healthz-smoke-bugfix2-524723214`
-- Calls handler and verifies response equals `{ ok: true, variant: "524723214" }`
-- ✅ PASS
-
-**Test 2: Responds in under 100ms**
-
-- Measures handler execution time
-- Verifies elapsed time is less than 100ms
-- ✅ PASS (actual: ~2ms)
-
-### Full Verification
-
-```
-$ bun run verify
-
- Test Files  25 passed (25)
-      Tests  56 passed (56)
-   Start at  05:32:40
-   Duration  1.71s (transform 211ms, setup 298ms, import 460ms, tests 485ms, environment 1.07s)
-```
-
-✅ All verification gates pass:
-
-- Linting: 0 warnings
-- Type checking: No errors
-- Unit/component/API tests: 56 passed
-- Integration test for new endpoint: 2 passed
-
-## Summary
-
-The regression test (`routes/api/healthz-smoke-bugfix2-524723214.test.ts`) was created as a real, executable test file under the `routes/` directory. It verifies:
-
-1. The endpoint responds with the correct JSON body
-2. Performance baseline is met (<100ms)
-
-The test fails red (file not found) before the fix is applied, and passes green after the route handler is created.
-
+---
+artifact: tdd-test-result
+spec: 1
+status: complete
+author_role: implementation
+sprint: VRTX3-S-0002
+ticket: VRTX3-T-0008
+branch: vortex/fix/VRTX3-T-0008-smoke-bugfix-17873246012078034-api-healt-205c5ea0
+upstream: [artifacts/VRTX3-S-0002/VRTX3-T-0008/PLAN.md]
 ---
 
-TDD-RESULT: 2 passed, 0 failed
+# TDD result — VRTX3-T-0008
+
+## Test cases
+
+| Test                                                                                               | Covers | Intent                       |
+| -------------------------------------------------------------------------------------------------- | ------ | ---------------------------- |
+| `routes/api/healthz-smoke-bugfix2-142310404.test.ts › returns HTTP 200 with correct response body` | AC-4   | handler returns correct body |
+
+## Red run
+
+The handler file did not exist before the fix — confirmed:
+
+```
+$ ls -la /workspace/repo/routes/api/healthz-smoke-bugfix2-142310404.ts
+ls: cannot access '/workspace/repo/routes/api/healthz-smoke-bugfix2-142310404.ts': No such file or directory
+```
+
+A live request to the endpoint returned `200 text/html` (the SPA shell) instead of the expected `200 application/json` with probe body.
+
+## Green run
+
+`bun run verify` _(this stack's full gate — lint, typecheck, all tests)_
+
+```
+$ bun run verify > /tmp/verify.log 2>&1; echo "EXIT:$?"; tail -10 /tmp/verify.log
+
+EXIT:0
+ Test Files  108 passed (108)
+      Tests  168 passed (168)
+   Start at  15:18:16
+   Duration  28.83s (transform 10.94s, setup 3.43s, import 22.81s, tests 6.93s, environment 10.75s)
+```
+
+Live verification: `GET /api/healthz-smoke-bugfix2-142310404` returned `200 application/json` with body `{"ok":true,"variant":"142310404"}`. Control route `/api/healthz-smoke-528856326-a` confirmed measurement harness was live.
+
+TDD-RESULT: 168 passed, 0 failed
