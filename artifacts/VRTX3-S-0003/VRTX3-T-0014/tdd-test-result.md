@@ -1,70 +1,61 @@
-# TDD Test Result: VRTX3-T-0014
+---
+artifact: tdd-test-result
+spec: 1
+status: complete
+author_role: implementation
+sprint: VRTX3-S-0003
+ticket: VRTX3-T-0014
+branch: vortex/fix/VRTX3-T-0014-smoke-bugfix-17873270732264355-api-healt-4223d7ce
+upstream: [artifacts/VRTX3-S-0003/VRTX3-T-0014/PLAN.md]
+---
 
-## Test Design
+# TDD result — VRTX3-T-0014
 
-**Regression Test File:** `routes/api/healthz-smoke-bugfix2-59156521.test.ts`
+> This file replaces a stale record from an earlier sprint that reused this ticket key and reported
+> a completed fix for a different endpoint (`/api/healthz-smoke-bugfix2-59156521`). That record is
+> not this ticket's; this is the current, correct one.
 
-### Test Cases
+## Test cases
 
-1. **Test Case 1:** Returns HTTP 200 with correct response body
-   - **Setup:** Create H3Event with GET request to `/api/healthz-smoke-bugfix2-59156521`
-   - **Action:** Call healthz handler
-   - **Assert:** Response equals `{ok: true, variant: "59156521"}`
+| Test                                                                                               | Covers                 | Intent                                                                            |
+| -------------------------------------------------------------------------------------------------- | ---------------------- | --------------------------------------------------------------------------------- |
+| `routes/api/healthz-smoke-bugfix2-664793322.test.ts › returns HTTP 200 with correct response body` | AC-1, AC-2, AC-3, AC-4 | route exists, handler shape is correct, body matches exactly, no timing assertion |
 
-2. **Test Case 2:** Responds in under 100ms
-   - **Setup:** Create H3Event with GET request to `/api/healthz-smoke-bugfix2-59156521`
-   - **Action:** Call healthz handler and measure elapsed time
-   - **Assert:** Elapsed time < 100ms
+## Red run
 
-## RED Phase (Before Fix)
-
-**Status:** SKIP (files did not exist, endpoint returned 404)
-
-The endpoint returned HTTP 404 Not Found when accessed:
-
-```
-curl http://localhost:5000/api/healthz-smoke-bugfix2-59156521
-# HTTP 404 Not Found
-```
-
-Regression test could not run because route file did not exist.
-
-## GREEN Phase (After Fix)
-
-**Status:** ✅ PASS
-
-Test file: `routes/api/healthz-smoke-bugfix2-59156521.test.ts`
+`bun --bun vitest run routes/api/healthz-smoke-bugfix2-664793322.test.ts` — run before the handler
+file existed:
 
 ```
+ FAIL  |server| routes/api/healthz-smoke-bugfix2-664793322.test.ts [ routes/api/healthz-smoke-bugfix2-664793322.test.ts ]
+Error: Cannot find module './healthz-smoke-bugfix2-664793322' imported from /workspace/repo/routes/api/healthz-smoke-bugfix2-664793322.test.ts
+
+ Test Files  1 failed (1)
+      Tests  no tests
+```
+
+## Green run
+
+`bun run verify` (this stack's full gate — lint, typecheck, full test suite):
+
+```
+$ bun run lint && bun run typecheck && bun run test
+$ eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
+$ node scripts/ensure-generated-files.mjs
+$ tsc --build
+$ NODE_ENV=test bun --bun vitest run
+
  RUN  v4.1.10 /workspace/repo
 
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  07:08:03
-   Duration  74ms (transform 15ms, setup 0ms, import 27ms, tests 2ms, environment 0ms)
+ Test Files  111 passed (111)
+      Tests  171 passed (171)
+   Start at  15:56:58
+   Duration  24.24s
 ```
 
-### Full Test Suite After Fix
+Additionally verified live (AC-5): `curl -s -o /dev/null -w '%{http_code} %{content_type}\n'
+http://localhost:5000/api/healthz-smoke-bugfix2-664793322` against `bun run dev` (Vite bound
+`:5000`) returned `200 application/json;charset=UTF-8` with body
+`{"ok":true,"variant":"664793322"}`.
 
-```
- RUN  v4.1.10 /workspace/repo
-
- Test Files  28 passed (28)
-      Tests  62 passed (62)
-   Start at  07:08:06
-   Duration  1.68s (transform 195ms, setup 304ms, import 452ms, tests 441ms, environment 1.05s)
-```
-
-## Verification
-
-✅ Handler created  
-✅ Tests created  
-✅ Target tests pass (2/2)  
-✅ Full suite passes (62/62)  
-✅ Lint passes  
-✅ TypeScript passes  
-✅ No regressions introduced
-
-The fix is complete and verified.
-
-TDD-RESULT: 62 passed, 0 failed
+TDD-RESULT: 171 passed, 0 failed
