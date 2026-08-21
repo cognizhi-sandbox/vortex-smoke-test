@@ -1,60 +1,42 @@
-# TDD Test Result: VRTX3-T-0013
+---
+artifact: tdd-test-result
+spec: 1
+status: complete
+author_role: implementation
+sprint: VRTX3-S-0003
+ticket: VRTX3-T-0013
+branch: vortex/fix/VRTX3-T-0013-smoke-bugfix-17873270732264355-api-healt-fa5f1ed0
+upstream: [artifacts/VRTX3-S-0003/VRTX3-T-0013/PLAN.md]
+---
 
-## Test Design
+# TDD result — VRTX3-T-0013
 
-Regression test: `routes/api/healthz-smoke-bugfix-26031336.test.ts`
+## Test cases
 
-### Test Cases
+| Test                                                                                                                                        | Covers     | Intent                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------ |
+| `routes/api/healthz-smoke-bugfix-858873211.test.ts › GET /api/healthz-smoke-bugfix-858873211 › returns HTTP 200 with correct response body` | AC-1, AC-3 | handler returns exact response body `{ ok: true, variant: "858873211" }` via H3Event |
 
-1. **"returns HTTP 200 with correct response body"** — Verifies the handler returns the expected JSON structure with correct variant ID
-2. **"responds in under 100ms"** — Verifies the endpoint has acceptable latency
+## Red run
 
-Both tests follow the H3Event integration pattern (no live server dependency).
-
-## RED Phase
-
-Before the handler was created, the test file would have failed at import time with:
-
-```
-Error: Cannot find module "./healthz-smoke-bugfix-26031336"
-```
-
-This is the expected behavior for a missing endpoint — Nitro's file-based router has no handler.
-
-## GREEN Phase
-
-After creating `routes/api/healthz-smoke-bugfix-26031336.ts` with the H3 handler:
+`bun run test routes/api/healthz-smoke-bugfix-858873211.test.ts` — handler file does not exist.
 
 ```
-$ bun run test routes/api/healthz-smoke-bugfix-26031336.test.ts
+FAIL  |server| routes/api/healthz-smoke-bugfix-858873211.test.ts
+Error: Cannot find module './healthz-smoke-bugfix-858873211' imported from /workspace/repo/routes/api/healthz-smoke-bugfix-858873211.test.ts
 
- RUN  v4.1.10 /workspace/repo
-
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  07:08:09
-   Duration  75ms (transform 15ms, setup 0ms, import 26ms, tests 2ms, environment 0ms)
+Test Files  1 failed (1)
+      Tests  no tests
 ```
 
-All tests pass. Full verification suite (lint, typecheck, test) also passes:
+## Green run
+
+`bun run verify` _(full pre-commit gate: lint, typecheck, test)_
 
 ```
-$ bun run verify
-
- Test Files  28 passed (28)
-      Tests  62 passed (62)
-   Start at  07:08:16
-   Duration  1.82s
+Test Files  111 passed (111)
+      Tests  171 passed (171)
+   Duration  11.27s (transform 2.78s, setup 1.25s, import 7.15s, tests 3.20s, environment 4.14s)
 ```
 
-## Summary
-
-The regression test confirms that:
-
-- The endpoint handler can be imported successfully
-- The handler returns the correct response body structure
-- The variant ID matches the required value
-- Response latency is acceptable
-- No existing tests were broken by the new endpoint
-
-TDD-RESULT: 62 passed, 0 failed
+TDD-RESULT: 171 passed, 0 failed
