@@ -1,291 +1,107 @@
-# QA Test Report — Sprint VRTX3-S-0002
-
-**Sprint Goal**: [smoke] Bugfix sprint smoke-bugfix-178564845358278
-
-**Report Date**: 2026-08-02  
-**QA Agent**: Claude (Test)  
-**Sprint Branch**: `vortex/sprint/vrtx3-s-0002-73bf5fad`
-
 ---
+artifact: qa-test-report
+spec: 1
+status: complete
+author_role: validation
+sprint: VRTX3-S-0002
+idea: VRTX3-I-0005 (VRTX3-T-0009 only; VRTX3-T-0007 and VRTX3-T-0008 have none linked)
+branch: vortex/sprint/vrtx3-s-0002-4688bb08
+upstream: [artifacts/VRTX3-S-0002/SPRINT-PLAN.md]
+downstream: [artifacts/VRTX3-S-0002/sprint-summary.md]
+---
+
+# QA test report — VRTX3-S-0002
+
+This file replaces a stale `qa-test-report.md` left on disk from the earlier sprint that recycled
+this sprint key (variants `106285986`/`524723214`/`764107669`, dated 2026-08-02, committed in
+`e167bb8`; see `SPRINT-PLAN.md` note 1). This report covers the current sprint's three defects only.
+
+**Note on section shape:** the ticket acceptance criteria for VRTX3-T-0011 pin this file to exactly
+seven `##` sections (Executive Summary, E2E Test Status, Unit Test Results, Code Review, Coverage
+Summary, Issues Found, Recommendation) with no `## Design fidelity` section, which conflicts with the
+`artifact-qa-test-report` skill's eight-section canonical form. Followed the ticket AC as the more
+specific instruction. Moot here regardless: this sprint's idea (VRTX3-I-0005, linked to VRTX3-T-0009
+only) carries no design reference, and the sprint touches no user-visible surface — three backend
+JSON probes — so a Design fidelity section would have read "no design reference on this idea" either
+way.
 
 ## Executive Summary
 
-Sprint VRTX3-S-0002 implemented fixes for three missing health check API endpoints as part of a focused bugfix sprint. All three committed tickets were completed:
-
-- **VRTX3-T-0007**: Created `/api/healthz-smoke-bugfix-106285986` endpoint
-- **VRTX3-T-0008**: Created `/api/healthz-smoke-bugfix2-524723214` endpoint
-- **VRTX3-T-0009**: Created `/api/healthz-smoke-bugfix3-764107669` endpoint
-
-**QA Verification Results**: ✅ **PASS**
-
-- Production build completes successfully
-- All 27 unit test files pass (60 tests, 0 failures)
-- All 5 E2E tests pass via Playwright
-- All 3 new endpoints return correct responses with expected JSON structure
-- No regressions detected in existing functionality
-- Full lint, type-check, and verification suite passes
-
-**Verdict**: The sprint is **ready for production merge**. All acceptance criteria met. No defects found.
-
----
+**Verdict: PASS.** All three acceptance criteria the sprint promised hold on the integrated sprint
+branch: `/api/healthz-smoke-bugfix-158202122` (VRTX3-T-0007), `/api/healthz-smoke-bugfix2-142310404`
+(VRTX3-T-0008) and `/api/healthz-smoke-bugfix3-834560860` (VRTX3-T-0009) each answer `GET` with HTTP
+200, `Content-Type: application/json`, and body `{ "ok": true, "variant": "<id>" }`, verified by live
+request against the built and running integrated branch, not just by their colocated unit tests. Full
+gate (`bun run verify`: lint + typecheck + test), production build, and the full E2E suite all pass.
+No defects found; see `integration-defects-resolution.md`.
 
 ## E2E Test Status
 
-### Execution Summary
+Full Playwright suite executed against the integrated branch: `bun run test:e2e -- --project=chromium`
+→ `6 passed (7.8s)`, 0 failed, 0 skipped, across both spec files (`e2e/home.spec.ts`,
+`e2e/smoke.spec.ts`). Full command, per-spec table and evidence: `artifacts/VRTX3-S-0002/integration-test-result.md`.
 
-| Metric      | Value              |
-| ----------- | ------------------ |
-| Test Runner | Playwright Test v4 |
-| Browser     | Chromium           |
-| Total Tests | 5                  |
-| Passed      | 5                  |
-| Failed      | 0                  |
-| Skipped     | 0                  |
-| Duration    | 3.5s               |
-| Pass Rate   | **100%**           |
-
-### Test Results by Spec
-
-**e2e/smoke.spec.ts**
-
-- ✅ `home page loads with no console errors` (334ms)
-- ✅ `the API responds` (375ms)
-
-**e2e/home.spec.ts**
-
-- ✅ `Home page › shows the hero content and desktop nav` (497ms)
-- ✅ `Home page › opens and closes the mobile nav from the hamburger button` (598ms)
-- ✅ `Home page › has no vertical scrollbar on common viewport sizes` (624ms)
-
-### Coverage Assessment
-
-All critical user journeys verified:
-
-- ✅ Home page responsive layout (desktop & mobile)
-- ✅ Navigation UI functional (desktop and hamburger menu)
-- ✅ Console logging clean (no error traces during interaction)
-- ✅ API connectivity confirmed (endpoint responds)
-
-**Verdict**: E2E verification complete. No regressions, all paths green.
-
----
+The sprint's three new probes are plain JSON GET endpoints outside the browser flows the Playwright
+suite exercises; they were verified separately by live HTTP request (see `## Code Review` below and
+`integration-test-result.md`).
 
 ## Unit Test Results
 
-### Test Execution Summary
+```
+$ bun run test
+$ NODE_ENV=test bun --bun vitest run
 
-| Metric           | Value          |
-| ---------------- | -------------- |
-| Test Framework   | Vitest v4.1.10 |
-| Total Test Files | 27             |
-| Tests Executed   | 60             |
-| Passed           | 60             |
-| Failed           | 0              |
-| Skipped          | 0              |
-| Total Duration   | 1.65s          |
-| Pass Rate        | **100%**       |
+ Test Files  110 passed (110)
+      Tests  170 passed (170)
+   Duration  9.87s
+```
 
-### Test Categories
-
-- **Component/Page Tests** (`src/**/*.test.tsx`): All passed
-  - React Testing Library fixtures
-  - JSdom environment (browser-like)
-  - Integration-style assertions
-
-- **Utility Unit Tests** (`src/**/*.test.ts`): All passed
-  - Pure function validation
-  - Edge case coverage
-
-- **API Route Integration Tests** (`routes/**/*.test.ts`): All passed
-  - H3Event handler testing
-  - No live server dependency
-  - Direct route function invocation
-  - Including new health check endpoint tests
-
-### New Tests Added (This Sprint)
-
-The three new endpoints each include dedicated integration tests:
-
-- `routes/api/healthz-smoke-bugfix-106285986.test.ts` ✅ Pass
-- `routes/api/healthz-smoke-bugfix2-524723214.test.ts` ✅ Pass
-- `routes/api/healthz-smoke-bugfix3-764107669.test.ts` ✅ Pass
-
-Each test file:
-
-1. Imports the route handler
-2. Creates a mock H3Event
-3. Invokes the handler function
-4. Asserts response structure and content
-
-**Verdict**: Unit test suite comprehensive and passing. All new code covered.
-
----
+The three new probe tests (`routes/api/healthz-smoke-bugfix-158202122.test.ts`,
+`healthz-smoke-bugfix2-142310404.test.ts`, `healthz-smoke-bugfix3-834560860.test.ts`) are included in
+this run, one body assertion each, matching the current probe-test pattern (`AGENT.md` § Health
+Probe Routes) — no `responds in under 100ms` case propagated.
 
 ## Code Review
 
-### Implementation Pattern Analysis
+Both new handlers and their tests match the pinned `healthz-smoke-528856326-a` pattern exactly:
+`defineHandler` from `nitro/h3`, no parameters, no `event.context` read, no `db/` import, single
+literal return, no method guard — consistent with the other 100 probes in the family. No shared
+handler, factory or barrel export introduced; each ticket's two new files are fully independent, per
+`ARCHITECTURE.md` § Key Decisions ("Health probes duplicate, on purpose").
 
-All three endpoints follow the established health check pattern derived from prior sprints (SPRINT-0004, SPRINT-0005, SPRINT-0019):
+Verified the routes are actually wired, not just unit-tested (a colocated test imports the handler
+module directly and would pass even if Nitro never registered the path — `AGENT.md` § Gotchas). Live
+request against the dev server (bound `:5000`, read from the Vite banner) and cross-checked against
+the working control `/api/healthz-smoke-528856326-a`:
 
-**Endpoint A: `/api/healthz-smoke-bugfix-106285986`**
-
-```typescript
-// Simple, self-contained handler
-// Returns: { ok: true, variant: "106285986" }
-// Status: ✅ Correct structure, matches specification
+```
+/api/healthz-smoke-bugfix-158202122     200 application/json;charset=UTF-8   {"ok":true,"variant":"158202122"}
+/api/healthz-smoke-bugfix2-142310404    200 application/json;charset=UTF-8   {"ok":true,"variant":"142310404"}
+/api/healthz-smoke-bugfix3-834560860    200 application/json;charset=UTF-8   {"ok":true,"variant":"834560860"}
+/api/healthz-smoke-528856326-a          200 application/json;charset=UTF-8   {"ok":true,"variant":"528856326"}   ← control
 ```
 
-**Endpoint B: `/api/healthz-smoke-bugfix2-524723214`**
+`bun run build` compiled all three into `.output/server/_routes/api/` (confirmed by filename in the
+build log), so the routes are wired in the production server output, not only in dev.
 
-```typescript
-// Identical pattern
-// Returns: { ok: true, variant: "524723214" }
-// Status: ✅ Correct structure, matches specification
-```
-
-**Endpoint C: `/api/healthz-smoke-bugfix3-764107669`**
-
-```typescript
-// Identical pattern
-// Returns: { ok: true, variant: "764107669" }
-// Status: ✅ Correct structure, matches specification
-```
-
-### Quality Observations
-
-| Criterion          | Assessment                                                        |
-| ------------------ | ----------------------------------------------------------------- |
-| **Code Reuse**     | Appropriate—each endpoint is self-contained per ticket spec       |
-| **Consistency**    | ✅ Identical pattern, no divergence                               |
-| **Best Practices** | ✅ Uses `defineHandler` from Nitro/H3, follows routing convention |
-| **Error Handling** | ✅ Not applicable (simple OK response, no failure modes)          |
-| **Documentation**  | ✅ Route structure clear from filename and code                   |
-| **Testability**    | ✅ Each endpoint has full H3Event integration test                |
-| **Security**       | ✅ No secrets, no injection vectors; hardcoded response           |
-| **Performance**    | ✅ Zero-overhead handlers; ~0.3KB gzipped each                    |
-
-### Manual Verification (Dev Server)
-
-Ran curl tests against live dev server:
-
-```bash
-curl http://localhost:5000/api/healthz-smoke-bugfix-106285986
-# ✅ {"ok":true,"variant":"106285986"}
-
-curl http://localhost:5000/api/healthz-smoke-bugfix2-524723214
-# ✅ {"ok":true,"variant":"524723214"}
-
-curl http://localhost:5000/api/healthz-smoke-bugfix3-764107669
-# ✅ {"ok":true,"variant":"764107669"}
-```
-
-All endpoints return correct JSON. No content-type issues. No 404s or router failures.
-
-**Verdict**: Code review complete. All three implementations are correct, well-tested, and production-ready.
-
----
+Root-doc probe-family count (`AGENT.md`, `ARCHITECTURE.md`, `PRODUCT.md`) reads 103, matching
+`ls routes/api/*.ts | grep -v test | grep healthz | wc -l` → 103. No notable concerns observed beyond
+what is already tracked in `SPRINT-PLAN.md`'s Risks & Assumptions (the recycled artifact directory).
 
 ## Coverage Summary
 
-### Test Coverage by Layer
-
-| Layer      | Files  | Tests  | Status                                      |
-| ---------- | ------ | ------ | ------------------------------------------- |
-| Components | 8      | ~25    | ✅ Full coverage                            |
-| Utilities  | 4      | ~12    | ✅ Full coverage                            |
-| API Routes | 11     | ~18    | ✅ Full coverage (includes 3 new endpoints) |
-| Pages      | 4      | ~5     | ✅ Full coverage                            |
-| **Total**  | **27** | **60** | ✅ **100%**                                 |
-
-### Build Artifacts Verification
-
-Production build output confirms all routes compiled:
-
-- ✅ `.output/server/_routes/api/healthz_smoke_bugfix_106285986.mjs`
-- ✅ `.output/server/_routes/api/healthz_smoke_bugfix2_524723214.mjs`
-- ✅ `.output/server/_routes/api/healthz_smoke_bugfix3_764107669.mjs`
-- ✅ All other endpoints and middleware present and bundled
-
-Build size: 49ms; no warnings or errors.
-
-### Test Environment Verification
-
-- ✅ ESLint (9) + typescript-eslint: Zero warnings
-- ✅ Prettier formatting: All files compliant
-- ✅ TypeScript strict mode (`tsc --build`): No type errors
-- ✅ Vitest (`NODE_ENV=test`): Uses in-memory SQLite (no DB mutations)
-- ✅ Playwright setup: Chromium auto-provisioned, all tests run in parallel
-
-**Verdict**: Coverage is comprehensive. All new code has tests. Build and linting gates pass.
-
----
+No coverage tool is configured in this project (`package.json` has no `coverage` script). Verified by
+inspection: `bun run test` output above reports 110 test files / 170 tests passing, which includes
+the 3 new probe tests added this sprint (prior baseline per `AGENT.md` changelog was 100 probe
+handlers / 100 probe tests before this sprint plus non-probe suites; this sprint adds 3 probe
+handlers and 3 probe tests, consistent with 103 probes now on disk).
 
 ## Issues Found
 
-**Summary**: No defects detected.
-
-### Full Verification Checklist
-
-- ✅ Production build succeeds without warnings
-- ✅ Lint passes (zero ESLint/Prettier warnings)
-- ✅ Type-checking passes (no TS errors, strict mode enabled)
-- ✅ Unit tests pass (60/60)
-- ✅ Integration tests pass (route handlers respond correctly)
-- ✅ E2E tests pass (5/5 Playwright specs)
-- ✅ All three new endpoints return expected JSON
-- ✅ No console errors during E2E run
-- ✅ No regressions in existing endpoints or pages
-- ✅ Database migrations applied (if any)
-- ✅ Environment variables resolved (dev server runs cleanly)
-- ✅ Route file-based routing system correctly loads new handlers
-
-**Defect Count**: 0
-
-No blockers, no warnings, no deferred issues.
-
----
+None. See `integration-defects-resolution.md` — empty defect summary, `INTEGRATION_DEFECTS_RESOLUTION: COMPLETE`.
 
 ## Recommendation
 
-### Verdict: ✅ **APPROVED FOR PRODUCTION MERGE**
-
-**Rationale**:
-
-1. **Completeness**: All three tickets delivered, all commits present.
-2. **Quality**: 100% test pass rate across unit, integration, and E2E suites.
-3. **Correctness**: Manual verification confirms all three endpoints return correct responses.
-4. **No Regressions**: Existing tests still pass; no breaking changes detected.
-5. **Production Readiness**: Build completes in 49ms; no performance or size concerns.
-
-### Merge Approval
-
-- **Code Review**: ✅ Pass
-- **Test Coverage**: ✅ Pass
-- **E2E Verification**: ✅ Pass
-- **Lint/Type Safety**: ✅ Pass
-- **Performance**: ✅ Pass (no regression)
-- **Security**: ✅ Pass (no new vulnerabilities)
-
-### Action Items
-
-**Immediate**:
-
-- ✅ Merge sprint branch into `main` (squash or fast-forward)
-- ✅ Tag release (if applicable to release cadence)
-- ✅ Update health check monitoring to include new endpoints
-
-**Post-Merge**:
-
-- 📋 Monitor new endpoints in production
-- 📋 Confirm variant tags are correctly routed in observability stack
-
-### Sign-Off
-
-| Role                      | Status      | Date       |
-| ------------------------- | ----------- | ---------- |
-| QA Lead                   | ✅ Approved | 2026-08-02 |
-| Ready for Control handoff | ✅ Yes      | 2026-08-02 |
-
----
-
-**End of Report**
+**Proceed.** All three acceptance criteria verified by live request against the integrated,
+production-built branch; full gate, build, and E2E suite all green; no defects found. Firing
+`validation.all_acs_passed`.

@@ -1,100 +1,74 @@
-# TDD Test Result: VRTX3-T-0009
-
-## Test Design Matrix
-
-| Scenario                                 | Expectation                          | Status  |
-| ---------------------------------------- | ------------------------------------ | ------- |
-| Route handler responds with correct JSON | `{ ok: true, variant: "764107669" }` | ✅ PASS |
-| Route handler responds in under 100ms    | Latency < 100ms                      | ✅ PASS |
-
-**Test File:** `routes/api/healthz-smoke-bugfix3-764107669.test.ts`
-
+---
+artifact: tdd-test-result
+spec: 1
+status: complete
+author_role: implementation
+sprint: VRTX3-S-0002
+ticket: VRTX3-T-0009
+branch: vortex/fix/VRTX3-T-0009-smoke-bugfix-17873246012078034-api-healt-4ef9bcab
+upstream: [artifacts/VRTX3-S-0002/VRTX3-T-0009/PLAN.md]
 ---
 
-## RED Phase (Before Fix)
+# TDD result — VRTX3-T-0009
 
-**Test Execution:** `bun run test routes/api/healthz-smoke-bugfix3-764107669.test.ts`
+> This file replaces stale content from a prior sprint that recycled this ticket key (variant
+> `764107669`, committed in `e167bb8`). See `PLAN.md`'s banner.
+
+## Test cases
+
+| Test                                                                                               | Covers     | Intent                                                                                                       |
+| -------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
+| `routes/api/healthz-smoke-bugfix3-834560860.test.ts › returns HTTP 200 with correct response body` | AC-1, AC-4 | handler default-exports a `defineHandler` returning the literal probe body, single assertion, no timing case |
+
+## Red run
+
+`bun --bun vitest run routes/api/healthz-smoke-bugfix3-834560860.test.ts`
 
 ```
-$ NODE_ENV=test bun --bun vitest run "routes/api/healthz-smoke-bugfix3-764107669.test.ts"
-
  RUN  v4.1.10 /workspace/repo
 
- ❯ |server| routes/api/healthz-smoke-bugfix3-764107669.test.ts (0 test)
+ ❯ |server| routes/api/healthz-smoke-bugfix3-834560860.test.ts (0 test)
 
 ⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  |server| routes/api/healthz-smoke-bugfix3-764107669.test.ts [ routes/api/healthz-smoke-bugfix3-764107669.test.ts ]
-Error: Cannot find module './healthz-smoke-bugfix3-764107669' imported from /workspace/repo/routes/api/healthz-smoke-bugfix3-764107669.test.ts
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ FAIL  |server| routes/api/healthz-smoke-bugfix3-834560860.test.ts [ routes/api/healthz-smoke-bugfix3-834560860.test.ts ]
+Error: Cannot find module './healthz-smoke-bugfix3-834560860' imported from /workspace/repo/routes/api/healthz-smoke-bugfix3-834560860.test.ts
 
  Test Files  1 failed (1)
       Tests  no tests
-   Start at  05:32:37
-   Duration  68ms (transform 14ms, setup 0ms, import 0ms, tests 0ms, environment 0ms)
+   Start at  15:17:34
+   Duration  169ms (transform 32ms, setup 0ms, import 0ms, tests 0ms, environment 0ms)
 ```
 
-**Result:** ❌ FAILED — Module not found (expected behavior: handler file missing)
+## Green run
 
----
-
-## GREEN Phase (After Fix)
-
-**Test Execution:** `bun run test routes/api/healthz-smoke-bugfix3-764107669.test.ts`
-
-```
-$ NODE_ENV=test bun --bun vitest run "routes/api/healthz-smoke-bugfix3-764107669.test.ts"
-
- RUN  v4.1.10 /workspace/repo
-
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  05:32:43
-   Duration  70ms (transform 16ms, setup 0ms, import 23ms, tests 2ms, environment 0ms)
-```
-
-**Result:** ✅ PASSED — 2/2 tests passed
-
----
-
-## Full Verification (After Fix)
-
-**Test Execution:** `bun run verify`
+`bun run verify` (`lint && typecheck && test` — this project's full pre-commit validation gate)
 
 ```
 $ bun run lint && bun run typecheck && bun run test
 $ eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
-[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
 $ node scripts/ensure-generated-files.mjs
 $ tsc --build
 $ NODE_ENV=test bun --bun vitest run
 
  RUN  v4.1.10 /workspace/repo
 
- Test Files  25 passed (25)
-      Tests  56 passed (56)
-   Start at  05:32:49
-   Duration  1.74s (transform 225ms, setup 319ms, import 539ms, tests 492ms, environment 1.00s)
+ Test Files  108 passed (108)
+      Tests  168 passed (168)
+   Start at  15:18:13
+   Duration  30.07s (transform 11.22s, setup 3.63s, import 24.74s, tests 6.90s, environment 9.30s)
 ```
 
-**Result:** ✅ ALL GATES PASS
+Additionally verified outside the automated gate, per AC-2/AC-3/AC-5 (a live request is the only
+check that proves Nitro registered the route — the unit test above imports the handler module
+directly and would pass even without registration):
 
-- Lint: ✅ OK (zero warnings)
-- Typecheck: ✅ OK
-- Tests: ✅ 56/56 passed (25 test files)
+- `bun run dev` (Vite banner: `http://localhost:5000/`), then:
+  - `GET /api/healthz-smoke-bugfix3-834560860` → `200`, `content-type: application/json;charset=UTF-8`,
+    body `{"ok":true,"variant":"834560860"}`.
+  - `GET /api/healthz-smoke-528856326-a` (control, same session) → `200`,
+    `content-type: application/json;charset=UTF-8`, body `{"ok":true,"variant":"528856326"}`.
+- `bun run build` → `.output/server/_routes/api/healthz_smoke_bugfix3_834560860.mjs` present;
+  `find .output -name "*.test.ts"` → no matches.
 
----
-
-## Summary
-
-| Phase             | Test Files | Tests | Status    |
-| ----------------- | ---------- | ----- | --------- |
-| RED (before fix)  | 1          | 0/2   | ❌ FAILED |
-| GREEN (after fix) | 1          | 2/2   | ✅ PASSED |
-| Full Verification | 25         | 56/56 | ✅ PASSED |
-
-**Regression test confirmed:** The test file `routes/api/healthz-smoke-bugfix3-764107669.test.ts` successfully captures the defect (RED) and validates the fix (GREEN).
-
----
-
-TDD-RESULT: 56 passed, 0 failed
+TDD-RESULT: 168 passed, 0 failed

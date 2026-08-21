@@ -53,7 +53,7 @@ Concrete versions are read from `package.json`: React 19.2, Vite 8.1, Nitro 3.0 
 
 ### Health probe route contract
 
-`routes/api/healthz-smoke-*.ts` (100 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENT.md](./AGENT.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
+`routes/api/healthz-smoke-*.ts` (103 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENT.md](./AGENT.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
 
 `bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-189360772-a` → `.output/server/_routes/api/healthz_smoke_189360772_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
 
@@ -98,6 +98,14 @@ Four tiers, one worked example each. Commands and how to extend: [README.md](./R
 ---
 
 ## Changelog
+
+### 2026-08-21 — Sprint VRTX3-S-0002 (`smoke-bugfix-17873246012078034`): Three Missing Health Probes
+
+Added `routes/api/healthz-smoke-bugfix-158202122.ts`, `healthz-smoke-bugfix2-142310404.ts`, `healthz-smoke-bugfix3-834560860.ts` and their colocated tests — 6 new files, 0 modified source files, no dependency change. Probe-family count under [Routing](#routing) updated 100 → 103, re-counted from the filesystem rather than incremented (206 `.ts` files under `routes/api/` at planning, 212 once this sprint lands).
+
+`## Key Decisions` is unchanged. The "Health probes duplicate, on purpose" entry governs this sprint as written, and the decomposition is again what the entry predicts: three defects, each owning exactly two new files, no `depends_on` edge between any pair, and the one file set they could have collided on — the three root docs carrying the probe count — held exclusively by the planning ticket and moved 100 → 103 once for the sprint rather than 100 → 101 three times. The copy-source ambiguity recorded against the entry since VRTX3-S-0027 produced a second harmless near-miss: VRTX3-I-0005 named a directory neighbour (`healthz-smoke-bugfix3-351014898.test.ts`) rather than the pinned `528856326` pair, but the neighbour postdates VRTX3-S-0011 and is shape-identical, so the substitution cost nothing. The 47 legacy tests carrying the flaky wall-clock case are never rewritten, so the ratio dilutes (47 of 103) while the per-sample odds stay near even — the mitigation is working, not retiring.
+
+One routing note re-confirmed by live measurement rather than inheritance: an unmatched `/api/*` path is answered by the SPA `index.html` shell with `200 text/html`, so the filename-is-the-URL contract has no negative signal. A route that does not exist and a route that does are indistinguishable by status code; only the response body and `Content-Type` separate them. See [AGENT.md](./AGENT.md#gotchas).
 
 ### 2026-08-20 — Sprint VRTX3-S-0033: Three Independent Health Check Endpoints (189360772)
 
