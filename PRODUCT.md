@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 103 across the family, the most recent being the three restored in VRTX3-S-0002 (`healthz-smoke-bugfix-158202122`, `healthz-smoke-bugfix2-142310404`, `healthz-smoke-bugfix3-834560860`).
+**Current probes:** 106 across the family, the most recent being the three restored in VRTX3-S-0003 (`healthz-smoke-bugfix-858873211`, `healthz-smoke-bugfix2-664793322`, `healthz-smoke-bugfix3-267063007`).
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,12 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-21 — Sprint VRTX3-S-0003 (`smoke-bugfix-17873270732264355`): Three Missing Health Probes
+
+Restored three probes that were reported as unreachable: `/api/healthz-smoke-bugfix-858873211`, `/api/healthz-smoke-bugfix2-664793322` and `/api/healthz-smoke-bugfix3-267063007`, each returning `{ok:true,variant:"<id>"}`. Purely additive — 6 new files, 0 modified source files, no new dependency, nothing in `src/`. Probe count 103 → 106, and the "most recent set" pointer under [Features](#features) moves to this trio.
+
+The defect was real in all three cases and, for the second sprint running, not the one reported. Each was described as returning `404`; measured live during planning, each returned the SPA HTML shell with `200`. What is new this time is where the wrong claim came from: the idea behind one of the three is unusually well-evidenced — it locates the missing file, greps for the variant id, quotes a working sibling in full — and still carries the wrong status code. For anyone consuming these probes that is the product requirement restated: a health check asserting only on status code passes against an endpoint that does not exist, and no amount of care in the bug report changes that. The probe contract under [Features](#features) is stated as body plus `Content-Type`, and stays that way.
 
 ### 2026-08-21 — Sprint VRTX3-S-0002 (`smoke-bugfix-17873246012078034`): Three Missing Health Probes
 
