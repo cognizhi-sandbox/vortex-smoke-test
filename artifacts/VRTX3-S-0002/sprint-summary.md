@@ -1,115 +1,128 @@
-# VRTX3-S-0002 Sprint Summary
-
-**Sprint Goal:** Fix three missing health check endpoints that currently return 404
-
-**Sprint Type:** BUGFIX (Smoke-test)
-
-**Status:** ✅ COMPLETED
-
+---
+artifact: sprint-summary
+spec: 1
+status: complete
+author_role: planning
+sprint: VRTX3-S-0002
+idea: VRTX3-I-0005 (VRTX3-T-0009 only; VRTX3-T-0007 and VRTX3-T-0008 have none linked)
+branch: vortex/sprint/vrtx3-s-0002-4688bb08
+upstream: [artifacts/VRTX3-S-0002/SPRINT-PLAN.md, artifacts/VRTX3-S-0002/qa-test-report.md]
 ---
 
-## What Shipped
+# Sprint summary — VRTX3-S-0002
 
-Three independent health check endpoints were successfully implemented and tested:
+Bugfix sprint. Goal: `[smoke] Bugfix sprint smoke-bugfix-17873246012078034` — serve the three
+missing health probes, each answering `GET` with HTTP 200, `Content-Type: application/json` and a
+body deep-equal to `{ "ok": true, "variant": "<id>" }`.
 
-1. **VRTX3-T-0007:** `/api/healthz-smoke-bugfix-106285986`
-   - Status: ✅ DONE
-   - Returns: `{ ok: true, variant: "106285986" }`
-   - File: `routes/api/healthz-smoke-bugfix-106285986.ts` + test
+## Tickets
 
-2. **VRTX3-T-0008:** `/api/healthz-smoke-bugfix2-524723214`
-   - Status: ✅ DONE
-   - Returns: `{ ok: true, variant: "524723214" }`
-   - File: `routes/api/healthz-smoke-bugfix2-524723214.ts` + test
+| Ticket       | Type   | Title                                          | Outcome                                                       |
+| ------------ | ------ | ---------------------------------------------- | ------------------------------------------------------------- |
+| VRTX3-T-0010 | TASK   | Bugfix plan — VRTX3-S-0002                     | DONE — `SPRINT-PLAN.md`, three `PLAN.md`, root docs at target |
+| VRTX3-T-0007 | DEFECT | `/api/healthz-smoke-bugfix-158202122` missing  | DONE — `VRTX3-T-0007/fix-note.md`                             |
+| VRTX3-T-0008 | DEFECT | `/api/healthz-smoke-bugfix2-142310404` missing | DONE — `VRTX3-T-0008/fix-note.md`                             |
+| VRTX3-T-0009 | DEFECT | `/api/healthz-smoke-bugfix3-834560860` missing | DONE — `VRTX3-T-0009/fix-note.md`                             |
+| VRTX3-T-0011 | TASK   | Integration QA report — VRTX3-S-0002           | DONE — `qa-test-report.md`, PASS, zero defects                |
+| VRTX3-T-0012 | TASK   | Sprint close bundle — VRTX3-S-0002             | DONE — this file and `release-notes.md`                       |
 
-3. **VRTX3-T-0009:** `/api/healthz-smoke-bugfix3-764107669`
-   - Status: ✅ DONE
-   - Returns: `{ ok: true, variant: "764107669" }`
-   - File: `routes/api/healthz-smoke-bugfix3-764107669.ts` + test
+All six tickets reached DONE. No ticket was deferred, cancelled or left open.
 
----
+## What shipped
 
-## Root Cause
+Three health probes, delivered exactly as planned and verified live against the integrated branch:
 
-All three defects were caused by **missing route handler files** in `routes/api/`. When requests arrived at these endpoints, Nitro's file-based router fell back to serving the frontend SPA instead of returning the expected JSON responses.
+| Route                                  | Variant     | Ticket       |
+| -------------------------------------- | ----------- | ------------ |
+| `/api/healthz-smoke-bugfix-158202122`  | `158202122` | VRTX3-T-0007 |
+| `/api/healthz-smoke-bugfix2-142310404` | `142310404` | VRTX3-T-0008 |
+| `/api/healthz-smoke-bugfix3-834560860` | `834560860` | VRTX3-T-0009 |
 
----
+Purely additive: **6 new files, 0 existing source files modified**, no new dependency, nothing under
+`src/`. Each handler is 8 lines — a single `defineHandler` from `nitro/h3` with no `event` parameter,
+no method guard and no import beyond `nitro/h3` — with a colocated 14-line `H3Event` test carrying
+one body assertion. Probe family count 100 → 103, re-derived from the filesystem and reflected in
+`AGENT.md`, `ARCHITECTURE.md` and `PRODUCT.md` on the planning ticket.
 
-## Fix Strategy Applied
+Sprint goal met in full.
 
-Each endpoint was implemented as a self-contained Nitro route handler following the established pattern:
+## Divergence from plan
 
-- **No code sharing** - Each endpoint is completely independent
-- **No external dependencies** - No auth, database, or middleware required
-- **Simple contract** - Returns `{ ok: true, variant: "<id>" }` JSON
-- **Full test coverage** - H3Event integration tests verify response and performance (< 100ms)
+**None in scope, sequencing or delivery.** All three defects had the same root cause the plan
+predicted — a never-written file, with Nitro registering `/api/*` by filename alone — and each was
+fixed with the two-file change its `PLAN.md` specified. Ownership maps were disjoint as planned, so
+the three ran in parallel with no `depends_on` and no collision. QA found zero defects on first
+verification, so no fix-in-place round was needed.
 
----
+Two process observations, neither of which changed what shipped:
+
+- **The recycled-key hazard resolved itself, but by luck rather than design.** `SPRINT-PLAN.md`
+  note 1 recorded that this sprint key and all three ticket keys were recycled, leaving an earlier
+  sprint's artifacts on disk — including per-ticket `fix-note.md` files reporting _completed_ fixes
+  for variants that were not this sprint's. Every one of those stale files was overwritten in the
+  normal course of the sprint: implementation replaced the three `fix-note.md` and
+  `tdd-test-result.md` files, QA replaced `qa-test-report.md` and `integration-test-result.md`, and
+  this close bundle replaces the last two. Nothing stale remains. That only worked because this
+  sprint happened to regenerate every artifact type the directory already held; a sprint producing a
+  different artifact set would have left misleading files behind. See Retrospective.
+- **A ticket AC and an artifact skill disagreed on document shape.** VRTX3-T-0011's acceptance
+  criteria pinned `qa-test-report.md` to seven `##` sections, against the eight-section canonical
+  form in the `artifact-qa-test-report` skill (the difference being `## Design fidelity`). QA
+  followed the ticket AC and recorded the conflict in the file. Moot on the substance — VRTX3-I-0005
+  carries no design reference and the sprint touches no user-visible surface — but see Retrospective.
 
 ## Verification
 
-- ✅ All three endpoints return HTTP 200 with correct JSON responses
-- ✅ All unit tests pass: `bun run test`
-- ✅ Full verification gate passes: `bun run verify`
-- ✅ No regressions in existing tests
-- ✅ Integration QA smoke tests passed
-
----
+**PASS**, zero defects. See `artifacts/VRTX3-S-0002/qa-test-report.md` for the full report and
+`artifacts/VRTX3-S-0002/integration-defects-resolution.md` for the (empty) defect disposition. Unit
+suite 110 files / 170 tests passing, E2E `6 passed, 0 failed, 0 skipped`, production build compiled
+all three routes into `.output/server/_routes/api/`, and all three probes were confirmed by live
+request on body and `Content-Type` against the integrated branch alongside the working control route.
+This sprint was **not** conditionally approved, so there is no `## Known Issues` section.
 
 ## Retrospective
 
-### What Went Well
+**Went well**
 
-1. **Clear Root Cause:** All three defects shared the same root cause (missing files), making the fix strategy consistent and straightforward
-2. **Established Pattern:** Following the existing health check endpoint pattern (`healthz-smoke-302960562-a.ts`) ensured consistency and reduced implementation time
-3. **Independent Tickets:** No coordination overhead between the three fixes — each could be implemented in parallel
-4. **Test Coverage:** Each endpoint includes comprehensive H3Event integration tests ensuring correctness and performance
-5. **Quick Planning:** Root cause analysis was completed quickly during the planning phase, enabling rapid implementation
+- **Measuring the defect instead of trusting the report paid off three times over.** All three
+  tickets claimed `404`; the real symptom was a 949-byte SPA shell served as `200 text/html`. Because
+  planning re-measured and put the evidence in each `PLAN.md`, no implementation agent spent time
+  chasing a status code that never occurred, and each `fix-note.md` reproduces the corrected RCA
+  rather than re-litigating it. Twenty-second consecutive confirmation of that trap.
+- **Disjoint ownership maps did what they are for.** Three two-file tickets, no `depends_on`, three
+  parallel branches, zero merge conflicts, zero defects at integration. The "health probes duplicate,
+  on purpose" decision in `ARCHITECTURE.md` continues to earn its cost.
+- **The pinned copy-source rule held under a canvas that named a different file.** VRTX3-I-0005
+  named `healthz-smoke-bugfix3-351014898.test.ts`; the `528856326` pair was substituted per
+  `AGENT.md`, and none of the three new tests carries the flaky `responds in under 100ms` case.
+- **Live verification was done at every stage** — planning, implementation and QA each issued a real
+  request with the control route alongside it, rather than relying on colocated unit tests that pass
+  even when Nitro never registered the path.
 
-### What Could Improve
+**Could improve**
 
-1. **Initial Detection:** The three endpoints were missing in the first place — consider adding file-based validation to catch missing routes earlier in development
-2. **Pattern Documentation:** Consider adding a template or code snippet to `CLAUDE.md` specifically for "Adding Health Check Endpoints" to reduce the chance of missing files in future sprints
+- **Recycled sprint and ticket keys should not be planning's problem to paper over.** The mitigation
+  this sprint was banners in four documents and a warning in three ticket descriptions — a lot of
+  prose to work around a directory collision. The durable fix is upstream: namespace recycled keys,
+  or clear the artifact directory when a key is reissued, so no agent has to reason about whether the
+  file next to its plan belongs to it.
+- **Ticket acceptance criteria should not restate structure an artifact skill owns.** VRTX3-T-0011's
+  seven-section pin is the same class of problem as an AC naming a build command: the ticket is more
+  specific, so it wins by construction, and it silently overrides the contract the skill maintains.
+  It cost nothing here only because the omitted section was inapplicable.
+- **The upstream `404` mis-transcription keeps arriving.** Two of the three tickets had no idea
+  linked and asserted `404` unchecked; the one with a canvas got it right. Twenty-two sprints of
+  re-measuring is a working mitigation but not a fix — defect capture is where the status code should
+  stop being wrong.
 
----
+## Compliance / Control Evidence
 
-## Timeline
-
-- **Planning Phase (VRTX3-T-0010):** Root cause analysis and fix plans documented
-- **Execution Phase (VRTX3-T-0007, VRTX3-T-0008, VRTX3-T-0009):** Three endpoints implemented and tested in parallel
-- **Integration QA:** All tests passed, no defects found
-
----
-
-## Files Changed
-
-### New Files Created
-
-- `routes/api/healthz-smoke-bugfix-106285986.ts` — First health check endpoint
-- `routes/api/healthz-smoke-bugfix-106285986.test.ts` — Integration tests
-- `routes/api/healthz-smoke-bugfix2-524723214.ts` — Second health check endpoint
-- `routes/api/healthz-smoke-bugfix2-524723214.test.ts` — Integration tests
-- `routes/api/healthz-smoke-bugfix3-764107669.ts` — Third health check endpoint
-- `routes/api/healthz-smoke-bugfix3-764107669.test.ts` — Integration tests
-
-### Updated Files
-
-None — this sprint did not change any existing files, only added new ones.
-
----
-
-## Observable Behavior Changes
-
-✅ **Yes** — Three new endpoints are now available and responding correctly:
-
-- `GET /api/healthz-smoke-bugfix-106285986` → 200 with `{ ok: true, variant: "106285986" }`
-- `GET /api/healthz-smoke-bugfix2-524723214` → 200 with `{ ok: true, variant: "524723214" }`
-- `GET /api/healthz-smoke-bugfix3-764107669` → 200 with `{ ok: true, variant: "764107669" }`
-
-**Documentation Update Required:** AGENT.md Changelog needs a dated entry documenting these new endpoints.
-
----
-
-## Known Issues
-
-None — all defects were fixed and verified.
+| Control                        | Evidence                                           | Location                                                   | Status    | Exception |
+| ------------------------------ | -------------------------------------------------- | ---------------------------------------------------------- | --------- | --------- |
+| Change planned before build    | Sprint plan + per-defect plans with DoD            | `artifacts/VRTX3-S-0002/SPRINT-PLAN.md`, `*/PLAN.md`       | Satisfied | —         |
+| Change verified before release | QA report, PASS verdict                            | `artifacts/VRTX3-S-0002/qa-test-report.md`                 | Satisfied | —         |
+| Defects dispositioned          | 0 found at integration                             | `artifacts/VRTX3-S-0002/integration-defects-resolution.md` | Satisfied | —         |
+| Tests executed                 | Unit 170 passed; E2E 6 passed, 0 failed, 0 skipped | `artifacts/VRTX3-S-0002/integration-test-result.md`        | Satisfied | —         |
+| Per-ticket fix recorded        | Three fix notes, one per DEFECT                    | `artifacts/VRTX3-S-0002/VRTX3-T-000{7,8,9}/fix-note.md`    | Satisfied | —         |
+| Release contents recorded      | Release notes                                      | `artifacts/VRTX3-S-0002/release-notes.md`                  | Satisfied | —         |
+| Documentation kept current     | Probe count 100 → 103 + dated changelog entries    | `AGENT.md`, `ARCHITECTURE.md`, `PRODUCT.md`                | Satisfied | —         |

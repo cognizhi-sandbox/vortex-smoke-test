@@ -1,132 +1,57 @@
-# VRTX3-S-0002 Release Notes
-
-**Release Date:** 2026-08-02
-
-**Sprint:** VRTX3-S-0002 (Smoke Bugfix)
-
+---
+artifact: release-notes
+spec: 1
+status: complete
+author_role: planning
+sprint: VRTX3-S-0002
+idea: VRTX3-I-0005 (VRTX3-T-0009 only; VRTX3-T-0007 and VRTX3-T-0008 have none linked)
+branch: vortex/sprint/vrtx3-s-0002-4688bb08
+upstream: [artifacts/VRTX3-S-0002/qa-test-report.md]
 ---
 
-## What's New
+# Release notes — VRTX3-S-0002
 
-### Three New Health Check Endpoints
+## Fixed
 
-This release adds three independent health check endpoints for smoke testing:
+- `GET /api/healthz-smoke-bugfix-158202122` now answers `200` with `Content-Type: application/json`
+  and body `{"ok":true,"variant":"158202122"}`. It previously returned no probe response at all.
+  (VRTX3-T-0007)
+- `GET /api/healthz-smoke-bugfix2-142310404` now answers `200` with `Content-Type: application/json`
+  and body `{"ok":true,"variant":"142310404"}`. (VRTX3-T-0008)
+- `GET /api/healthz-smoke-bugfix3-834560860` now answers `200` with `Content-Type: application/json`
+  and body `{"ok":true,"variant":"834560860"}`. (VRTX3-T-0009)
 
-#### `/api/healthz-smoke-bugfix-106285986`
+All three were reported as returning `404`. They did not: an `/api/*` path with no handler falls
+through to the single-page-app HTML shell and answers `200 text/html`. **If you monitor these probes,
+assert on the response body and `Content-Type`, not the status code** — a status-only health check
+passes against an endpoint that does not exist. This applies to every probe in the family, not only
+the three fixed here.
 
-```bash
-GET /api/healthz-smoke-bugfix-106285986
-```
+The health probe family now numbers 103 endpoints.
 
-**Response:**
+## Upgrade notes
 
-```json
-{
-  "ok": true,
-  "variant": "106285986"
-}
-```
+None. The change is purely additive — three new endpoints, no existing endpoint altered, no
+migration, no configuration change, no feature flag, no new dependency, and nothing removed.
 
-#### `/api/healthz-smoke-bugfix2-524723214`
+## Not included
 
-```bash
-GET /api/healthz-smoke-bugfix2-524723214
-```
+Nothing in the sprint's scope was dropped; all three committed defects shipped. Deliberately out of
+scope, unchanged from the family's existing behaviour: these probes accept any HTTP verb and return
+the same `200` body for `POST`, `PUT` and `DELETE` as for `GET` — no method guard was added, because
+none of the 100 sibling probes declares one. Authentication, request parameters and observability
+wiring remain out of scope for the probe family.
 
-**Response:**
+## Verification
 
-```json
-{
-  "ok": true,
-  "variant": "524723214"
-}
-```
+Verified at integration QA against the built and running integrated branch — see
+`artifacts/VRTX3-S-0002/qa-test-report.md` (PASS, zero defects).
 
-#### `/api/healthz-smoke-bugfix3-764107669`
+## Compliance / Control Evidence
 
-```bash
-GET /api/healthz-smoke-bugfix3-764107669
-```
-
-**Response:**
-
-```json
-{
-  "ok": true,
-  "variant": "764107669"
-}
-```
-
----
-
-## What Changed
-
-### Bug Fixes
-
-- **Fixed:** Three missing health check endpoints that were returning 404 errors
-  - `GET /api/healthz-smoke-bugfix-106285986` now returns 200 with correct JSON
-  - `GET /api/healthz-smoke-bugfix2-524723214` now returns 200 with correct JSON
-  - `GET /api/healthz-smoke-bugfix3-764107669` now returns 200 with correct JSON
-
-### Root Cause
-
-Missing route handler files in `routes/api/` were causing these endpoints to return 404 errors. Each endpoint is now implemented as a self-contained Nitro route handler returning a simple JSON response with status and variant identifier.
-
-### No Breaking Changes
-
-All changes are additive — three new endpoints that were previously returning 404. Existing endpoints and APIs remain unchanged.
-
----
-
-## Testing
-
-All three endpoints include comprehensive H3Event integration tests:
-
-- ✅ Correct JSON response body validation
-- ✅ HTTP 200 status code verification
-- ✅ Performance baseline (< 100ms response time)
-
-Run tests with:
-
-```bash
-bun run test routes/api/healthz-smoke-bugfix-*.test.ts
-bun run verify
-```
-
----
-
-## Migration Guide
-
-**No migration required.** These are new endpoints with no impact on existing functionality.
-
----
-
-## Performance
-
-- All endpoints respond in under 100ms
-- No external dependencies or database calls
-- Lightweight, self-contained handlers
-
----
-
-## Files Added
-
-- `routes/api/healthz-smoke-bugfix-106285986.ts`
-- `routes/api/healthz-smoke-bugfix-106285986.test.ts`
-- `routes/api/healthz-smoke-bugfix2-524723214.ts`
-- `routes/api/healthz-smoke-bugfix2-524723214.test.ts`
-- `routes/api/healthz-smoke-bugfix3-764107669.ts`
-- `routes/api/healthz-smoke-bugfix3-764107669.test.ts`
-
----
-
-## Known Issues
-
-None.
-
----
-
-## Future Improvements
-
-- Consider adding a health check endpoint template or generator to reduce errors in future sprints
-- Add file-based validation to catch missing route files earlier in development
+| Control                      | Evidence                              | Location                                                   | Status    | Exception |
+| ---------------------------- | ------------------------------------- | ---------------------------------------------------------- | --------- | --------- |
+| Release contents recorded    | this file                             | `artifacts/VRTX3-S-0002/release-notes.md`                  | Satisfied | —         |
+| Release verified before land | QA PASS verdict                       | `artifacts/VRTX3-S-0002/qa-test-report.md`                 | Satisfied | —         |
+| Known limitations disclosed  | Method-agnostic behaviour under scope | `## Not included` above                                    | Satisfied | —         |
+| No open defects at release   | 0 found at integration                | `artifacts/VRTX3-S-0002/integration-defects-resolution.md` | Satisfied | —         |
