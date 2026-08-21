@@ -1,327 +1,92 @@
-# QA Test Report — VRTX3-S-0003: Bugfix Sprint [smoke-bugfix-17856540658772]
-
-**Sprint Goal**: Restore three missing health check endpoints that were returning 404 errors.
-
-**Execution Date**: 2026-08-02
-
 ---
+artifact: qa-test-report
+spec: 1
+status: complete
+author_role: validation
+sprint: VRTX3-S-0003
+idea: VRTX3-I-0006
+branch: vortex/sprint/vrtx3-s-0003-36924a4a
+upstream: [artifacts/VRTX3-S-0003/SPRINT-PLAN.md]
+downstream: [artifacts/VRTX3-S-0003/sprint-summary.md]
+---
+
+> **Note on this file:** it previously held the QA record from a different, earlier sprint that
+> also ran as `VRTX3-S-0003` (2026-08-02, variants `26031336`/`59156521`/`200192357`). It is
+> replaced here with the record for the current sprint (variants
+> `858873211`/`664793322`/`267063007`), per the recycled-key banner in `SPRINT-PLAN.md`.
+
+> **Section count note:** this report uses exactly the 7 sections mandated by the Validation role
+> instructions and this ticket's acceptance criteria (Executive Summary, E2E Test Status, Unit Test
+> Results, Code Review, Coverage Summary, Issues Found, Recommendation). The `artifact-qa-test-report`
+> skill's canonical template additionally lists an 8th, advisory `## Design fidelity` section; that
+> section's own trigger ("when the sprint's idea carries a design reference") does not fire here —
+> VRTX3-I-0006 is a backend-only bugfix with no design reference — so nothing is lost by the 7-section
+> form and no conflict actually surfaces in this report's content.
+
+# QA test report — VRTX3-S-0003
 
 ## Executive Summary
 
-Sprint VRTX3-S-0003 commits three tickets to implement missing health check endpoints:
-
-- **VRTX3-T-0013**: Implement `/api/healthz-smoke-bugfix-26031336` endpoint
-- **VRTX3-T-0014**: Implement `/api/healthz-smoke-bugfix2-59156521` endpoint
-- **VRTX3-T-0015**: Implement `/api/healthz-smoke-bugfix3-200192357` endpoint
-
-**Verdict**: ✅ **ALL ACCEPTANCE CRITERIA MET**
-
-All three endpoints have been implemented correctly, all unit tests pass (66/66), all E2E tests pass (5/5), build succeeds without warnings, and code quality gates are met. No defects found during integration QA. The sprint is ready for production deployment.
-
----
+**Verdict: PASS.** All three acceptance criteria for VRTX3-I-0006 hold on the integrated sprint
+branch (commit `516ee64`). The sprint adds three previously-missing health probes —
+`/api/healthz-smoke-bugfix-858873211`, `/api/healthz-smoke-bugfix2-664793322`,
+`/api/healthz-smoke-bugfix3-267063007` — each now answering `200 application/json` with
+`{"ok":true,"variant":"<id>"}`, verified live against a running dev server (not by status code
+alone — see `AGENT.md` § Gotchas). Full verification gate (`bun run verify`: lint, typecheck, unit
+tests) passed, the production build succeeded and compiled all three new routes, and the full E2E
+suite passed 6/6 with no skips. No defects found.
 
 ## E2E Test Status
 
-### Test Execution
-
-**Command**: `bun run e2e -- --project=chromium`
-
-**Result Summary**:
-
-```
-5 passed (3.5s)
-```
-
-### Test Breakdown
-
-| Spec              | Test Case                                                 | Status  | Duration |
-| ----------------- | --------------------------------------------------------- | ------- | -------- |
-| e2e/smoke.spec.ts | home page loads with no console errors                    | ✅ PASS | 317ms    |
-| e2e/smoke.spec.ts | the API responds                                          | ✅ PASS | 331ms    |
-| e2e/home.spec.ts  | shows the hero content and desktop nav                    | ✅ PASS | 463ms    |
-| e2e/home.spec.ts  | has no vertical scrollbar on common viewport sizes        | ✅ PASS | 597ms    |
-| e2e/home.spec.ts  | opens and closes the mobile nav from the hamburger button | ✅ PASS | 645ms    |
-
-### Coverage
-
-- **Critical Smoke Tests**: ✅ Pass (home page load, API connectivity, no console errors)
-- **Responsive Design**: ✅ Pass (viewport sizes tested, no vertical scrollbar regression)
-- **Navigation**: ✅ Pass (mobile hamburger menu interaction)
-- **API Connectivity**: ✅ Verified via `/api/hello` endpoint (smoke test)
-
-**Status**: All E2E tests pass. No regressions detected.
-
----
+Full E2E suite executed and passed: `6 passed (7.2s)`, 0 failed, 0 skipped, across both spec files
+(`e2e/home.spec.ts`, `e2e/smoke.spec.ts`). Full command, per-spec table and Playwright's verbatim
+summary are in `artifacts/VRTX3-S-0003/integration-test-result.md`.
 
 ## Unit Test Results
 
-### Test Execution
-
-**Command**: `bun run test`
-
-**Result Summary**:
-
 ```
-Test Files: 30 passed (30)
-Tests:      66 passed (66)
-Duration:   1.71s
+$ bun run test
+NODE_ENV=test bun --bun vitest run
+
+ Test Files  113 passed (113)
+      Tests  173 passed (173)
+   Duration  10.43s
 ```
 
-### Test Breakdown by Type
+Includes the three new colocated route tests (`healthz-smoke-bugfix-858873211.test.ts`,
+`healthz-smoke-bugfix2-664793322.test.ts`, `healthz-smoke-bugfix3-267063007.test.ts`), each a
+single body-assertion case following the pinned `healthz-smoke-528856326-a` shape — none carries
+the flaky `responds in under 100ms` case.
 
-| Test Category               | Count  | Status      |
-| --------------------------- | ------ | ----------- |
-| Component/Page Tests (.tsx) | 28     | ✅ All Pass |
-| API Route Tests (.ts)       | 38     | ✅ All Pass |
-| **Total**                   | **66** | **✅ PASS** |
+Also run and passing, part of the same gate:
 
-### New Endpoint Tests (This Sprint)
-
-**VRTX3-T-0013: `/api/healthz-smoke-bugfix-26031336`**
-
-- ✅ Test: "returns HTTP 200 with correct response body"
-- ✅ Test: "responds in under 100ms"
-- ✅ Assertions: Response format `{ok: true, variant: "26031336"}`
-
-**VRTX3-T-0014: `/api/healthz-smoke-bugfix2-59156521`**
-
-- ✅ Test: "returns HTTP 200 with correct response body"
-- ✅ Test: "responds in under 100ms"
-- ✅ Assertions: Response format `{ok: true, variant: "59156521"}`
-
-**VRTX3-T-0015: `/api/healthz-smoke-bugfix3-200192357`**
-
-- ✅ Test: "returns HTTP 200 with correct response body"
-- ✅ Test: "responds in under 100ms"
-- ✅ Assertions: Response format `{ok: true, variant: "200192357"}`
-
-### Test Infrastructure
-
-- **Framework**: Vitest v4.1.10
-- **Environments**: jsdom (client), Node (server/routes)
-- **Database**: In-memory SQLite (VITEST=true)
-- **Duration**: All tests complete in 1.71s
-
-**Status**: All unit tests pass. All new endpoints tested and verified.
-
----
+```
+$ bun run lint     # eslint . --ext ts,tsx --max-warnings 0 → 0 errors, 0 warnings
+$ bun run typecheck  # tsc --build → no errors
+```
 
 ## Code Review
 
-### Implementation Quality
-
-#### Endpoint Implementation Pattern
-
-**All three endpoints follow the established pattern**:
-
-```typescript
-import { defineHandler } from "nitro/h3";
-
-export default defineHandler(() => {
-  return {
-    ok: true,
-    variant: "<variant_id>",
-  };
-});
-```
-
-**Code characteristics**:
-
-- ✅ Minimal, self-contained implementation (8-9 lines each)
-- ✅ No external dependencies (no database, no auth, no shared code)
-- ✅ Consistent with existing healthz endpoints (`healthz-smoke-bugfix-106285986`, etc.)
-- ✅ Uses Nitro's standard `defineHandler` pattern
-- ✅ Returns JSON response in correct format
-- ✅ No TypeScript errors or warnings
-
-#### Test Implementation Pattern
-
-**All three endpoint tests follow H3Event integration test pattern**:
-
-```typescript
-import { H3Event } from "nitro/h3";
-import { describe, expect, it } from "vitest";
-import healthz from "./healthz-smoke-bugfix-<variant>";
-
-describe("GET /api/healthz-smoke-bugfix-<variant>", () => {
-  it("returns HTTP 200 with correct response body", async () => {
-    const event = new H3Event(new Request("http://localhost/api/healthz-smoke-bugfix-<variant>"));
-    const result = await healthz(event);
-    expect(result).toEqual({ ok: true, variant: "<variant>" });
-  });
-
-  it("responds in under 100ms", async () => {
-    const event = new H3Event(new Request("http://localhost/api/healthz-smoke-bugfix-<variant>"));
-    const start = Date.now();
-    await healthz(event);
-    const elapsed = Date.now() - start;
-    expect(elapsed).toBeLessThan(100);
-  });
-});
-```
-
-**Test characteristics**:
-
-- ✅ Follows H3Event integration test pattern (no live server needed)
-- ✅ Tests correct response format and body
-- ✅ Tests performance (responds in <100ms)
-- ✅ No external dependencies
-- ✅ Clear test descriptions
-
-### Build and Type Safety
-
-**TypeScript Type Check**:
-
-```bash
-✅ bun run typecheck — PASS (no errors, strict mode enabled)
-```
-
-**Linting**:
-
-```bash
-✅ bun run lint — PASS (zero warnings policy enforced)
-```
-
-**Build**:
-
-```bash
-✅ bun run build — PASS (Vite + Nitro compilation successful)
-  - All three new endpoints compiled into .output/server/_routes/api/
-  - healthz_smoke_bugfix_26031336.mjs (0.31 kB gzip)
-  - healthz_smoke_bugfix2_59156521.mjs (0.31 kB gzip)
-  - healthz_smoke_bugfix3_200192357.mjs (0.32 kB gzip)
-```
-
-### Code Quality Assessment
-
-| Dimension           | Assessment                                  | Status  |
-| ------------------- | ------------------------------------------- | ------- |
-| **Correctness**     | Endpoints return correct format and data    | ✅ Pass |
-| **Consistency**     | Matches established patterns exactly        | ✅ Pass |
-| **Maintainability** | Simple, self-contained, no hidden deps      | ✅ Pass |
-| **Test Coverage**   | 2 tests per endpoint (format + performance) | ✅ Pass |
-| **Type Safety**     | TypeScript strict mode, no errors           | ✅ Pass |
-| **Performance**     | All endpoints respond in <100ms             | ✅ Pass |
-| **Accessibility**   | Health check endpoints, no UI concerns      | ✅ Pass |
-
-**Status**: Code quality is excellent. All implementations follow conventions exactly.
-
----
+Reviewed the three new route/test pairs (VRTX3-T-0013/0014/0015) incidentally while verifying.
+Each handler is a minimal `defineHandler` returning `{ ok: true, variant: "<id>" }`, importing only
+`nitro/h3` — no `db/` import, no `event.context.user` read, no method guard, no shared helper —
+matching every sibling probe and `ARCHITECTURE.md`'s documented "deliberate duplication" decision.
+No file outside the six new ones (two per ticket) was touched. No notable concerns observed.
 
 ## Coverage Summary
 
-### Test Coverage Metrics
-
-| Metric                   | Value | Target | Status  |
-| ------------------------ | ----- | ------ | ------- |
-| **Unit Test Pass Rate**  | 66/66 | 100%   | ✅ 100% |
-| **E2E Test Pass Rate**   | 5/5   | 100%   | ✅ 100% |
-| **Build Success Rate**   | 1/1   | 100%   | ✅ 100% |
-| **Type Check Pass Rate** | Pass  | Pass   | ✅ Pass |
-| **Lint Pass Rate**       | Pass  | Pass   | ✅ Pass |
-
-### Feature Coverage
-
-**VRTX3-T-0013** — `/api/healthz-smoke-bugfix-26031336`
-
-- ✅ Implementation (routes/api/healthz-smoke-bugfix-26031336.ts)
-- ✅ Unit tests (routes/api/healthz-smoke-bugfix-26031336.test.ts)
-- ✅ Builds successfully
-- ✅ No regressions in E2E suite
-
-**VRTX3-T-0014** — `/api/healthz-smoke-bugfix2-59156521`
-
-- ✅ Implementation (routes/api/healthz-smoke-bugfix2-59156521.ts)
-- ✅ Unit tests (routes/api/healthz-smoke-bugfix2-59156521.test.ts)
-- ✅ Builds successfully
-- ✅ No regressions in E2E suite
-
-**VRTX3-T-0015** — `/api/healthz-smoke-bugfix3-200192357`
-
-- ✅ Implementation (routes/api/healthz-smoke-bugfix3-200192357.ts)
-- ✅ Unit tests (routes/api/healthz-smoke-bugfix3-200192357.test.ts)
-- ✅ Builds successfully
-- ✅ No regressions in E2E suite
-
-### Acceptance Criteria Coverage
-
-| AC                                       | Status  |
-| ---------------------------------------- | ------- |
-| Build/deploy integrated sprint branch    | ✅ Pass |
-| Run E2E + acceptance tests               | ✅ Pass |
-| Write qa-test-report.md (7 sections)     | ✅ Pass |
-| No defects found (or all fixed in-place) | ✅ Pass |
-
-**Overall Coverage**: ✅ **100%** — All sprint goals and ACs covered.
-
----
+No coverage-reporting tool (e.g. `vitest --coverage`) is configured in this project — `vitest.config.ts`
+carries no `coverage` block and `package.json` has no coverage script. Verified by inspection.
+Test-count evidence (113 files / 173 tests, up from the pre-sprint baseline by 3 test files / 3
+tests for the three new probes) is in `## Unit Test Results` above; no coverage percentage is
+available to report.
 
 ## Issues Found
 
-**Summary**: ✅ **NO DEFECTS FOUND**
-
-All three endpoints pass implementation requirements, all tests pass, build succeeds, and no regressions detected in E2E suite. Integration QA found zero critical, blocking, or actionable issues.
-
-### Issue Resolution Log
-
-| Issue ID | Description | Status | Notes                                 |
-| -------- | ----------- | ------ | ------------------------------------- |
-| (none)   | —           | —      | No issues found during integration QA |
-
----
+None. See `artifacts/VRTX3-S-0003/integration-defects-resolution.md` (empty defect summary,
+`INTEGRATION_DEFECTS_RESOLUTION: COMPLETE`) for the formal record.
 
 ## Recommendation
 
-### QA Verdict
-
-✅ **SPRINT READY FOR PRODUCTION DEPLOYMENT**
-
-**Rationale**:
-
-1. **Completeness**: All three committed tickets (VRTX3-T-0013, VRTX3-T-0014, VRTX3-T-0015) are implemented and verified.
-
-2. **Test Coverage**:
-   - All 66 unit tests pass (100% pass rate)
-   - All 5 E2E tests pass (100% pass rate)
-   - No test failures or flakiness observed
-
-3. **Quality Gates**:
-   - ✅ TypeScript type check passes
-   - ✅ ESLint zero-warning policy enforced
-   - ✅ Build succeeds without errors
-   - ✅ No console errors in E2E smoke tests
-
-4. **Regression Testing**:
-   - Existing E2E suite runs without degradation
-   - No API functionality broken
-   - Home page loads and responds as expected
-
-5. **Acceptance Criteria**:
-   - ✅ Integration QA report written (this document)
-   - ✅ All required sections present (7/7)
-   - ✅ E2E tests run on real Chromium browser
-   - ✅ Unit tests all pass
-   - ✅ Build successful
-
-### Recommendation Actions
-
-**Immediate**:
-
-- ✅ Approve sprint for deployment to production
-- ✅ All defect counts: 0 critical, 0 major, 0 minor, 0 new
-
-**No Further Action Required**: No defects to fix, no follow-up sprints needed for this scope.
-
-**Next Steps** (Product/Ops):
-
-- Schedule deployment window for VRTX3-S-0003
-- Verify endpoints are accessible after deployment
-- Monitor `/api/healthz-smoke-bugfix-*` endpoints in production
-
----
-
-**Report Prepared By**: QA Integration Agent (VRTX3-T-0017)
-
-**Date**: 2026-08-02
-
-**Status**: ✅ APPROVED FOR PRODUCTION
+**Proceed.** All three acceptance criteria verified live, full verification gate green, E2E suite
+green with no skips, no defects found. Firing `validation.all_acs_passed`.
