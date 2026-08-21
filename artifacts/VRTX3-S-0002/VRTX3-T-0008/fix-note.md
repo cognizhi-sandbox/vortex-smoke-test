@@ -1,32 +1,34 @@
-# VRTX3-T-0008 Fix Note
+---
+artifact: fix-note
+spec: 1
+status: complete
+author_role: implementation
+sprint: VRTX3-S-0002
+ticket: VRTX3-T-0008
+branch: vortex/fix/VRTX3-T-0008-smoke-bugfix-17873246012078034-api-healt-205c5ea0
+upstream: [artifacts/VRTX3-S-0002/VRTX3-T-0008/PLAN.md]
+downstream: [artifacts/VRTX3-S-0002/qa-test-report.md]
+---
 
-## Root Cause
+# Fix note — VRTX3-T-0008: `/api/healthz-smoke-bugfix2-142310404` returns 404, should return ok+variant
 
-Route handler file `routes/api/healthz-smoke-bugfix2-524723214.ts` did not exist. When requests arrived at `/api/healthz-smoke-bugfix2-524723214`, Nitro's file-based router could not find the handler, falling back to the frontend SPA and returning 404 or HTML instead of the expected JSON response.
+## Root cause
 
-## Minimal Fix
+The handler file `routes/api/healthz-smoke-bugfix2-142310404.ts` was never written. Nitro registers routes from filenames alone — `nitro({ serverDir: "./", ignore: ["**/*.test.ts"] })` in `vite.config.ts` with no route table — so a missing file means an unmatched path. An unmatched `/api/*` path falls through to the SPA shell and answers `200 text/html`, not `404`. The defect is real (the endpoint does not return the expected JSON); its reported status code was a mis-transcription.
 
-Created two self-contained files following the established pattern from existing health check endpoints:
+## Fix
 
-1. **`routes/api/healthz-smoke-bugfix2-524723214.ts`** — Route handler
-   - Defines a simple Nitro H3 handler that returns `{ ok: true, variant: "524723214" }`
-   - No external dependencies, no database access, no middleware required
-   - Follows identical pattern to `routes/api/healthz-smoke-302960562-a.ts`
+Created two new files by copying the established probe template (`healthz-smoke-528856326-a`) and changing only the variant string. The handler returns `{ ok: true, variant: "142310404" }`, and the colocated test asserts the handler's return value matches. No shared code, no imports beyond `nitro/h3`, and no timing assertions — the pattern is pure independence.
 
-2. **`routes/api/healthz-smoke-bugfix2-524723214.test.ts`** — Integration test
-   - Tests the handler directly via H3Event (no live server)
-   - Verifies correct JSON response body
-   - Verifies response performance baseline (<100ms)
+## Regression test
 
-## Files Touched
+`routes/api/healthz-smoke-bugfix2-142310404.test.ts` constructs an H3Event and asserts `toEqual({ ok: true, variant: "142310404" })` — the single body assertion that catches the defect. Red→green recorded in `tdd-test-result.md`.
 
-- **Created:** `routes/api/healthz-smoke-bugfix2-524723214.ts`
-- **Created:** `routes/api/healthz-smoke-bugfix2-524723214.test.ts`
+## Files touched
 
-## Verification
+- `routes/api/healthz-smoke-bugfix2-142310404.ts` — new handler, no existing file modified.
+- `routes/api/healthz-smoke-bugfix2-142310404.test.ts` — new integration test, no existing file modified.
 
-- ✅ Route handler file created and follows existing pattern
-- ✅ Integration test passes: `bun run test routes/api/healthz-smoke-bugfix2-524723214.test.ts` (2 tests passed)
-- ✅ Full verification passes: `bun run verify` (lint, typecheck, all 56 tests pass)
-- ✅ Handler returns correct response body: `{ ok: true, variant: "524723214" }`
-- ✅ Performance baseline verified: handler responds in <100ms
+## Notes
+
+Live verification: `GET /api/healthz-smoke-bugfix2-142310404` against a running dev server returns `200 application/json` with body `{"ok":true,"variant":"142310404"}`. Control route `/api/healthz-smoke-528856326-a` confirms the measurement harness was live. No file outside these two new ones was modified, and no dependency was added.
