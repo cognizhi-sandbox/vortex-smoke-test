@@ -2,7 +2,7 @@
 
 **vortex-smoke-test-bootstrap** — A working template demonstrating the Vortex infrastructure stack: React + TypeScript + Nitro full-stack with file-based routing, SQLite persistence, and a complete test harness (unit, component, E2E, smoke).
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for how it's built, [DESIGN.md](./DESIGN.md) for the visual system, and [AGENT.md](./AGENT.md) for the operating manual.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for how it's built, [DESIGN.md](./DESIGN.md) for the visual system, and [AGENTS.md](./AGENTS.md) for the operating manual.
 
 ## Problem
 
@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 106 across the family, the most recent being the three restored in VRTX3-S-0003 (`healthz-smoke-bugfix-858873211`, `healthz-smoke-bugfix2-664793322`, `healthz-smoke-bugfix3-267063007`).
+**Current probes:** 109 across the family, the most recent being the three restored in VRTX3-S-0034 (`healthz-smoke-bugfix-839771954`, `healthz-smoke-bugfix2-554747562`, `healthz-smoke-bugfix3-238311955`).
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,16 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-23 — Sprint VRTX3-S-0034 (`smoke-bugfix-178747715613700`): Three Missing Health Probes
+
+Restored three probes that were reported as unreachable: `/api/healthz-smoke-bugfix-839771954`, `/api/healthz-smoke-bugfix2-554747562` and `/api/healthz-smoke-bugfix3-238311955`, each returning `{ok:true,variant:"<id>"}`. Purely additive — 6 new files, 0 modified source files, no new dependency, nothing in `src/`. Probe count 106 → 109, and the "most recent set" pointer under [Features](#features) moves to this trio.
+
+The defect was real in all three cases and, for the third sprint running, not the one reported: each was described as returning `404`, and each measured live during planning as the SPA HTML shell with `200`. The probe contract under [Features](#features) is stated as body plus `Content-Type` for exactly this reason, and stays that way.
+
+One correction recorded against the per-probe acceptance criteria rather than changing them. The idea behind one of the three asked for a "sub-100ms response" assertion inside the companion unit test. That is not a product criterion and is not carried here — a probe's guarantee is the response contract (`200`, `application/json`, the exact body) plus the structural promise that it touches no auth, database or sibling module. Latency follows from that structure; a wall-clock check on a shared CI runner measures the runner. This is the second time an idea has asked for it (VRTX3-S-0017 was the first) and the answer is unchanged.
+
+Also repaired: the `AGENT.md` → `AGENTS.md` rename in `600b74f` left three dead cross-references in this document. Paths only; no prose changed.
 
 ### 2026-08-21 — Sprint VRTX3-S-0003 (`smoke-bugfix-17873270732264355`): Three Missing Health Probes
 
@@ -166,13 +176,13 @@ Scope, non-goals, user stories and the per-probe acceptance criteria are unchang
 
 Added `/api/healthz-smoke-bugfix-406186407`, `/api/healthz-smoke-bugfix2-487405332` and `/api/healthz-smoke-bugfix3-418626414`, each returning `{ok:true,variant:"<id>"}`. Purely additive: 6 new files, 0 modified. Probe count 56 → 59. Scope and per-probe acceptance criteria are unchanged; only the count and the most-recent-set pointer moved.
 
-All three were reported as returning `404`; re-measured during planning against a live dev server, all three returned `200 text/html` (the SPA shell) instead — the seventh sprint in a row to find this. The defects were real, the status codes were not — see [AGENT.md § Gotchas](./AGENT.md#gotchas).
+All three were reported as returning `404`; re-measured during planning against a live dev server, all three returned `200 text/html` (the SPA shell) instead — the seventh sprint in a row to find this. The defects were real, the status codes were not — see [AGENT.md § Gotchas](./AGENTS.md#gotchas).
 
 ### 2026-08-10 — Sprint VRTX3-S-0014: Bugfix Sprint – Three Missing Health Probes
 
 Added `/api/healthz-smoke-bugfix-174694844`, `/api/healthz-smoke-bugfix2-754372119` and `/api/healthz-smoke-bugfix3-404580234`, each returning `{ok:true,variant:"<id>"}`. Purely additive: 6 new files, 0 modified. Probe count 53 → 56. Scope and per-probe acceptance criteria are unchanged; only the count and the most-recent-set pointer moved.
 
-All three were reported as returning `404`; re-measured during planning, all three returned `200 text/html` (the SPA shell) instead. The defects were real, the status codes were not — see [AGENT.md § Gotchas](./AGENT.md#gotchas).
+All three were reported as returning `404`; re-measured during planning, all three returned `200 text/html` (the SPA shell) instead. The defects were real, the status codes were not — see [AGENT.md § Gotchas](./AGENTS.md#gotchas).
 
 ### 2026-08-09 — Sprint VRTX3-S-0013: Three Independent Health Check Endpoints (841017405)
 
