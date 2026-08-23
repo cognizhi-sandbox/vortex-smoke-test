@@ -1,6 +1,6 @@
 # Design System
 
-See [PRODUCT.md](./PRODUCT.md) for what this is, [ARCHITECTURE.md](./ARCHITECTURE.md) for how it's built, and [AGENT.md](./AGENT.md) for the operating manual.
+See [PRODUCT.md](./PRODUCT.md) for what this is, [ARCHITECTURE.md](./ARCHITECTURE.md) for how it's built, and [AGENTS.md](./AGENTS.md) for the operating manual.
 
 ## Tokens
 
@@ -43,6 +43,12 @@ Dark-mode tokens exist (`.dark` class) but no toggle is wired up — nothing set
 ---
 
 ## Changelog
+
+### 2026-08-23 — Sprint VRTX3-S-0034: Three Missing Health Probes
+
+No design-system change. The sprint is backend-only (three `routes/api/` handlers plus their colocated tests); nothing in `src/`, no token, component, icon or animation touched, and no UI surface links to the new endpoints. VRTX3-I-0041's design manifest is empty (`blocks: []`), and the two other defects have no idea linked at all — so "unchanged" here means reviewed and found to have no visual surface, not skipped. The light-mode `--destructive-foreground` issue noted under [Tokens](#tokens) remains open and unclaimed, as does the missing dark-mode toggle under [Theming](#theming).
+
+One edit was made to this file: a dead `./AGENT.md` cross-reference, left by the manual's consolidation to `AGENTS.md` in `600b74f`, now points at the real path. Link only; no design content changed.
 
 ### 2026-08-20 — Sprint VRTX3-S-0033: Three Independent Health Check Endpoints (189360772)
 
