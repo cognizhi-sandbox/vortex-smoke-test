@@ -66,6 +66,11 @@ commands:
       environment this repo targets (agent workspace containers, CI, local dev)
       ships a Chromium.
   extra:
+    doc-links:
+      command: node scripts/check-doc-links.mjs
+      description: >-
+        Fail on a relative markdown link whose target file is missing. Exists because
+        renaming a root doc silently breaks every link to it, across files, invisibly.
     db-generate:
       command: bun run db:generate
       description: Drizzle — generate a migration into drizzle/ after editing db/schema.ts
