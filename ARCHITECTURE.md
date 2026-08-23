@@ -53,9 +53,9 @@ Concrete versions are read from `package.json`: React 19.2, Vite 8.1, Nitro 3.0 
 
 ### Health probe route contract
 
-`routes/api/healthz-smoke-*.ts` (109 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENTS.md](./AGENTS.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
+`routes/api/healthz-smoke-*.ts` (112 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENTS.md](./AGENTS.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
 
-`bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-189360772-a` → `.output/server/_routes/api/healthz_smoke_189360772_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
+`bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-180848429-a` → `.output/server/_routes/api/healthz_smoke_180848429_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
 
 ## Data Flow Example
 
@@ -98,6 +98,16 @@ Four tiers, one worked example each. Commands and how to extend: [README.md](./R
 ---
 
 ## Changelog
+
+### 2026-08-23 — Sprint VRTX3-S-0035: Three Independent Health Check Endpoints (180848429)
+
+Added `routes/api/healthz-smoke-180848429-a.ts`, `-b.ts`, `-c.ts` and their colocated tests — 6 new files, 0 modified source files, no dependency change. Probe-family count under [Routing](#routing) updated 109 → 112, re-counted from the filesystem rather than incremented (224 files under `routes/api/` at planning, 230 once this sprint lands). The build-output example in the same section now names this sprint's route.
+
+`## Key Decisions` is unchanged, and the decomposition is again what the "Health probes duplicate, on purpose" entry predicts: three tasks, each owning two new files, no `depends_on` edge between any pair, and the only file set they could have collided on — the root docs carrying the probe count — held exclusively by the planning ticket and moved 109 → 112 once for the sprint.
+
+The copy-source ambiguity recorded against that entry produced its third harmful instance, and this one bounds the mitigation's cost more precisely than the previous two. VRTX3-I-0042 named `healthz-smoke-913793173-a` and its test — a pre-VRTX3-S-0011 file carrying the wall-clock assertion — while its own risk register described, accurately, the hazard of copying the wrong file from a noisy directory. That rules out the cheapest fix anyone might propose for this decision's downside: it is not a matter of authors being careless, so no amount of care at the canvas end removes it. A 112-file directory of deliberately identical siblings gives a reader no in-band way to tell a safe neighbour from a legacy one; the check has to be a documentation lookup, paid once per sprint by one planning agent. Factoring the family into a shared handler would instead convert every future probe into a shared-file edit — the coupling the probes exist to disprove — paid by every ticket in every sprint. The decision stands and the mitigation stays documentary.
+
+One clarification recorded against the idea rather than the decision: VRTX3-I-0042 puts "No README/ARCHITECTURE update" out of scope, on the grounds that the endpoints are throwaway. The endpoints are; the register that counts them is not. This document's probe count is planning-owned and moves with the filesystem, so it was updated here and named in no implementation ticket. `README.md` carries no probe count and was untouched — the second sprint running that an idea has assumed it does.
 
 ### 2026-08-23 — Sprint VRTX3-S-0034 (`smoke-bugfix-178747715613700`): Three Missing Health Probes
 

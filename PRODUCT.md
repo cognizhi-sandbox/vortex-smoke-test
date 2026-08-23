@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 109 across the family, the most recent being the three restored in VRTX3-S-0034 (`healthz-smoke-bugfix-839771954`, `healthz-smoke-bugfix2-554747562`, `healthz-smoke-bugfix3-238311955`).
+**Current probes:** 112 across the family, the most recent being the three added in VRTX3-S-0035 (`healthz-smoke-180848429-a`, `-b`, `-c`).
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,16 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-23 — Sprint VRTX3-S-0035: Three Independent Health Check Endpoints (180848429)
+
+Added `/api/healthz-smoke-180848429-a`, `-b` and `-c`, each returning `{ok:true,variant:"180848429"}` — three separate leaf units of work with no shared code, built and merged in parallel. Purely additive: 6 new files, 0 modified source files, no new dependency, nothing in `src/`. Probe count 109 → 112, and the "most recent set" pointer under [Features](#features) moves to this trio.
+
+Scope, the feature definition, its user stories and the per-probe acceptance criteria are unchanged. Two corrections recorded against the idea rather than the criteria.
+
+VRTX3-I-0042 lists `README.md` among the documents to leave alone on the grounds that it carries probe-family information. It carries none — this is the second consecutive sprint whose idea has assumed it does. The count lives in `AGENTS.md`, `ARCHITECTURE.md` and this document, all planning-owned, so no implementation ticket carried a documentation change and `README.md` was untouched either way.
+
+The same idea puts documentation updates out of scope entirely, reasoning that "these are throwaway probe endpoints". That reasoning is sound about the endpoints and does not transfer to the count of them. For anyone consuming this document the distinction is the product point: an individual probe is disposable by design, but "how many probes exist, and which are newest" is a claim this document makes to its readers, and a claim that quietly drifts out of date is a defect regardless of how cheap the thing being counted is. The count is re-derived from the filesystem every sprint for that reason, not incremented.
 
 ### 2026-08-23 — Sprint VRTX3-S-0034 (`smoke-bugfix-178747715613700`): Three Missing Health Probes
 
