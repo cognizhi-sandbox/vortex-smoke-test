@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 112 across the family, the most recent being the three added in VRTX3-S-0035 (`healthz-smoke-180848429-a`, `-b`, `-c`).
+**Current probes:** 115 across the family, the most recent being the three added in VRTX3-S-0036 (`healthz-smoke-450228657-a`, `-b`, `-c`).
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,14 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-23 — Sprint VRTX3-S-0036: Three Independent Health Check Endpoints (450228657)
+
+Added `/api/healthz-smoke-450228657-a`, `-b` and `-c`, each returning `{ok:true,variant:"450228657"}` — three separate leaf units of work with no shared code, built and merged in parallel. Purely additive: 6 new files, 0 modified source files, no new dependency, nothing in `src/`. Probe count 112 → 115, and the "most recent set" pointer under [Features](#features) moves to this trio.
+
+Scope, the feature definition, its user stories and the per-probe acceptance criteria are unchanged. One conversion recorded against the idea rather than the criteria: VRTX3-I-0043's AC-7 asks that a named verification script pass. What that criterion is reaching for — each new probe's test runs in the existing suite, and the production server actually carries the route — is already covered by the per-probe criteria above as observable outcomes. Which script produces them is a matter for whoever implements, not a product claim, so the outcome is carried and the script name is not.
+
+This is the second consecutive sprint whose idea declines documentation work on the grounds that probes are throwaway — VRTX3-I-0043 puts an "OpenAPI/docs entry" out of scope. The endpoints are disposable; the count of them is a claim this document makes to its readers, so it is re-derived from the filesystem every sprint rather than incremented, and `README.md` — which carries no probe count — stays untouched.
 
 ### 2026-08-23 — Sprint VRTX3-S-0035: Three Independent Health Check Endpoints (180848429)
 

@@ -53,9 +53,11 @@ Concrete versions are read from `package.json`: React 19.2, Vite 8.1, Nitro 3.0 
 
 ### Health probe route contract
 
-`routes/api/healthz-smoke-*.ts` (112 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENTS.md](./AGENTS.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
+`routes/api/healthz-smoke-*.ts` (115 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENTS.md](./AGENTS.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
 
-`bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-180848429-a` → `.output/server/_routes/api/healthz_smoke_180848429_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
+`bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-450228657-a` → `.output/server/_routes/api/healthz_smoke_450228657_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
+
+Everything else under `routes/api/` is the worked-example set, and it is small: `hello.ts`, `hello.test.ts`, and a `users/` directory of four files (`[id].ts`, `[id].test.ts`, `index.get.ts`, `index.get.test.ts`). There is no `hello.post.ts` — the `.post.ts` suffix is documented in [AGENTS.md § Conventions](./AGENTS.md#conventions) as the method-restriction rule, illustrated with a filename that does not exist here.
 
 ## Data Flow Example
 
@@ -98,6 +100,16 @@ Four tiers, one worked example each. Commands and how to extend: [README.md](./R
 ---
 
 ## Changelog
+
+### 2026-08-23 — Sprint VRTX3-S-0036: Three Independent Health Check Endpoints (450228657)
+
+Added `routes/api/healthz-smoke-450228657-a.ts`, `-b.ts`, `-c.ts` and their colocated tests — 6 new files, 0 modified source files, no dependency change. Probe-family count under [Routing](#routing) updated 112 → 115, re-counted from the filesystem rather than incremented (227 entries under `routes/api/` at planning, 233 once this sprint lands). The build-output example in the same section now names this sprint's route.
+
+The same section gained the non-probe inventory, because re-deriving the count this sprint turned up an error in the previous sprint plan's breakdown: it listed a `hello.post.ts` that does not exist and three `users/` files where there are four. `hello.post.ts` appears in [AGENTS.md § Conventions](./AGENTS.md#conventions) as an illustration of the `.post.ts` method-restriction rule, and was read as inventory. Naming the six real non-probe entries here gives the next re-count something to check against, in the document that already carries the probe number.
+
+`## Key Decisions` is unchanged, and the decomposition is again what the "Health probes duplicate, on purpose" entry predicts: three tasks, each owning two new files, no `depends_on` edge between any pair, and the only file set they could have collided on — the root docs carrying the probe count — held exclusively by the planning ticket and moved 112 → 115 once for the sprint.
+
+The copy-source ambiguity recorded against that entry produced its fourth harmless instance, and this one prices the mitigation more precisely than the harmful ones did. VRTX3-I-0043 named a post-VRTX3-S-0011 file, so nothing had to be corrected — but the same canvas argues independently that a wall-clock assertion on these handlers measures the runtime rather than the code, which is this decision's own reasoning, and still named a template it had not checked against it. The cost of 115 deliberately identical siblings is therefore not a comprehension cost that better authorship would remove; it is a lookup cost, one documentation read per sprint by one planning agent, and it stays flat as the family grows. Factoring the family into a shared handler would instead convert every future probe into a shared-file edit — the coupling the probes exist to disprove — paid by every ticket in every sprint. The decision stands and the mitigation stays documentary.
 
 ### 2026-08-23 — Sprint VRTX3-S-0035: Three Independent Health Check Endpoints (180848429)
 
