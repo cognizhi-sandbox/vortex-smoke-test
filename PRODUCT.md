@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 115 across the family, the most recent being the three added in VRTX3-S-0036 (`healthz-smoke-450228657-a`, `-b`, `-c`).
+**Current probes:** 118 across the family, the most recent being the three restored in VRTX3-S-0037 (`healthz-smoke-bugfix-147016547`, `healthz-smoke-bugfix2-386341015`, `healthz-smoke-bugfix3-1025161533`).
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,12 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-23 — Sprint VRTX3-S-0037: Three Missing Health Probes Restored (bugfix 147016547 / 386341015 / 1025161533)
+
+Restored `/api/healthz-smoke-bugfix-147016547`, `/api/healthz-smoke-bugfix2-386341015` and `/api/healthz-smoke-bugfix3-1025161533`, each returning `{ok:true,variant:"<id>"}` — three separate leaf units of work with no shared code, built and merged in parallel. All three were reported as returning `404`; measurement showed each answering the SPA shell instead, which is the documented behaviour for an unrouted `/api/*` path and does not change what the fix is. Purely additive: 6 new files, 0 modified source files, no new dependency, nothing in `src/`. Probe count 115 → 118, and the "most recent set" pointer under [Features](#features) moves to this trio.
+
+Scope, the feature definition, its user stories and the per-probe acceptance criteria are unchanged. Two conversions recorded against the idea rather than the criteria. VRTX3-I-0044's AC-5 and AC-6 name verification and build commands; what they reach for — the new tests run in the existing suite, and the production server carries the route — is already covered above as observable outcomes, so the outcome is carried and the command names are not. Its AC-8 assigns the probe-count doc update to the fix work; that register is planning-owned and was updated in the same planning pass, so no fix ticket carries it.
 
 ### 2026-08-23 — Sprint VRTX3-S-0036: Three Independent Health Check Endpoints (450228657)
 
