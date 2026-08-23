@@ -1,123 +1,77 @@
 # Agent Guide
 
-`CLAUDE.md` is a symlink to this file.
+`CLAUDE.md` and `GEMINI.md` are symlinks to this file — one authored manual, whatever
+harness is reading it.
 
-See [PRODUCT.md](./PRODUCT.md) for what this project is, [ARCHITECTURE.md](./ARCHITECTURE.md) for the stack and key decisions, and [DESIGN.md](./DESIGN.md) for the visual system.
+**Vortex composes four of the sections below straight into every agent's prompt**:
+`## Build & Run`, `## Test & Validate`, `## Conventions` and `## Gotchas`. Everything
+else — `## Changelog` — is named in the prompt and read from the file on demand. Put an
+instruction an agent must obey in one of those four, and keep accumulated sprint history
+out of them; a heading outside the four costs nothing, a heading inside costs every run.
+
+Commands are NOT listed here. They are declared once, machine-readably, in
+`.vortex/config.yaml` under `commands:`, and reach every agent as a resolved table under
+`## Project commands`. This file explains the ones whose behaviour is not obvious; it
+does not restate them.
+
+See [PRODUCT.md](./PRODUCT.md) for what this project is, [ARCHITECTURE.md](./ARCHITECTURE.md)
+for the stack and key decisions, and [DESIGN.md](./DESIGN.md) for the visual system.
 
 ## Build & Run
 
-### Install
+`start` runs the Vite SPA and the Nitro server together, with HMR for both `.tsx` files
+and server routes.
 
-```bash
-bun install
-```
+**Read the dev-server port from the Vite banner.** `:5000` is the preferred port, not a
+guarantee — contention has pushed it to `:5001`–`:5007` across sprints, and the banner
+says which it took (`Port 5000 is in use, trying another one...`). Measuring against the
+wrong port yields connection errors that look like a broken route. Playwright is separate
+and fixed: `:5178` with `--strictPort`, so a running dev server never absorbs a test run.
 
-### Development Server
+`build` outputs two things: `dist/` (the Vite SPA bundle, static) and
+`.output/server/index.mjs` (the Nitro server). **The server must run under Bun** —
+`db/client.ts` imports the `bun:sqlite` builtin, so `node .output/server/index.mjs` fails
+at import. Under PM2/systemd set `interpreter: "bun"`.
 
-```bash
-bun run dev
-```
-
-Starts both the Vite SPA (frontend) and Nitro server (backend) on:
-
-- Frontend: http://localhost:5000 (also http://0.0.0.0:5000)
-- Backend API: available via proxying in dev mode
-
-Hot module reload (HMR) enabled for both `.tsx` files and server routes.
-
-### Production Build
-
-```bash
-bun run build
-```
-
-Outputs:
-
-- `dist/` — Vite SPA bundle (static files)
-- `.output/server/index.mjs` — Nitro server (run under Bun: `bun .output/server/index.mjs`)
-
----
+`auto-imports.d.ts` does not exist on a fresh clone. The `prebuild` and `pretypecheck`
+hooks generate it; if `tsc` fails on a new machine, run
+`node scripts/ensure-generated-files.mjs` first. Give any new tsc-only script the same hook.
 
 ## Test & Validate
 
-### Unit/Component/API Tests
+`verify` is the browser-free core gate — lint, typecheck and the unit tier. Run it before
+committing. `verify-full` adds the E2E tier and is the Validation gate; prefer it, because
+every environment this repo targets ships a Chromium.
 
-```bash
-bun run test
-```
+The E2E scripts carry a preflight that fails fast with a clear message when the browser is
+genuinely missing. If you hit it, fall back to `verify`, note the skipped E2E in your
+summary, and move on — do **not** retry E2E and do **not** try to install a browser.
 
-Runs Vitest on:
+`test-smoke` is one spec (`e2e/smoke.spec.ts`): the home page loads, the main heading is
+visible, there are no console errors, and `/api/hello` answers.
 
-- `src/**/*.test.tsx` — component/page UI tests (jsdom, React Testing Library)
-- `src/**/*.test.ts` — utility unit tests
-- `routes/**/*.test.ts` — API route integration tests (Node environment, real `H3Event`, no live server)
+The unit tier covers three shapes in one run — `src/**/*.test.tsx` (components and pages,
+jsdom + React Testing Library), `src/**/*.test.ts` (utilities), and `routes/**/*.test.ts`
+(API routes, node environment, a real `H3Event`, no live server). All of them run with
+`NODE_ENV=test` and `VITEST=true`, which makes `db/client.ts` use an in-memory SQLite
+database, so a test run never touches `sqlite.db`.
 
-All test files use `Node_ENV=test` and `VITEST=true` env vars, which makes `db/client.ts` use an in-memory SQLite database (no `sqlite.db` touched).
+| You changed...                            | Add...                                      | Copy from                           |
+| ----------------------------------------- | ------------------------------------------- | ----------------------------------- |
+| A util (`src/utils`)                      | Unit test, `<name>.test.ts`                 | `src/utils/cn.test.ts`              |
+| A component                               | UI test, `<name>.test.tsx`                  | `src/components/ui/button.test.tsx` |
+| A page                                    | UI test, `<name>.test.tsx`                  | `src/pages/index.test.tsx`          |
+| An API route/middleware                   | Integration test, real `H3Event`, no server | `routes/api/hello.test.ts`          |
+| A cross-page/responsive/browser-only flow | Playwright spec in `e2e/`                   | `e2e/home.spec.ts`                  |
 
-### Type Check
+**A route's unit test imports the handler module directly**, so it passes even when Nitro
+never registered the path. Only a live request proves a route is wired — see `## Gotchas`.
 
-```bash
-bun run typecheck
-```
-
-Runs `tsc --build` on the full project (src + server files). TypeScript strict mode enabled.
-
-### Lint
-
-```bash
-bun run lint
-```
-
-Runs ESLint 10 + typescript-eslint, Prettier. Zero-warning policy (`--max-warnings 0`) — the build fails if any warnings exist.
-
-### Full Verification (Core Gate, No Browser)
-
-```bash
-bun run verify
-```
-
-Runs: `lint && typecheck && test` in sequence. Use this locally to validate before pushing.
-
-### E2E Smoke Test (Requires Browser)
-
-```bash
-bun run test:smoke
-```
-
-Runs a single Playwright spec (`e2e/smoke.spec.ts`) against the dev server:
-
-- Home page loads (HTTP 200)
-- Main heading is visible
-- No console errors
-- API `/api/hello` responds
-
-Requires Chromium installed. If missing, fails with a clear message. Fall back to `bun run verify` if Chromium is unavailable locally.
-
-### Full E2E Suite
-
-```bash
-bun run test:e2e
-```
-
-or
-
-```bash
-bun run e2e
-```
-
-Runs all Playwright specs in `e2e/`. Same Chromium requirement as smoke test.
-
-### Full Verification (Complete Gate, Includes E2E)
-
-```bash
-bun run verify:full
-```
-
-Runs: `lint && typecheck && test && test:e2e`. Use this before shipping or if CI is failing on E2E. Requires Chromium.
-
----
+A spec you have not executed is not a test. Never commit a `*.spec.ts` you have not run at
+least once.
 
 ## Conventions
+
 
 ### File-Based Routing
 
@@ -219,23 +173,10 @@ Drizzle ORM with SQLite (`db/schema.ts` + `db/client.ts`):
 | API Route      | `routes/api/hello.test.ts`          | Vitest + H3Event | Mock event, call handler, assert response    |
 | E2E/Smoke      | `e2e/home.spec.ts`                  | Playwright       | Real browser, real dev server, critical path |
 
-New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md#adding-tests) below).
-
----
-
-## Adding Tests
-
-| You changed...                            | Add...                                      | Copy from                           |
-| ----------------------------------------- | ------------------------------------------- | ----------------------------------- |
-| A util (`src/utils`)                      | Unit test, `<name>.test.ts`                 | `src/utils/cn.test.ts`              |
-| A component                               | UI test, `<name>.test.tsx`                  | `src/components/ui/button.test.tsx` |
-| A page                                    | UI test, `<name>.test.tsx`                  | `src/pages/index.test.tsx`          |
-| An API route/middleware                   | Integration test, real `H3Event`, no server | `routes/api/hello.test.ts`          |
-| A cross-page/responsive/browser-only flow | Playwright spec in `e2e/`                   | `e2e/home.spec.ts`                  |
-
----
+New test files: copy a similar existing test file — the table is in `## Test & Validate` above.
 
 ## Gotchas
+
 
 - **A missing `/api/*` route returns `200 text/html`, NOT `404`.** An unmatched API path falls through to the SPA `index.html` shell, in `bun run dev` and in the production build alike (nginx does not change this — `location /api/` proxies straight to Nitro with `proxy_intercept_errors` off). So **status code alone cannot tell a working endpoint from a missing one**, and a `404 → 200` check proves nothing. When adding or verifying an API route, assert on the **response body and `Content-Type`**:
 
@@ -265,8 +206,6 @@ New test files: copy a similar existing test file (see [Adding Tests](./AGENT.md
   - Production server `.output/server/index.mjs` needs Bun runtime (PM2/systemd: set `interpreter: "bun"`)
 - **Branch protection**: Recommended to set required status checks on `vortex/sprint/*` and `vortex/feat/*` branches to enforce CI passing before merge.
 - **Husky hooks**: Pre-commit runs `lint-staged` on staged files only; doesn't run full lint or test. Run `bun run verify` locally before committing to catch issues early.
-
----
 
 ## Changelog
 

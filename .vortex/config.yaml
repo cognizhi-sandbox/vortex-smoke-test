@@ -1,0 +1,74 @@
+# Vortex project configuration.
+#
+# Two things live here, and both feed an agent's composed prompt directly.
+
+# This project has CONSOLIDATED its agent instructions: AGENTS.md is the single
+# authored manual, and CLAUDE.md / GEMINI.md are symlinks to it. Declaring this is
+# what makes `settingSources: []` safe — Vortex composes the manual section-scoped
+# into the project layer, so letting a harness auto-load it as well would deliver
+# the same document twice.
+instructions:
+  source: AGENTS.md
+
+# Project command contract — tier 2.
+#
+# How THIS project installs, builds, tests and validates itself. Slots not listed
+# fall through to the `ts-reactjs-vite-tailwindcss` stack defaults in the Vortex
+# bundle, and then to `unresolved` — which agents report rather than guessing
+# around. The resolved table reaches every agent's prompt under
+# `## Project commands`, for every harness.
+#
+# Three of these correct a stack default that would FAIL here. They are marked.
+# AGENTS.md explains the non-obvious ones; it does not restate the table.
+commands:
+  install: { command: bun install }
+  build:
+    command: bun run build
+    notes: >-
+      `tsc --build && vite build`. Outputs dist/ (SPA) and .output/server/index.mjs
+      (Nitro) — the latter must be run under Bun, not Node.
+  start:
+    command: bun run dev
+    notes: >-
+      Vite + Nitro together. READ THE BANNER for the port — :5000 is only the
+      preferred one, and contention has pushed it to :5001-:5007 across sprints.
+  check-types:
+    command: bun run typecheck
+    notes: >-
+      CORRECTS the stack default. `tsc --build`, never `tsc --noEmit` —
+      tsconfig.node.json is `composite: true` and cannot set noEmit. A pretypecheck
+      hook generates auto-imports.d.ts, which is absent on a fresh clone.
+  check-lint:
+    command: bun run lint
+    notes: ESLint + typescript-eslint, --max-warnings 0. A warning fails the gate.
+  test-unit:
+    command: bun run test
+    notes: >-
+      CORRECTS the stack default. `bun --bun vitest run`, never plain vitest —
+      db/client.ts imports the `bun:sqlite` builtin and Vitest's worker pool
+      otherwise spawns Node children that cannot resolve it.
+  test-e2e:
+    command: bun run test:e2e
+    notes: >-
+      CORRECTS the stack default. The script carries a preflight that fails fast
+      with a clear message when Chromium is genuinely missing — do NOT retry, and
+      do NOT try to install a browser. Playwright uses :5178 with --strictPort.
+  test-smoke:
+    command: bun run test:smoke
+    notes: One spec (e2e/smoke.spec.ts) — home loads, heading renders, /api/hello answers.
+  verify:
+    command: bun run verify
+    notes: The browser-free core gate — lint + typecheck + unit. Safe in any environment.
+  verify-full:
+    command: bun run verify:full
+    notes: >-
+      `verify` plus the E2E tier. This is the Validation gate. Prefer it: every
+      environment this repo targets (agent workspace containers, CI, local dev)
+      ships a Chromium.
+  extra:
+    db-generate:
+      command: bun run db:generate
+      description: Drizzle — generate a migration into drizzle/ after editing db/schema.ts
+    db-studio:
+      command: bun run db:studio
+      description: Open Drizzle Studio against the local sqlite.db
