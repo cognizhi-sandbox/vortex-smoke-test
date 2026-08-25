@@ -77,3 +77,11 @@ commands:
     db-studio:
       command: bun run db:studio
       description: Open Drizzle Studio against the local sqlite.db
+
+# Spec-driven development (OpenSpec). Turning this on makes Vortex provision
+# `openspec/` in this repo, have Planning author one validated OpenSpec change per
+# idea, gate the planning ticket on `openspec validate --strict`, stamp task
+# checkboxes server-side at each ticket merge, and archive completed changes into
+# `openspec/specs/` at sprint close — the durable, per-capability spec of record.
+specDriven:
+  enabled: true
