@@ -28,3 +28,14 @@ tests out of a family that grows every sprint" rather than a pair of numbers tha
 
 Recorded by the planning agent, VRTX3-S-0042 (change
 `vrtx3-i-0051-smoke-178768361938065-3-independent-endpoints-61`).
+
+**Drifted again on the next sprint, exactly as predicted.** Counted on
+`vortex/sprint/vrtx3-s-0043-5e7e01b2` at `4cc3a01`, during VRTX3-S-0043 planning: **133** handlers
+and 133 colocated tests, 268 `.ts` files under `routes/api/`, still **47** carrying
+`expect(elapsed).toBeLessThan(100)`. So the ratio is now 47 of 133.
+
+This entry is deliberately not being maintained as a running figure — re-stamping it every sprint is
+the exact upkeep the "Root docs carry no per-sprint counts" decision exists to avoid, and the
+denominator is derivable from the filesystem in one command. The durable statement stands: **47
+legacy tests out of a family that grows every sprint.** Treat any specific denominator here as the
+date-stamped observation it is, not as a number to trust or to update.
