@@ -44,6 +44,12 @@ Dark-mode tokens exist (`.dark` class) but no toggle is wired up — nothing set
 
 ## Changelog
 
+### 2026-08-25 — Sprint VRTX3-S-0038: Three Independent Health Check Endpoints (992401223)
+
+No design-system change. The sprint is backend-only (three `routes/api/` handlers plus their colocated tests); nothing in `src/`, no token, component, icon or animation touched, and no UI surface links to the new endpoints. VRTX3-I-0047's design manifest is empty (`blocks: []`), its Wireframes section is empty, and the idea puts UI explicitly out of scope — "No frontend, UI, navigation or documentation-site changes." So "unchanged" here means reviewed and found to have no visual surface, not skipped, and nothing was exported to `artifacts/VRTX3-S-0038/design/` because there was nothing to export. The light-mode `--destructive-foreground` issue noted under [Tokens](#tokens) remains open and unclaimed, as does the missing dark-mode toggle under [Theming](#theming).
+
+Worth noting for the first spec-driven sprint: the `health-probes` capability spec carries no UI requirement, and the delta model means a later sprint that gives probes a visual surface would add one rather than modify a placeholder. Neither open issue above has a spec covering it, so both remain documented here only.
+
 ### 2026-08-23 — Sprint VRTX3-S-0036: Three Independent Health Check Endpoints (450228657)
 
 No design-system change. The sprint is backend-only (three `routes/api/` handlers plus their colocated tests); nothing in `src/`, no token, component, icon or animation touched, and no UI surface links to the new endpoints. VRTX3-I-0043's design manifest is empty (`blocks: []`), its Wireframes section is empty, and the idea puts UI explicitly out of scope — "No UI. Nothing is rendered, linked or navigable — this is API-only." So "unchanged" here means reviewed and found to have no visual surface, not skipped. The light-mode `--destructive-foreground` issue noted under [Tokens](#tokens) remains open and unclaimed, as does the missing dark-mode toggle under [Theming](#theming).
