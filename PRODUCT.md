@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 121 across the family, the most recent being the three added in VRTX3-S-0038 (`healthz-smoke-992401223-a`, `-b`, `-c`).
+**Current probes:** 124 across the family, the most recent being the three added in VRTX3-S-0039 (`healthz-smoke-812788042-a`, `-b`, `-c`).
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,14 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-25 — Sprint VRTX3-S-0039: Three Independent Health Check Endpoints (812788042)
+
+Added `/api/healthz-smoke-812788042-a`, `-b` and `-c`, each returning `{ok:true,variant:"812788042"}` — three separate leaf units of work with no shared code, built and merged in parallel. Purely additive: 6 new files, 0 modified source files, no new dependency, nothing in `src/`. Probe count 121 → 124, and the "most recent set" pointer under [Features](#features) moves to this trio.
+
+Scope, the feature definition, its user stories and the per-probe acceptance criteria are unchanged. This is the second spec-driven sprint, and the first in which the `health-probes` capability was extended rather than created: the change adds three requirements to the existing spec of record and restates none of the 121 already there. For a product feature that ships three instances a sprint, that is the property worth having — the cost of writing the contract down does not grow with the number of instances already shipped.
+
+One conversion recorded against the idea rather than the criteria: VRTX3-I-0048's AC-8 names a verification script and its three constituent tools. What it reaches for — the new tests run in the existing suite with no new lint warning or type error — is already covered above as observable outcomes, so the outcome is carried and the command names are not.
 
 ### 2026-08-25 — Sprint VRTX3-S-0038: Three Independent Health Check Endpoints (992401223)
 
