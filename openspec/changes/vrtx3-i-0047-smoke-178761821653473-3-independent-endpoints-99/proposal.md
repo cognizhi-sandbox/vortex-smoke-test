@@ -1,0 +1,42 @@
+# Three independent health probes for variant 992401223
+
+## Why
+
+Adding a self-contained HTTP endpoint to this service currently goes through a full planning
+cycle, even when the whole change is one file that depends on nothing else. Three such
+endpoints — `/api/healthz-smoke-992401223-a`, `-b` and `-c` — are blocked on that overhead.
+
+Because the three arrive as one undivided request, they are also serialised for no reason:
+nothing in any of them depends on either of the others. The sprint owner who needs a trivial
+endpoint shipped, and the delivery team that could take the three concurrently, both pay for
+that coupling.
+
+The probe family is the repository's standing evidence that independent units of work merge in
+parallel without conflict. This change adds three more instances of it.
+
+## What Changes
+
+- **ADDED** `GET /api/healthz-smoke-992401223-a`, returning `{"ok": true, "variant": "992401223"}`
+  with a JSON content type.
+- **ADDED** `GET /api/healthz-smoke-992401223-b`, same contract.
+- **ADDED** `GET /api/healthz-smoke-992401223-c`, same contract.
+
+Each probe is one new handler file under `routes/api/` plus one colocated `.test.ts`. No shared
+helper, factory, constants file or barrel export is introduced, and no probe imports another.
+
+Explicitly not changing: authentication or authorization on probes, non-`GET` method handling,
+request params or bodies, database access, any frontend surface, observability wiring, CI or
+build configuration, and the ~118 existing `healthz-smoke-*` routes.
+
+## Impact
+
+- **Affected capability:** `health-probes` (new capability spec — the behaviour has been shipped
+  118 times but was never written down as a spec of record).
+- **Affected code:** six new files under `routes/api/`. Zero existing source files modified, zero
+  new dependencies, nothing under `src/`, no migration.
+- **Affected consumers:** none. Nothing in the repository reads a probe response; the endpoints
+  are called by operators and smoke checks outside it.
+- **Risk:** low and bounded. The diff is additive, so there is no regression path into current
+  behaviour. The only shared surface the three tickets could have collided on — the root
+  documents carrying the probe-family count — is held by the planning ticket and moved once,
+  118 → 121.

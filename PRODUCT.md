@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 118 across the family, the most recent being the three restored in VRTX3-S-0037 (`healthz-smoke-bugfix-147016547`, `healthz-smoke-bugfix2-386341015`, `healthz-smoke-bugfix3-1025161533`).
+**Current probes:** 121 across the family, the most recent being the three added in VRTX3-S-0038 (`healthz-smoke-992401223-a`, `-b`, `-c`).
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
@@ -67,6 +67,14 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 ---
 
 ## Changelog
+
+### 2026-08-25 — Sprint VRTX3-S-0038: Three Independent Health Check Endpoints (992401223)
+
+Added `/api/healthz-smoke-992401223-a`, `-b` and `-c`, each returning `{ok:true,variant:"992401223"}` — three separate leaf units of work with no shared code, built and merged in parallel. Purely additive: 6 new files, 0 modified source files, no new dependency, nothing in `src/`. Probe count 118 → 121, and the "most recent set" pointer under [Features](#features) moves to this trio.
+
+Scope, the feature definition, its user stories and the per-probe acceptance criteria are unchanged. What changed is where the contract is written down, and it is worth stating as a product fact rather than a process note. This is the first sprint in which the probe behaviour is specified as a versioned requirement — an OpenSpec `health-probes` capability with RFC-2119 requirements and GIVEN/WHEN/THEN scenarios — instead of only as the criteria in this section. The family has shipped 118 times against criteria that lived here and nowhere machine-checkable; each ticket criterion now derives from a named scenario, so a QA verdict points at a requirement rather than at a paragraph. The criteria above stay as the product-level statement and did not need rewording to be derivable, which is the useful confirmation.
+
+One conversion recorded against the idea rather than the criteria: VRTX3-I-0047's AC-8 names two commands (a verification script and a build). What it reaches for — the new tests run in the existing suite, and the production server carries the three routes — is already covered above as observable outcomes, so the outcome is carried and the command names are not.
 
 ### 2026-08-23 — Sprint VRTX3-S-0037: Three Missing Health Probes Restored (bugfix 147016547 / 386341015 / 1025161533)
 
