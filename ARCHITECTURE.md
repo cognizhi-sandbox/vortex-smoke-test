@@ -73,9 +73,9 @@ OpenSpec CLI's strict mode before its planning ticket closes.
 
 ### Health probe route contract
 
-`routes/api/healthz-smoke-*.ts` (121 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENTS.md](./AGENTS.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
+`routes/api/healthz-smoke-*.ts` (124 files) each export a single default `defineHandler` from `nitro/h3` that takes no parameters and returns a literal `{ ok: true, variant: "<id>" }`. No `event` access, no imports beyond `nitro/h3`, no method guard — so every HTTP verb gets the same body (see [AGENTS.md](./AGENTS.md#gotchas)). The filename **is** the URL contract: `routes/api/x.ts` → `/api/x`, with no registration step, so a filename typo is a wrong URL with no other symptom.
 
-`bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-992401223-a` → `.output/server/_routes/api/healthz_smoke_992401223_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
+`bun run build` emits one module per route under `.output/server/_routes/api/`, dashes converted to underscores — `/api/healthz-smoke-812788042-a` → `.output/server/_routes/api/healthz_smoke_812788042_a.mjs`. That output is how you confirm a route compiled into the production server; the colocated `*.test.ts` files are excluded from it by `nitro({ ignore })`.
 
 Everything else under `routes/api/` is the worked-example set, and it is small: `hello.ts`, `hello.test.ts`, and a `users/` directory of four files (`[id].ts`, `[id].test.ts`, `index.get.ts`, `index.get.test.ts`). There is no `hello.post.ts` — the `.post.ts` suffix is documented in [AGENTS.md § Conventions](./AGENTS.md#conventions) as the method-restriction rule, illustrated with a filename that does not exist here.
 
@@ -121,6 +121,18 @@ Four tiers, one worked example each. Commands and how to extend: [README.md](./R
 ---
 
 ## Changelog
+
+### 2026-08-25 — Sprint VRTX3-S-0039: Three Independent Health Check Endpoints (812788042)
+
+Added `routes/api/healthz-smoke-812788042-a.ts`, `-b.ts`, `-c.ts` and their colocated tests — 6 new files, 0 modified source files, no dependency change. Probe-family count under [Routing](#routing) updated 121 → 124, re-counted from the filesystem rather than incremented. Both figures the previous entry disambiguated still hold and still differ: `routes/api/` **lists 245 entries** at planning (251 once this sprint lands) but **holds 248 `.ts` files** (254 after), because `users/` is one entry and four files. Checked against the non-probe inventory both ways: 121 + 121 + `hello.ts` + `hello.test.ts` + `users/` = 245 entries, and the same set counted recursively = 248 files. The build-output example in the same section now names this sprint's route.
+
+The [Specifications](#specifications) section needed no change, and that is the sprint's structural finding. VRTX3-S-0038 created both the section and the `health-probes` capability; this is the first change to **extend** an existing capability, and the delta model behaved as the "Specs are deltas, not restatements" decision says it should — the change file carries three `## ADDED Requirements` and reproduces none of the 121 requirements already in `openspec/specs/health-probes/spec.md`. For a repository that adds three instances of the same contract every sprint, the cost of the spec staying correct is therefore flat rather than proportional to the family size. The platform assembles the merged spec of record at close; nothing under `openspec/specs/` was written by hand.
+
+`## Key Decisions` is unchanged, and the decomposition is again what the "Health probes duplicate, on purpose" entry predicts: three tasks, each owning two new files, no `depends_on` edge between any pair, and the only file set they could have collided on — the root docs carrying the probe count — held exclusively by the planning ticket and moved 121 → 124 once for the sprint.
+
+The copy-source ambiguity recorded against that entry produced its sixth harmless instance, and this one is worth keeping for what it says about the two halves of a probe pair. VRTX3-I-0048 names a **handler** (`healthz-smoke-1065915107-a.ts`) and a **test** (`healthz-smoke-1065915107-c.test.ts`) from the same post-VRTX3-S-0011 triple. Only tests carry the wall-clock case, so citing a handler carries no risk at all and citing a test is the whole exposure — a distinction VRTX3-S-0037 first recorded and this sprint is the first to see exercised on both halves at once. Both were diffed and both are clean. The mitigation stays documentary and costs one diff per sprint by one planning agent, the same diff whether the pointer turns out right or wrong; factoring the family into a shared handler would instead convert every future probe into a shared-file edit, paid by every ticket in every sprint.
+
+The filename-is-the-URL contract was re-measured live before implementation for the twenty-ninth consecutive sprint: all three unwritten paths returned `200 text/html` (the 949-byte SPA shell), while the control `/api/healthz-smoke-528856326-a` returned `200 application/json` (33 bytes). Confirm a route compiled by looking for its module under `.output/server/_routes/api/`.
 
 ### 2026-08-25 — Sprint VRTX3-S-0038: Three Independent Health Check Endpoints (992401223)
 

@@ -44,6 +44,12 @@ Dark-mode tokens exist (`.dark` class) but no toggle is wired up — nothing set
 
 ## Changelog
 
+### 2026-08-25 — Sprint VRTX3-S-0039: Three Independent Health Check Endpoints (812788042)
+
+No design-system change. The sprint is backend-only (three `routes/api/` handlers plus their colocated tests); nothing in `src/`, no token, component, icon or animation touched, and no UI surface links to the new endpoints. VRTX3-I-0048's design manifest is empty (`blocks: []`), its Wireframes section is empty, and the idea puts UI explicitly out of scope — "Any UI, page or navigation change" is listed under Out of Scope. So "unchanged" here means reviewed and found to have no visual surface, not skipped, and nothing was exported to `artifacts/VRTX3-S-0039/design/` because there was nothing to export. The light-mode `--destructive-foreground` issue noted under [Tokens](#tokens) remains open and unclaimed, as does the missing dark-mode toggle under [Theming](#theming).
+
+Both open issues have now gone unclaimed across two spec-driven sprints. Worth stating once here rather than repeating: neither has a requirement in any OpenSpec capability, so nothing in `openspec/` will surface them at a QA gate — this document is their only record, and they will stay open until a sprint takes them as scope.
+
 ### 2026-08-25 — Sprint VRTX3-S-0038: Three Independent Health Check Endpoints (992401223)
 
 No design-system change. The sprint is backend-only (three `routes/api/` handlers plus their colocated tests); nothing in `src/`, no token, component, icon or animation touched, and no UI surface links to the new endpoints. VRTX3-I-0047's design manifest is empty (`blocks: []`), its Wireframes section is empty, and the idea puts UI explicitly out of scope — "No frontend, UI, navigation or documentation-site changes." So "unchanged" here means reviewed and found to have no visual surface, not skipped, and nothing was exported to `artifacts/VRTX3-S-0038/design/` because there was nothing to export. The light-mode `--destructive-foreground` issue noted under [Tokens](#tokens) remains open and unclaimed, as does the missing dark-mode toggle under [Theming](#theming).
