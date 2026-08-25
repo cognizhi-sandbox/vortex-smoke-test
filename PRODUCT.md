@@ -52,7 +52,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - The probe imports nothing from `db/`, reads nothing from `event.context`, and imports no sibling probe. No shared helper, factory, constants file or barrel export is introduced for it.
 - Adding a probe modifies no existing route, page, middleware, schema or migration — the diff is new files only.
 
-**Current probes:** 124 across the family, the most recent being the three added in VRTX3-S-0039 (`healthz-smoke-812788042-a`, `-b`, `-c`).
+**How many exist:** the family grows by a few probes most sprints and none are retired, so this document deliberately carries no count and no "most recent" pointer — both are claims that would be stale the sprint after they were written. The live inventory is `routes/api/healthz-smoke-*.ts`; the contract each probe satisfies is written down per probe in [`openspec/specs/health-probes/`](./openspec/specs/health-probes/spec.md).
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
 
