@@ -87,7 +87,7 @@ The substitution is not conditional on how healthy the named file looks. 33 of t
 that subdirectory has roughly even odds of landing on one, and two prior sprints (VRTX3-I-0037,
 VRTX3-I-0041) did exactly that and pinned the timing shape into an acceptance criterion. A
 wall-clock assertion on a constant-returning handler measures the CI runner, not the code; the
-property it gropes for — the handler performs no I/O — is guaranteed by the interface contract in
+property it reaches for — the handler performs no I/O — is guaranteed by the interface contract in
 § D5 instead. New tests get a single body assertion.
 
 ### D4 — No root document is updated
