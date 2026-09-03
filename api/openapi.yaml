@@ -1,0 +1,442 @@
+openapi: 3.0.3
+info:
+  title: Petstore Legacy API
+  description: Order processing, payment, and fulfillment API
+  version: 1.0.0
+  contact:
+    name: Operations Team
+  license:
+    name: Internal Use Only
+
+servers:
+  - url: https://api.example.test/petstore/v1
+    description: Production API
+  - url: https://staging-api.example.test/petstore/v1
+    description: Staging API
+  - url: http://localhost:8080/petstore/v1
+    description: Local development
+
+tags:
+  - name: Orders
+    description: Order processing and approval
+  - name: Payments
+    description: Payment validation and processing
+  - name: Refunds
+    description: Refund eligibility and processing
+
+paths:
+  /orders:
+    post:
+      tags:
+        - Orders
+      summary: Create order
+      description: Create a new order with validation and approval checks
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Invalid order data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '402':
+          description: Payment declined (card validation failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /orders/{orderId}:
+    get:
+      tags:
+        - Orders
+      summary: Get order details
+      operationId: getOrder
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Order not found
+
+  /orders/{orderId}/cancel:
+    post:
+      tags:
+        - Orders
+      summary: Cancel order
+      description: Cancel an order if eligible (PENDING or APPROVED status)
+      operationId: cancelOrder
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order cancelled successfully
+        '400':
+          description: Order cannot be cancelled (not in PENDING or APPROVED status)
+        '404':
+          description: Order not found
+
+  /orders/{orderId}/approval:
+    get:
+      tags:
+        - Orders
+      summary: Check if order requires approval
+      description: Check whether an order requires manager approval based on total and customer tier
+      operationId: checkApprovalRequirement
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Approval requirement check result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalCheckResult'
+        '404':
+          description: Order not found
+
+  /orders/{orderId}/shipping:
+    get:
+      tags:
+        - Orders
+      summary: Calculate shipping cost
+      description: Calculate shipping cost based on order total and item count
+      operationId: calculateShipping
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Shipping cost calculation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShippingCost'
+        '404':
+          description: Order not found
+
+  /payments/validate-card:
+    post:
+      tags:
+        - Payments
+      summary: Validate credit card
+      description: Validate credit card number (null check, length, brand)
+      operationId: validateCard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardValidationRequest'
+      responses:
+        '200':
+          description: Card validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardValidationResult'
+        '400':
+          description: Invalid request
+
+  /payments/validate-expiry:
+    post:
+      tags:
+        - Payments
+      summary: Validate card expiry
+      description: Validate that card has not expired
+      operationId: validateExpiry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardExpiryRequest'
+      responses:
+        '200':
+          description: Card expiry validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardExpiryResult'
+        '400':
+          description: Invalid request
+
+  /refunds/check-eligibility:
+    post:
+      tags:
+        - Refunds
+      summary: Check refund eligibility
+      description: Check if order is eligible for refund (within 90 days of settlement)
+      operationId: checkRefundEligibility
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundEligibilityRequest'
+      responses:
+        '200':
+          description: Refund eligibility check result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundEligibilityResult'
+        '400':
+          description: Invalid request
+
+components:
+  schemas:
+    OrderCreateRequest:
+      type: object
+      required:
+        - customerId
+        - items
+        - total
+      properties:
+        customerId:
+          type: string
+          description: Unique customer identifier
+        items:
+          type: array
+          description: List of order line items
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        total:
+          type: number
+          format: double
+          description: Total order amount (USD)
+        cardNumber:
+          type: string
+          description: Credit card number (required for payment)
+        cardExpiry:
+          type: string
+          description: Card expiry in MM/YY format
+        cardCvv:
+          type: string
+          description: Card CVV (not validated in this system)
+
+    OrderItem:
+      type: object
+      required:
+        - productId
+        - quantity
+        - price
+      properties:
+        productId:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        price:
+          type: number
+          format: double
+
+    Order:
+      type: object
+      properties:
+        orderId:
+          type: string
+        customerId:
+          type: string
+        customerTier:
+          type: string
+          enum:
+            - STANDARD
+            - PLATINUM
+        status:
+          type: string
+          enum:
+            - PENDING
+            - APPROVED
+            - FULFILLED
+            - SHIPPED
+            - CANCELLED
+        total:
+          type: number
+          format: double
+        shippingCost:
+          type: number
+          format: double
+        requiresApproval:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+
+    ApprovalCheckResult:
+      type: object
+      properties:
+        orderId:
+          type: string
+        requiresApproval:
+          type: boolean
+        reason:
+          type: string
+          description: "ABOVE_STANDARD_THRESHOLD ($5000) or ABOVE_PLATINUM_THRESHOLD ($10000) or NONE"
+        approvalThreshold:
+          type: number
+          format: double
+          description: Applicable approval threshold for this customer tier
+
+    ShippingCost:
+      type: object
+      properties:
+        orderId:
+          type: string
+        shippingCost:
+          type: number
+          format: double
+          description: Calculated shipping cost (USD)
+        isFreeShipping:
+          type: boolean
+          description: True if order qualifies for free shipping ($75+)
+        itemCount:
+          type: integer
+          description: Number of items in order
+        baseThreshold:
+          type: number
+          format: double
+          description: Free shipping threshold ($75.00)
+
+    CardValidationRequest:
+      type: object
+      required:
+        - cardNumber
+      properties:
+        cardNumber:
+          type: string
+          description: 13-16 digit credit card number
+
+    CardValidationResult:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        reason:
+          type: string
+          description: "VALID, NULL_CARD, SHORT_CARD, UNSUPPORTED_BRAND, or other"
+        brand:
+          type: string
+          enum:
+            - VISA
+            - MASTERCARD
+            - OTHER
+          description: Detected card brand (4=Visa, 5=Mastercard, others rejected)
+        length:
+          type: integer
+          description: Card number length
+
+    CardExpiryRequest:
+      type: object
+      required:
+        - expiryMonth
+        - expiryYear
+      properties:
+        expiryMonth:
+          type: integer
+          minimum: 1
+          maximum: 12
+        expiryYear:
+          type: integer
+          description: 4-digit year (e.g., 2026)
+
+    CardExpiryResult:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        reason:
+          type: string
+          description: "VALID, EXPIRED_YEAR, EXPIRED_MONTH, or other"
+        expiryMonth:
+          type: integer
+        expiryYear:
+          type: integer
+        currentYear:
+          type: integer
+        currentMonth:
+          type: integer
+
+    RefundEligibilityRequest:
+      type: object
+      required:
+        - orderId
+        - settlementDate
+      properties:
+        orderId:
+          type: string
+        settlementDate:
+          type: string
+          format: date
+          description: Date transaction settled
+
+    RefundEligibilityResult:
+      type: object
+      properties:
+        orderId:
+          type: string
+        eligible:
+          type: boolean
+        daysSinceSettlement:
+          type: integer
+        refundWindow:
+          type: integer
+          description: "Refund window in days (90 days)"
+        expiresAt:
+          type: string
+          format: date
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+security:
+  - ApiKeyAuth: []

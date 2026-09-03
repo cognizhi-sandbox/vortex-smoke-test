@@ -3,6 +3,80 @@
 `CLAUDE.md` and `GEMINI.md` are symlinks to this file — one authored manual, whatever
 harness is reading it.
 
+## Legacy System Extraction — SX-0003
+
+This section documents the specification extraction from the legacy Petstore J2EE application (source in `legacy-source/`). See `build/manifest.yaml` for the complete extraction manifest, `api/openapi.yaml` for the API spec, and individual capability specs under `openspec/changes/sx-*/`.
+
+### Extracted Capabilities
+
+**Order Approval** (`order-approval`)
+
+- Two-tier approval thresholds: $5,000 (standard), $10,000 (platinum)
+- Bare literals with no documented business rationale
+- Tier assignment mechanism not visible in source
+
+**Card Validation** (`card-validation`)
+
+- Three-stage pipeline: null check → length check (≥13 digits) → brand check (Visa/Mastercard only)
+- American Express dropped in 2003 (reason undocumented)
+- No Luhn algorithm validation
+- PCI-DSS: Store only last 4 digits in database
+
+**Card Expiry** (`card-expiry`)
+
+- Year and month validation
+- Current month interpretation: valid through end of current month
+- No grace period after month end
+- Timezone handling undefined
+
+**Shipping Cost** (`shipping-cost`)
+
+- Free shipping: Orders ≥ $75.00
+- Charged: $4.95 base + $0.75 per item (for orders < $75)
+- All values are bare literals with no documented rationale
+- Javadoc comment contradicts implementation
+
+**Refund Eligibility** (`refund-eligibility`)
+
+- 90-day window from payment settlement date
+- Settlement date definition unclear
+- Conservative vs industry norms (typical: 120-180 days)
+
+### Key Decisions for Rebuild
+
+1. **Pure Functions, Not Classes**: All business logic implemented as stateless functions (easier to test, parallelize, reason about)
+2. **Externalized Configuration**: All hardcoded thresholds moved to config files; enables business changes without deployment
+3. **PCI-DSS Compliance**: Full card numbers never stored; only last 4 digits + brand + expiry
+4. **SQLite via Drizzle**: Database schema in `architecture/schema.sql`; migrations in `drizzle/`
+5. **OpenAPI Contract**: Full spec in `api/openapi.yaml`; enables API-first development
+
+### Rebuild Effort Estimate
+
+- **Phase 1 (Design & Requirements)**: 1 week (business validation of bare literals)
+- **Phase 2 (Implementation)**: 2-3 weeks per capability
+- **Phase 3 (Testing)**: 1 week (unit + integration + E2E)
+- **Phase 4 (Deployment)**: 1 week (staged rollout with monitoring)
+- **Total**: 8-12 weeks with 3-4 backend engineers, 2 QA, 1 DevOps, stakeholders
+
+### Known Ambiguities Requiring Business Review
+
+- Why $5,000 and $10,000 approval thresholds? (Historical? Risk-based? Competitive?)
+- How is PLATINUM tier assigned? (Customer request? Revenue? Manual?)
+- Why Visa/Mastercard only? (Why was Amex dropped in 2003?)
+- Why $75.00 free shipping threshold? (Margin target? Cost recovery?)
+- Why $4.95 + $0.75/item shipping charges? (Actual costs? Markups?)
+- Why 90-day refund window? (Card association rules? Business policy?)
+
+### References
+
+- **Extraction Manifest**: `build/manifest.yaml`
+- **OpenAPI Spec**: `api/openapi.yaml`
+- **Database Schema**: `architecture/schema.sql`
+- **ERD**: `architecture/erd.mermaid`
+- **Capability Specs**: See `openspec/changes/sx-*/specs/*/spec.md` for formal specifications
+
+---
+
 **Vortex composes four of the sections below straight into every agent's prompt**:
 `## Build & Run`, `## Test & Validate`, `## Conventions` and `## Gotchas`. Everything
 else — `## Changelog` — is named in the prompt and read from the file on demand. Put an

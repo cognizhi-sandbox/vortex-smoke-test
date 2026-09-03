@@ -1,0 +1,235 @@
+---
+extraction:
+  id: SX-0003
+  date: '2026-09-03'
+  source: Legacy petstore J2EE application
+  source_db: Oracle (PETSTORE)
+  extracted_by: Automated spec extraction pipeline
+  version: '1.0'
+
+capabilities:
+  - key: order-approval
+    name: Order Approval Logic
+    description: Two-tier approval thresholds based on customer tier
+    status: EXTRACTED
+    confidence: HIGH
+    records: 2
+    files:
+      proposal: openspec/changes/sx-order-approval/proposal.md
+      design: openspec/changes/sx-order-approval/design.md
+      tasks: openspec/changes/sx-order-approval/tasks.md
+      spec: openspec/changes/sx-order-approval/specs/order-approval/spec.md
+    key_findings:
+      - $5000 standard threshold (bare literal, no documented rationale)
+      - $10000 platinum tier threshold (2x multiplier, no documented rationale)
+      - Bare literals with no external configuration
+      - Tier assignment mechanism not visible in extracted code
+    effort_estimate: 33-37 hours
+
+  - key: card-validation
+    name: Credit Card Validation
+    description: Three-stage validation (null check, length, brand)
+    status: EXTRACTED
+    confidence: HIGH
+    records: 3
+    files:
+      proposal: openspec/changes/sx-card-validation/proposal.md
+      design: openspec/changes/sx-card-validation/design.md
+      tasks: openspec/changes/sx-card-validation/tasks.md
+      spec: openspec/changes/sx-card-validation/specs/card-validation/spec.md
+    key_findings:
+      - Null/empty rejection required
+      - Minimum 13-digit length requirement (conservatively low)
+      - Visa/Mastercard only (American Express dropped in 2003, reason undocumented)
+      - First-digit-only brand detection (limited, doesn't validate full card numbers)
+      - No Luhn algorithm validation
+    effort_estimate: 47 hours
+
+  - key: card-expiry
+    name: Card Expiry Validation
+    description: Year and month expiry validation with current-month edge case
+    status: EXTRACTED
+    confidence: HIGH
+    records: 2
+    files:
+      proposal: openspec/changes/sx-card-expiry/proposal.md
+      design: openspec/changes/sx-card-expiry/design.md
+      tasks: openspec/changes/sx-card-expiry/tasks.md
+      spec: openspec/changes/sx-card-expiry/specs/card-expiry/spec.md
+    key_findings:
+      - Year check first, then month check (order of operations important)
+      - Current month boundary interpretation unclear (is current month valid?)
+      - Timezone handling not specified
+      - No grace period after month end
+    effort_estimate: 43 hours
+
+  - key: shipping-cost
+    name: Shipping Cost Calculation
+    description: Two-model system (free above $75, charged $4.95 + $0.75/item below)
+    status: EXTRACTED
+    confidence: HIGH
+    records: 2
+    files:
+      proposal: openspec/changes/sx-shipping-cost/proposal.md
+      design: openspec/changes/sx-shipping-cost/design.md
+      tasks: openspec/changes/sx-shipping-cost/tasks.md
+      spec: openspec/changes/sx-shipping-cost/specs/shipping-cost/spec.md
+    key_findings:
+      - $75.00 free shipping threshold (bare literal, no documented rationale)
+      - $4.95 base fee + $0.75 per-item (bare literals, undocumented)
+      - Javadoc comment contradicts implementation
+      - Rounding policy not specified for fractional cents
+      - No regional or carrier variants
+    effort_estimate: 28-30 hours
+
+  - key: refund-eligibility
+    name: Refund Eligibility Check
+    description: 90-day refund window post-settlement
+    status: EXTRACTED
+    confidence: HIGH
+    records: 1
+    files:
+      proposal: openspec/changes/sx-refund-eligibility/proposal.md
+      design: openspec/changes/sx-refund-eligibility/design.md
+      tasks: openspec/changes/sx-refund-eligibility/tasks.md
+      spec: openspec/changes/sx-refund-eligibility/specs/refund-eligibility/spec.md
+    key_findings:
+      - 90-day window is bare literal (no documented rationale)
+      - Conservative vs industry norms (typically 120-180 days)
+      - Settlement date definition unclear
+      - Chargeback period not specified
+    effort_estimate: 10 hours
+
+infrastructure:
+  database:
+    type: Oracle
+    instance: PETSTORE
+    host: legacy-db
+    port: 1521
+    jdbc_url: jdbc:oracle:thin:@legacy-db:1521:PETSTORE
+    pool_size: 25
+    user: petstore_app
+    password: REDACTED
+    migration_target: SQLite (better-sqlite3)
+
+  payment_gateway:
+    provider: External gateway (https://gateway.example.test/v1)
+    timeout_ms: 8000
+    api_key_storage: environment variable or secret manager (not properties file)
+    recommendation: Migrate from plain-text properties to secure secret management
+
+  session:
+    timeout_minutes: 30
+    authentication: FORM-based
+    framework: J2EE Servlet
+    migration_target: Modern HTTP session or stateless JWT
+
+apis:
+  - path: /orders
+    method: POST
+    description: Create order with approval check
+    source: OrderRules.requiresApproval()
+
+  - path: /orders/{id}/approval
+    method: GET
+    description: Check approval requirement
+    source: OrderRules.requiresApproval()
+
+  - path: /orders/{id}/shipping
+    method: GET
+    description: Calculate shipping cost
+    source: OrderRules.shippingCost()
+
+  - path: /orders/{id}/cancel
+    method: POST
+    description: Cancel order if eligible
+    source: OrderRules.canCancel()
+
+  - path: /payments/validate-card
+    method: POST
+    description: Validate card number (null, length, brand)
+    source: CreditCardValidator.isValidCardNumber()
+
+  - path: /payments/validate-expiry
+    method: POST
+    description: Validate card expiry
+    source: CreditCardValidator.isCardExpired()
+
+  - path: /refunds/check-eligibility
+    method: POST
+    description: Check refund eligibility (90-day window)
+    source: CreditCardValidator.isRefundEligible()
+
+data_model:
+  entities:
+    - Customer (id, tier, name, email)
+    - Order (id, customer_id, total, status, requires_approval)
+    - OrderItem (id, order_id, product_id, quantity, price)
+    - Card (id, customer_id, brand, expiry_month, expiry_year, valid)
+    - Payment (id, order_id, card_id, amount, status, gateway_ref)
+    - Refund (id, order_id, amount, settlement_date, eligible)
+  relationships:
+    - Customer 1:M Order
+    - Order 1:M OrderItem
+    - Order 1:M Payment
+    - Order 1:M Refund
+    - Customer 1:M Card
+    - Card 1:M Payment
+    - Payment 1:M Refund
+
+testing:
+  unit_test_suite:
+    - Order approval logic (standard and platinum thresholds)
+    - Card validation (null, length, brand)
+    - Card expiry (year, month, current-month edge case)
+    - Shipping cost (free vs charged, boundary cases)
+    - Refund eligibility (90-day window, boundary dates)
+
+  integration_tests:
+    - Order creation with approval check
+    - Payment processing with card validation
+    - Order cancellation eligibility
+    - Refund processing with eligibility check
+
+  e2e_tests:
+    - Order flow (create, validate payment, check approval, calculate shipping)
+    - Payment flow (card validation, authorization, settlement)
+    - Refund flow (check eligibility, process refund)
+
+quality_metrics:
+  test_coverage_target: 95%
+  regression_baseline: Legacy system behavior verified via unit tests
+  performance: No explicit SLA; assume legacy performance as acceptable baseline
+
+risks:
+  - Bare literals throughout system require business validation
+  - Payment gateway timeout hardcoded (not configurable)
+  - Database credentials stored in properties file (security anti-pattern)
+  - API keys in properties file (security anti-pattern)
+  - Javadoc/code mismatches (e.g., shipping comment vs implementation)
+  - Legacy DB schema not available; data model inferred from code
+
+recommendations:
+  - Externalize all thresholds and rates to configuration
+  - Implement secure secret management for credentials and API keys
+  - Add comprehensive logging for approval decisions and payment events
+  - Implement audit trail for all financial transactions
+  - Create database schema documentation matching extracted requirements
+  - Establish change control process for threshold/rate updates
+  - Add performance monitoring for payment gateway interactions
+  - Plan multi-region/multi-currency support if expansion planned
+
+timeline:
+  phase_1_design: 1 week
+  phase_2_implementation: 2-3 weeks per capability
+  phase_3_testing: 1 week
+  phase_4_deployment: 1 week
+  total_estimate: 8-12 weeks for complete rebuild
+
+teams:
+  backend_engineers: 3-4
+  qa_engineers: 2
+  devops: 1
+  finance_stakeholder: 1
+  product_owner: 1
+  compliance_officer: 1 (for card/refund logic review)
