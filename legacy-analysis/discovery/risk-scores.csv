@@ -1,0 +1,5 @@
+module,loc,screens,risk,score
+modules/billing,21,0,high,9
+modules/orders,28,0,high,8
+conf,7,0,medium,5
+web,6,0,low,2

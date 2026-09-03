@@ -1,0 +1,118 @@
+{
+  "application": "Pet Store Legacy",
+  "version": "unknown",
+  "extracted_date": "2026-09-03",
+  "modules": [
+    {
+      "id": "modules/billing",
+      "name": "Billing Module",
+      "type": "business-logic",
+      "loc": 21,
+      "external_dependencies": [],
+      "internal_dependencies": [],
+      "provides": ["CreditCardValidator"],
+      "risk_level": "high",
+      "description": "Card validation and refund eligibility rules"
+    },
+    {
+      "id": "modules/orders",
+      "name": "Orders Module",
+      "type": "business-logic",
+      "loc": 28,
+      "external_dependencies": [],
+      "internal_dependencies": [],
+      "provides": ["OrderRules"],
+      "risk_level": "high",
+      "description": "Order approval, shipping, and cancellation rules"
+    },
+    {
+      "id": "conf",
+      "name": "Configuration",
+      "type": "configuration",
+      "loc": 7,
+      "external_dependencies": ["Oracle JDBC", "Payment Gateway API"],
+      "internal_dependencies": [],
+      "provides": ["jdbc.properties", "integration.properties"],
+      "risk_level": "medium",
+      "description": "Application configuration (database and payment gateway settings)"
+    },
+    {
+      "id": "web",
+      "name": "Web Layer",
+      "type": "web-config",
+      "loc": 6,
+      "external_dependencies": [],
+      "internal_dependencies": [],
+      "provides": ["web.xml"],
+      "risk_level": "low",
+      "description": "Servlet container configuration"
+    }
+  ],
+  "edges": [
+    {
+      "from": "modules/billing",
+      "to": "conf",
+      "type": "depends-on",
+      "reason": "Requires JDBC connection for card validation persistence",
+      "explicit": false,
+      "inferred": true
+    },
+    {
+      "from": "modules/orders",
+      "to": "conf",
+      "type": "depends-on",
+      "reason": "Requires JDBC connection for order data access",
+      "explicit": false,
+      "inferred": true
+    },
+    {
+      "from": "modules/orders",
+      "to": "modules/billing",
+      "type": "may-depend-on",
+      "reason": "Order processing likely invokes card validation during payment",
+      "explicit": false,
+      "inferred": true
+    },
+    {
+      "from": "conf",
+      "to": "Oracle JDBC",
+      "type": "depends-on",
+      "reason": "Database connection pool configuration",
+      "explicit": true,
+      "inferred": false
+    },
+    {
+      "from": "conf",
+      "to": "Payment Gateway API",
+      "type": "depends-on",
+      "reason": "External payment processing integration",
+      "explicit": true,
+      "inferred": false
+    }
+  ],
+  "external_systems": [
+    {
+      "id": "Oracle JDBC",
+      "type": "database",
+      "protocol": "Oracle Thin JDBC",
+      "configured_at": "conf/jdbc.properties",
+      "connectivity": "legacy-db:1521",
+      "pool_size": 25
+    },
+    {
+      "id": "Payment Gateway API",
+      "type": "payment-processor",
+      "protocol": "HTTPS REST",
+      "configured_at": "conf/integration.properties",
+      "endpoint": "https://gateway.example.test/v1",
+      "timeout_ms": 8000
+    }
+  ],
+  "notes": [
+    "No explicit import statements found in source code; dependencies are inferred from configuration and business context",
+    "No JSP/UI layer included in this extraction",
+    "Module structure suggests standard J2EE application with separated business logic",
+    "Configuration layer acts as central hub for external system integration",
+    "Implicit dependency: Orders module likely depends on Billing module for payment validation during order processing"
+  ]
+}
