@@ -1,0 +1,18 @@
+---
+records: []
+findings:
+  - kind: unparseable
+    path: legacy-source/conf/jdbc.properties
+    description: >
+      Database connection configuration: Oracle connection URL, username, password, and connection
+      pool maximum (25). These are operational deployment parameters, not business rules. Connection
+      pool sizing is infrastructure tuning, not a codified business requirement. No business
+      requirement can be extracted.
+
+  - kind: unparseable
+    path: legacy-source/conf/integration.properties
+    description: >
+      Payment gateway integration configuration: endpoint URL, API credentials, and timeout
+      (8000ms). These are operational system parameters that define the external integration
+      contract. The timeout is a deployment constraint, not a business requirement. Credentials
+      are secrets requiring separate handling. No business requirement can be extracted.
