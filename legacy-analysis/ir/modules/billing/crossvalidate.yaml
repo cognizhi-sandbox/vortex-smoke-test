@@ -1,0 +1,151 @@
+crossvalidation:
+  module: modules/billing
+  pass_a_records: 5
+  pass_b_records: 6
+  agreement_summary: >
+    Both passes identified same 5 core requirements with record-key naming divergence and different
+    record granularity. Pass B additionally extracted null-check as explicit separate record. All
+    findings AGREED; Pass B identified one additional completeness ambiguity.
+
+record_comparisons:
+  - record_id: "Card Null Check Validation"
+    pass_a_key: CARD-BRAND-MINIMUM-LENGTH-0001 (combined)
+    pass_b_key: CARD-VALIDATION-NULL-CHECK-0001 (separate)
+    status: partial
+    rationale: >
+      Pass A combined the null check and length validation into a single record
+      (CARD-BRAND-MINIMUM-LENGTH-0001) with requirement "length < 13" mentioning that null
+      is checked as part of guard clause. Pass B extracted the null check as an explicit
+      separate record (CARD-VALIDATION-NULL-CHECK-0001). Both correctly identify that null
+      numbers are rejected. Difference is granularity: Pass A treats as compound guard clause,
+      Pass B separates concerns. This is a COMPLETENESS DIFFERENCE where Pass B provides finer
+      granularity.
+    agreement_level: partial-granularity-difference
+
+  - record_id: "Card Length Validation"
+    pass_a_key: CARD-BRAND-MINIMUM-LENGTH-0001
+    pass_b_key: CARD-VALIDATION-LENGTH-REQUIREMENT-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified the 13-digit minimum requirement from line 6 of
+      CreditCardValidator.java. Same value (13), same confidence (high), same risk class
+      (financial). Record keys differ: Pass A uses CARD-BRAND-MINIMUM-LENGTH-0001 while
+      Pass B uses CARD-VALIDATION-LENGTH-REQUIREMENT-0001. Both note that 13 is a bare
+      literal and conservatively low compared to typical 16-digit cards. Semantic agreement
+      with stylistic key divergence.
+    agreement_level: semantic-agreement-with-key-divergence
+
+  - record_id: "Card Brand Acceptance"
+    pass_a_key: CARD-BRAND-ACCEPTANCE-0001
+    pass_b_key: CARD-VALIDATION-BRAND-VISA-MASTERCARD-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified Visa/Mastercard acceptance from lines 7-9. Same logic
+      (first digit 4 or 5), same confidence (high), same risk class (regulated). Record keys
+      differ significantly: Pass A uses CARD-BRAND-ACCEPTANCE-0001 (generic) while Pass B
+      uses CARD-VALIDATION-BRAND-VISA-MASTERCARD-0001 (specific to brands). Pass B's key is
+      more explicit about which brands. Both identify Amex dropout in 2003. Semantic agreement
+      with key divergence (Pass B more specific).
+    agreement_level: semantic-agreement-with-more-specific-key
+
+  - record_id: "Card Expiry Logic"
+    pass_a_key: CARD-EXPIRY-VALIDATION-0001
+    pass_b_key: CARD-EXPIRY-YEAR-MONTH-COMPARISON-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified expiry logic from lines 12-14. Same comparison logic
+      (year < then month <), same confidence (high), same risk class (financial). Record keys
+      differ: Pass A uses CARD-EXPIRY-VALIDATION-0001 while Pass B uses
+      CARD-EXPIRY-YEAR-MONTH-COMPARISON-0001 (more descriptive of what's compared). Both
+      correctly interpret that cards are valid through end of expiry month. Semantic agreement
+      with stylistic key divergence.
+    agreement_level: semantic-agreement-with-key-divergence
+
+  - record_id: "Card Expiry Edge Case (Current Month Validity)"
+    pass_a_key: CARD-EXPIRY-EDGE-CASE-0001
+    pass_b_key: CARD-EXPIRY-CURRENT-MONTH-VALIDITY-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified the edge case that cards are valid through the current
+      month. Same source (lines 12-14), same confidence (high), same risk class (financial).
+      Record keys differ: Pass A uses CARD-EXPIRY-EDGE-CASE-0001 (generic) while Pass B uses
+      CARD-EXPIRY-CURRENT-MONTH-VALIDITY-0001 (specific). Both use GIVEN/WHEN/THEN format.
+      Pass B's key more clearly describes the specific scenario. Semantic agreement with
+      key divergence.
+    agreement_level: semantic-agreement-with-more-specific-key
+
+  - record_id: "Refund Window"
+    pass_a_key: REFUND-WINDOW-0001
+    pass_b_key: REFUND-NINETY-DAY-WINDOW-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified 90-day refund window from lines 17-19. Same value
+      (90 days), same confidence (high), same risk class (financial), same capability
+      (refund-eligibility). Record keys differ: Pass A uses REFUND-WINDOW-0001 (generic)
+      while Pass B uses REFUND-NINETY-DAY-WINDOW-0001 (specific to duration). Pass B's key
+      is more explicit about the specific window duration. Both note value is bare literal
+      and aligns with PCI/card association norms. Semantic agreement with Pass B having more
+      specific key.
+    agreement_level: semantic-agreement-with-more-specific-key
+
+finding_comparisons:
+  - finding_id: "Extraction Completeness"
+    pass_a_status: NOT PRESENT
+    pass_b_status: ambiguity
+    status: partial
+    rationale: >
+      Pass B identified an ambiguity about whether the extracted rules represent the complete
+      set of card acceptance rules, or whether additional rules (velocity checks, fraud
+      scoring, CVV validation) exist elsewhere. Pass A did not explicitly flag this
+      completeness concern. This is a PARTIAL difference: Pass B flagged a potential gap
+      that Pass A did not.
+
+  - finding_id: "Amex Dropout Reason"
+    pass_a_status: ambiguity
+    pass_b_status: ambiguity
+    status: agreed
+    rationale: >
+      Both passes flagged identical ambiguity around the 2003 Amex dropout. Both note that
+      the date is provided but not the reason (partnership, regulatory, cost, strategy).
+      Both recommend clarification with business stakeholders. Findings are semantically
+      identical.
+
+  - finding_id: "Card Minimum Length Rationale"
+    pass_a_status: ambiguity
+    pass_b_status: ambiguity
+    status: agreed
+    rationale: >
+      Both passes flagged identical ambiguity about the 13-digit minimum being conservatively
+      low. Both note that 16-digit is standard for Visa/Mastercard, so 13 may accept test
+      or non-standard cards. Both recommend review for security/compliance implications.
+      Semantic agreement with minor phrasing differences (Pass B emphasizes "bare literal
+      without explanation").
+
+  - finding_id: "Refund Window Justification"
+    pass_a_status: ambiguity
+    pass_b_status: ambiguity
+    status: agreed
+    rationale: >
+      Both passes flagged identical ambiguity about the 90-day refund window lacking external
+      configuration or documented justification. Both note it aligns with industry norms but
+      specific choice needs verification against company policy and card association rules.
+      Semantic agreement with slight emphasis differences.
+
+summary:
+  status: strong-agreement-with-key-naming-and-granularity-differences
+  core_findings: >
+    Both passes achieved strong semantic agreement on 5 core requirements. Pass B provides
+    finer granularity by extracting null-check as separate record, yielding 6 total records.
+    All 4 ambiguity findings AGREED between passes. Only difference: Pass B flagged additional
+    extraction-completeness ambiguity that Pass A did not.
+
+  concerns: >
+    Record key divergence remains (CARD-BRAND-MINIMUM-LENGTH vs
+    CARD-VALIDATION-LENGTH-REQUIREMENT). Pass B uses more specific/descriptive keys overall
+    (e.g., CARD-VALIDATION-BRAND-VISA-MASTERCARD vs CARD-BRAND-ACCEPTANCE). This stylistic
+    divergence will cause ingester to treat records as separate despite semantic equivalence.
+
+  pass_b_advantages: >
+    (1) More granular extraction: null-check as explicit record improves precision.
+    (2) More specific record keys that name the exact requirement (not just category).
+    (3) Identified one additional finding about extraction completeness/rule scope.
