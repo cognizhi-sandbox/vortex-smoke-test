@@ -1,0 +1,136 @@
+crossvalidation:
+  module: conf
+  pass_a_records: 4
+  pass_b_records: 5
+  agreement_summary: "Both passes identified same 4 core requirements with key naming differences. Pass B additionally extracted database credentials record not in Pass A."
+
+record_comparisons:
+  - record_id: "Payment Gateway Timeout"
+    pass_a_key: CARD-PAYMENT-GATEWAY-TIMEOUT-0001
+    pass_b_key: CARD-PAYMENT-TIMEOUT-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified the 8-second timeout requirement from line 3 of
+      integration.properties. Same value, same source, same capability (card-validation),
+      same confidence (high). Record keys differ: Pass A uses longer key name
+      (CARD-PAYMENT-GATEWAY-TIMEOUT-0001) while Pass B uses shorter variant
+      (CARD-PAYMENT-TIMEOUT-0001). This will cause the ingester to treat them as separate
+      records. Difference is stylistic (naming convention), not semantic. Requirement text
+      is functionally equivalent.
+    agreement_level: semantic-agreement-with-key-divergence
+
+  - record_id: "Payment Gateway Endpoint"
+    pass_a_key: CARD-PAYMENT-GATEWAY-ENDPOINT-0001
+    pass_b_key: CARD-PAYMENT-ENDPOINT-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified the payment gateway URL requirement from line 1 of
+      integration.properties. Same value (https://gateway.example.test/v1), same source,
+      same capability (card-validation), same confidence (high). Record keys differ:
+      Pass A uses CARD-PAYMENT-GATEWAY-ENDPOINT-0001 while Pass B uses
+      CARD-PAYMENT-ENDPOINT-0001. Pass A classifies as "integration" kind while Pass B also
+      classifies as "integration". Requirement text is functionally equivalent with minor
+      phrasing differences (Pass A: "all payment authorization requests", Pass B: "payment
+      card validation and authorization requests").
+    agreement_level: semantic-agreement-with-key-divergence
+
+  - record_id: "Database Connection String"
+    pass_a_key: ORDER-DATABASE-CONNECTION-0001
+    pass_b_key: ORDER-PERSISTENCE-DATABASE-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified the Oracle database connection requirement from line 1
+      of jdbc.properties. Same connection details (legacy-db:1521:PETSTORE), same source,
+      same capability (order-approval), same confidence (high), same risk class (operational).
+      Record keys differ: Pass A uses ORDER-DATABASE-CONNECTION-0001 while Pass B uses
+      ORDER-PERSISTENCE-DATABASE-0001. Pass A emphasizes "persist order and customer data"
+      while Pass B emphasizes "Order and customer data SHALL be persisted". Functionally
+      equivalent with stylistic phrasing differences.
+    agreement_level: semantic-agreement-with-key-divergence
+
+  - record_id: "Database Connection Pool Size"
+    pass_a_key: ORDER-DATABASE-POOL-SIZE-0001
+    pass_b_key: ORDER-DATABASE-CONNECTION-POOL-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified the JDBC pool size requirement from line 4 of
+      jdbc.properties. Same value (25), same source, same capability (order-approval),
+      same confidence (medium, due to bare literal without justification). Record keys
+      differ: Pass A uses ORDER-DATABASE-POOL-SIZE-0001 while Pass B uses
+      ORDER-DATABASE-CONNECTION-POOL-0001. Pass B's key is more specific (emphasizes
+      "connection-pool"). Both note that the value is a bare literal lacking documented
+      rationale. Functionally equivalent.
+    agreement_level: semantic-agreement-with-key-divergence
+
+  - record_id: "Database Credentials"
+    pass_a_key: NOT-EXTRACTED
+    pass_b_key: ORDER-DATABASE-CREDENTIALS-0001
+    status: partial
+    rationale: >
+      Pass B extracted an explicit requirement for database credentials from line 2 of
+      jdbc.properties (jdbc.username=petstore_app) that Pass A did not. Pass B correctly
+      identified that the username and password are operational requirements for database
+      authentication. Pass A mentioned credentials in the findings/ambiguity section but did
+      not extract them as a separate record. Pass B correctly elevated this to a record with
+      HIGH confidence (explicit username specification) under capability order-approval. This
+      represents a completeness difference: Pass B was more thorough in extracting all
+      configuration elements as records.
+    agreement_level: pass-b-more-complete
+
+finding_comparisons:
+  - finding_id: "API Key Security Management"
+    pass_a_status: ambiguity
+    pass_b_status: ambiguity
+    status: agreed
+    rationale: >
+      Both passes identified the same security ambiguity around payment.gateway.api_key
+      storage in integration.properties. Both flagged: (1) plain-text storage; (2) unclear
+      environment-specific configuration (test vs. production); (3) unclear rotation/audit
+      practices. Pass B adds additional detail about scope (operation-specific keys?), and
+      clarifies that .test domain suggests sandbox environment. Both identify this as a
+      credentials management anti-pattern. Findings are semantically identical.
+
+  - finding_id: "Database Credentials Storage"
+    pass_a_status: ambiguity
+    pass_b_status: ambiguity
+    status: agreed
+    rationale: >
+      Both passes identified identical security ambiguity around jdbc.username and password
+      storage in jdbc.properties. Both flagged: (1) plain-text storage anti-pattern; (2)
+      unclear rotation practices; (3) unclear account permissions/scope; (4) legacy approach
+      not meeting modern standards. Pass B adds detail about account scope (app-specific or
+      shared?) and permission constraints (DML only or schema modification?). Findings are
+      semantically identical with Pass B slightly more detailed.
+
+  - finding_id: "Database Pool Size Justification"
+    pass_a_status: ambiguity
+    pass_b_status: ambiguity
+    status: agreed
+    rationale: >
+      Both passes identified identical ambiguity around the jdbc.pool.max=25 bare literal.
+      Both flagged: (1) no documented rationale; (2) unclear if based on load, defaults, or
+      database constraints; (3) lack of context for operators to assess appropriateness.
+      Pass B adds detail about scalability/concurrency implications. Findings are
+      semantically identical, representing agreement that this value lacks justification.
+
+summary:
+  status: partial-agreement-with-key-naming-issues
+  core_findings: >
+    Both passes identified the same 4 core requirements from conf module with 100% semantic
+    agreement on content, confidence levels, risk classification, and capability mapping.
+    Pass B additionally extracted database credentials as an explicit record. Discrepancies
+    are limited to record_key naming conventions (Pass A uses longer descriptive keys while
+    Pass B uses more concise variants). All 3 ambiguity findings are identical in substance
+    across both passes.
+
+  concerns: >
+    Record key divergence (CARD-PAYMENT-GATEWAY-TIMEOUT-0001 vs CARD-PAYMENT-TIMEOUT-0001)
+    will cause the ingester to treat these as separate records despite semantic equivalence.
+    This appears to be a deliberate stylistic choice by each pass rather than a substantive
+    disagreement. The record content, tracing, and findings are identical. Recommend
+    standardizing key naming convention to resolve this during ingestion.
+
+  pass_b_advantage: >
+    Pass B more thoroughly extracted database credentials (jdbc.username) as an explicit
+    record with HIGH confidence, whereas Pass A only flagged this as an ambiguity finding.
+    This represents better completeness in Pass B's extraction.
