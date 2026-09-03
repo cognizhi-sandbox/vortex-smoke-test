@@ -11,7 +11,7 @@
 
 ## ADDED Requirements
 
-### R1: Year Expiry Check
+### Requirement: R1: Year Expiry Check
 
 A payment card SHALL be considered expired if its expiry year is earlier than the current year.
 
@@ -29,7 +29,7 @@ A payment card SHALL be considered expired if its expiry year is earlier than th
 IF expiryYear < currentYear THEN card is EXPIRED
 ```
 
-### R2: Month Expiry Check (Same Year)
+### Requirement: R2: Month Expiry Check (Same Year)
 
 A payment card with an expiry year equal to the current year SHALL be considered expired if its expiry month is earlier than the current month.
 
@@ -47,7 +47,7 @@ A payment card with an expiry year equal to the current year SHALL be considered
 IF expiryYear == currentYear AND expiryMonth < currentMonth THEN card is EXPIRED
 ```
 
-### R3: Current Month Validity
+### Requirement: R3: Current Month Validity
 
 A payment card expiring in the current month SHALL be considered valid (not expired) for the entire month.
 
@@ -67,7 +67,7 @@ IF expiryYear == currentYear AND expiryMonth == currentMonth THEN card is VALID
 
 **Rationale**: Payment card industry standard allows transactions through the end of the stated expiry month.
 
-### R4: Future Validity
+### Requirement: R4: Future Validity
 
 A payment card expiring in a month after the current month SHALL be considered valid.
 
