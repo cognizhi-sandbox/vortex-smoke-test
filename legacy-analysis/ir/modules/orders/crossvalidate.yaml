@@ -1,0 +1,207 @@
+crossvalidation:
+  module: modules/orders
+  pass_a_records: 5
+  pass_b_records: 5
+  agreement_summary: >
+    Both passes identified the same 5 core requirements with 100% semantic agreement. All
+    differences are record-key naming divergence (stylistic conventions, not semantic).
+    Pass B additionally identified 2 completeness ambiguities not flagged in Pass A. Both
+    passes achieved HIGH confidence on all requirements.
+
+record_comparisons:
+  - record_id: "Order Approval Threshold (Standard)"
+    pass_a_key: ORDER-APPROVAL-BASE-THRESHOLD-0001
+    pass_b_key: ORDER-APPROVAL-THRESHOLD-STANDARD-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified the $5,000.00 approval threshold from lines 5-6
+      (constant definition) and line 15 (usage in requiresApproval method). Same value,
+      same source, same confidence (high), same risk_class (financial), same capability
+      (order-approval). Record keys differ: Pass A uses ORDER-APPROVAL-BASE-THRESHOLD-0001
+      while Pass B uses ORDER-APPROVAL-THRESHOLD-STANDARD-0001. Pass A emphasizes "base"
+      while Pass B emphasizes "standard" tier. Both correctly describe the requirement that
+      orders >= $5,000 require manager approval. Metadata differs slightly: Pass A uses
+      "constant: APPROVAL_THRESHOLD" while Pass B uses "applies_to: standard_customers".
+      Difference is stylistic (naming convention), not semantic.
+    agreement_level: semantic-agreement-with-key-divergence
+
+  - record_id: "Platinum Tier Approval Exemption"
+    pass_a_key: ORDER-APPROVAL-PLATINUM-TIER-0001
+    pass_b_key: ORDER-APPROVAL-PLATINUM-EXEMPTION-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified the Platinum tier logic from lines 10-13
+      (requiresApproval method tier-aware branching). Same value ($10,000 threshold),
+      same source lines, same confidence (high), same risk_class (financial). Record keys
+      differ: Pass A uses PLATINUM-TIER (noun emphasis) while Pass B uses
+      PLATINUM-EXEMPTION (describes the benefit). Both correctly describe that Platinum
+      customers are exempt from approval up to $10,000 (2x the base threshold). Semantic
+      agreement with stylistic key divergence. Metadata differs: Pass A uses "tier_multiplier: 2"
+      while Pass B uses "tier_threshold_multiplier: 2" and adds "tier_strategy: elevated_approval_limit".
+      Both note that tier assignment mechanism is not visible in this class.
+    agreement_level: semantic-agreement-with-key-divergence
+
+  - record_id: "Free Shipping Threshold"
+    pass_a_key: SHIPPING-COST-FREE-THRESHOLD-0001
+    pass_b_key: SHIPPING-COST-THRESHOLD-FREE-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified the $75.00 free shipping threshold from lines 7-8
+      (constant definition) and line 19 (usage in shippingCost method). Same value, same
+      source, same confidence (high), same risk_class (financial). Record keys differ:
+      Pass A uses SHIPPING-COST-FREE-THRESHOLD-0001 while Pass B uses
+      SHIPPING-COST-THRESHOLD-FREE-0001 (word order variation). Both correctly describe that
+      orders >= $75 qualify for free shipping. Semantic agreement with stylistic key
+      divergence. Both note the bare literal and lack of documented rationale. Metadata is
+      nearly identical with minor naming differences (Pass A: "constant: FREE_SHIPPING_MIN"
+      vs Pass B: "threshold_type: free_shipping_minimum").
+    agreement_level: semantic-agreement-with-key-divergence
+
+  - record_id: "Shipping Cost Calculation (Charged Orders)"
+    pass_a_key: SHIPPING-COST-CHARGED-CALCULATION-0001
+    pass_b_key: SHIPPING-COST-CALCULATION-PAID-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified the shipping cost formula from lines 20-21
+      (shippingCost method return statement). Same formula (4.95d + (itemCount * 0.75d)),
+      same source, same confidence (high), same risk_class (financial). Record keys differ:
+      Pass A uses CHARGED-CALCULATION (emphasizes billing) while Pass B uses
+      CALCULATION-PAID (emphasizes paid-shipping scenario). Both correctly describe the
+      hybrid model: $4.95 base fee + $0.75 per-item handling charge. Semantic agreement
+      with stylistic key divergence. Metadata differs: Pass A lists "constant_flat_rate: 4.95"
+      and "constant_per_item_rate: 0.75" while Pass B provides more detailed breakdown
+      with "base_shipping_fee: 4.95" and "cost_components" array. Both note the bare
+      literals and lack of rounding policy documentation.
+    agreement_level: semantic-agreement-with-key-divergence
+
+  - record_id: "Order Cancellation Eligibility"
+    pass_a_key: ORDER-CANCELLATION-ALLOWED-STATUSES-0001
+    pass_b_key: ORDER-CANCELLATION-STATE-RESTRICTION-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified the cancellation eligibility logic from lines 24-26
+      (canCancel method). Same allowed statuses (PENDING and APPROVED), same source, same
+      confidence (high), same risk_class (operational). Record keys differ: Pass A uses
+      ALLOWED-STATUSES (positive framing) while Pass B uses STATE-RESTRICTION (negative
+      framing). Both correctly describe that only PENDING and APPROVED orders can be
+      cancelled, implying orders in FULFILLED, SHIPPED or later states cannot be cancelled.
+      Semantic agreement with stylistic key divergence. Metadata differs: Pass A lists
+      "allowed_statuses" with two entries while Pass B provides both "cancellable_statuses"
+      and "non_cancellable_statuses_implied" for more completeness. Both cite the same
+      comment about pre-fulfillment constraint.
+    agreement_level: semantic-agreement-with-key-divergence
+
+finding_comparisons:
+  - finding_id: "Approval Threshold Policy Rationale"
+    pass_a_status: ambiguity
+    pass_b_status: ambiguity
+    status: agreed
+    rationale: >
+      Both passes flagged identical ambiguity: the approval thresholds ($5,000 for standard,
+      $10,000 for Platinum) and the 2x multiplier are bare literals with no documented
+      justification. Both express uncertainty about whether values are: (1) based on
+      historical data or risk assessment; (2) aligned with credit/company policies; (3)
+      subject to periodic review; (4) negotiated customer-specific. Both note that tier
+      assignment mechanism is not visible in this class. Both recommend review with business
+      and finance teams. Pass B adds additional detail about "management capacity and
+      approval SLAs" as a consideration. Findings are semantically identical with Pass B
+      slightly more comprehensive.
+
+  - finding_id: "Free Shipping Comment Contradiction"
+    pass_a_status: ambiguity
+    pass_b_status: ambiguity
+    status: agreed
+    rationale: >
+      Both passes identified the identical documentation bug: javadoc comment states "Orders
+      below this total ship free" but the implementation checks (orderTotal >= FREE_SHIPPING_MIN)
+      to grant free shipping. Both correctly note this is a contradiction and label it a
+      documentation error. Both recommend the comment be corrected to state "Orders at or
+      above this total ship free" to match the code. Findings are semantically identical.
+
+  - finding_id: "Shipping Cost Components (Bare Literals)"
+    pass_a_status: ambiguity
+    pass_b_status: ambiguity
+    status: agreed
+    rationale: >
+      Both passes flagged identical ambiguity about the shipping cost components ($4.95 base,
+      $0.75 per-item). Both express uncertainty whether: (1) values represent actual costs
+      or markups; (2) they account for regional variation; (3) rounding policy exists for
+      fractional cents; (4) rates are subject to periodic adjustment. Both note values are
+      bare literals with no explanation of derivation. Both emphasize direct impact on
+      customer pricing and margin. Pass B adds specific concern about "competitiveness or
+      profitability impact". Findings are semantically identical with Pass B slightly more
+      detailed.
+
+  - finding_id: "Order Status Enumeration Completeness"
+    pass_a_status: ambiguity
+    pass_b_status: ambiguity
+    status: agreed
+    rationale: >
+      Both passes flagged identical ambiguity: the database schema is unavailable, so the
+      complete set of valid order statuses cannot be verified. Both note the canCancel()
+      method assumes only PENDING and APPROVED allow cancellation, but it is unclear
+      whether: (1) other pre-fulfillment statuses should allow cancellation; (2) other
+      post-fulfillment statuses exist; (3) status enumeration has changed; (4) additional
+      business logic exists elsewhere. Both recommend reviewing database schema and order
+      workflow to validate. Pass B provides slightly more comprehensive status examples
+      (HELD, DELIVERED, RETURNED, REFUNDED). Findings are semantically identical.
+
+  - finding_id: "Rule Completeness and Scope"
+    pass_a_status: NOT PRESENT
+    pass_b_status: ambiguity
+    status: partial
+    rationale: >
+      Pass B uniquely identified an ambiguity about whether the OrderRules class contains
+      the complete set of order business rules or whether additional rules exist in other
+      classes (e.g., OrderValidation, OrderProcessor, OrderService). Pass B asks whether
+      this class is authoritative or whether override/bypass mechanisms exist. Pass A did
+      not explicitly flag this completeness concern as a separate finding. This represents a
+      COMPLETENESS DIFFERENCE where Pass B identified an additional ambiguity that Pass A
+      did not explicitly surface.
+
+  - finding_id: "Platinum Tier Assignment Mechanism"
+    pass_a_status: NOT PRESENT
+    pass_b_status: ambiguity
+    status: partial
+    rationale: >
+      Pass B uniquely identified an ambiguity about the hardcoded "PLATINUM" string literal
+      and tier assignment. Pass B asks: (1) how are tiers assigned (at creation or dynamically)?
+      (2) where is tier status stored? (3) are there other tiers (GOLD, SILVER, BRONZE)? (4)
+      is tier assignment based on customer attributes or manual decisions? Pass A mentioned
+      in Finding 1 that "tier assignment mechanism is not visible" but did not extract this
+      as a separate, detailed ambiguity finding. This represents a COMPLETENESS DIFFERENCE
+      where Pass B provided more granular analysis of the tier system's operational and
+      architectural unknowns.
+
+summary:
+  status: strong-agreement-with-key-naming-conventions-and-completeness-differences
+  core_findings: >
+    Both passes achieved 100% semantic agreement on all 5 core requirements. Differences
+    are limited to record-key naming conventions (Pass A vs Pass B stylistic choices) and
+    metadata naming variations. All requirements were assigned HIGH confidence. Both passes
+    correctly identified the business logic across approval thresholds, tier-based exemptions,
+    free shipping threshold, shipping cost calculations, and cancellation eligibility.
+
+  concerns: >
+    Record key divergence will cause the ingester to treat semantically equivalent records
+    as separate:
+    - ORDER-APPROVAL-BASE-THRESHOLD vs ORDER-APPROVAL-THRESHOLD-STANDARD
+    - ORDER-APPROVAL-PLATINUM-TIER vs ORDER-APPROVAL-PLATINUM-EXEMPTION
+    - SHIPPING-COST-FREE-THRESHOLD vs SHIPPING-COST-THRESHOLD-FREE
+    - SHIPPING-COST-CHARGED-CALCULATION vs SHIPPING-COST-CALCULATION-PAID
+    - ORDER-CANCELLATION-ALLOWED-STATUSES vs ORDER-CANCELLATION-STATE-RESTRICTION
+    This appears to be a deliberate stylistic choice by each pass (different naming
+    conventions) rather than a substantive disagreement. Recommend standardizing key
+    naming convention to resolve during ingestion.
+
+  pass_b_advantages: >
+    (1) Identified 2 additional completeness ambiguities (rule scope and tier assignment
+    mechanism) that Pass A did not explicitly surface. (2) Provided more detailed metadata
+    for several records (e.g., "tier_strategy: elevated_approval_limit", "cost_components"
+    array). (3) More comprehensive status examples in the order enumeration finding
+    (HELD, DELIVERED, RETURNED, REFUNDED). (4) Slightly more thorough in exploring
+    operational and architectural unknowns.
+
+  ambiguities_agreed: 4
+  ambiguities_pass_b_only: 2
+  total_ambiguities: 6
