@@ -1,0 +1,179 @@
+records:
+  - record_key: CONF-INTEGRATION-0001
+    kind: integration
+    capability_key: payment-gateway-connectivity
+    requirement: >
+      The system SHALL establish connections to an external payment gateway service
+      at the configured endpoint with a maximum timeout of 8000 milliseconds (8 seconds)
+      per transaction attempt.
+    confidence: high
+    confidence_basis: >
+      Timeout value is explicitly configured in integration.properties with no
+      conflicting sources. Endpoint URL is also hardcoded. Both are referenced as
+      integration configuration, a single authoritative source.
+    risk_class: financial
+    basis: >
+      The integration.properties file configures payment gateway connectivity parameters.
+      The timeout of 8000ms constrains the maximum acceptable latency for any payment
+      transaction. This is a critical integration point for order processing (inferred
+      from discovery context), making timeout violations a transaction failure mode.
+    traces:
+      - path: legacy-source/conf/integration.properties
+        line_start: 1
+        line_end: 3
+        excerpt: |
+          payment.gateway.url=https://gateway.example.test/v1
+          payment.gateway.api_key=«REDACTED:secret-finding-1»
+          payment.timeout.ms=8000
+    stack_metadata:
+      db.object: none
+      framework: properties-based-configuration
+
+  - record_key: CONF-INTEGRATION-0002
+    kind: requirement
+    capability_key: payment-gateway-authentication
+    requirement: >
+      The system SHALL authenticate to the payment gateway service using an API key
+      configured at deployment time, transmitted with each payment request.
+    confidence: medium
+    confidence_basis: >
+      API key is declared in configuration with a redacted value, indicating it is
+      a secret. The configuration name "api_key" suggests authentication use. However,
+      no code showing how the key is transmitted or validated is present in this
+      extraction, so confidence is medium (config-only source).
+    risk_class: financial
+    basis: >
+      The presence of payment.gateway.api_key in the configuration indicates the
+      payment gateway requires authentication. The redaction of its value in this
+      extraction confirms it is treated as a secret. Gateway authentication is a
+      mandatory integration requirement for fraud prevention and audit trails.
+    traces:
+      - path: legacy-source/conf/integration.properties
+        line_start: 2
+        line_end: 2
+        excerpt: |
+          payment.gateway.api_key=«REDACTED:secret-finding-1»
+    stack_metadata:
+      framework: properties-based-configuration
+
+  - record_key: CONF-DATABASE-0001
+    kind: requirement
+    capability_key: database-connection-pooling
+    requirement: >
+      The system SHALL maintain a connection pool to the Oracle database with a
+      maximum of 25 simultaneous connections.
+    confidence: high
+    confidence_basis: >
+      Connection pool maximum is explicitly configured in jdbc.properties. This is
+      a declarative configuration value with no conflicting sources. The value
+      appears as a literal property, indicating it is the authoritative pool size
+      constraint.
+    risk_class: operational
+    basis: >
+      The jdbc.properties configuration file declares jdbc.pool.max=25, establishing
+      the maximum pool size. This parameter is critical for resource management and
+      database server capacity planning. A pool size of 25 is typical for mid-scale
+      J2EE applications and suggests expected concurrency requirements.
+    traces:
+      - path: legacy-source/conf/jdbc.properties
+        line_start: 4
+        line_end: 4
+        excerpt: |
+          jdbc.pool.max=25
+    stack_metadata:
+      db.object: connection-pool
+      framework: jdbc-configuration
+
+  - record_key: CONF-DATABASE-0002
+    kind: requirement
+    capability_key: database-connection-target
+    requirement: >
+      The system SHALL connect to an Oracle database instance at legacy-db:1521
+      with database name PETSTORE using JDBC thin client driver.
+    confidence: high
+    confidence_basis: >
+      Database connection string is explicitly configured in jdbc.properties with
+      standard Oracle thin connection syntax. The host, port, and SID are literal
+      values with no alternative sources. Declarative configuration is authoritative.
+    risk_class: operational
+    basis: >
+      The jdbc.url property specifies the Oracle database endpoint using standard
+      JDBC syntax (jdbc:oracle:thin:@<host>:<port>:<sid>). This indicates the
+      legacy application is tightly coupled to a specific Oracle instance. The
+      connection target is a deployment-time parameter managed via configuration.
+    traces:
+      - path: legacy-source/conf/jdbc.properties
+        line_start: 1
+        line_end: 1
+        excerpt: |
+          jdbc.url=jdbc:oracle:thin:@legacy-db:1521:PETSTORE
+    stack_metadata:
+      db.object: oracle-database
+      framework: jdbc-configuration
+
+  - record_key: CONF-DATABASE-0003
+    kind: requirement
+    capability_key: database-authentication
+    requirement: >
+      The system SHALL authenticate to the Oracle database using the configured
+      username and password at connection establishment time.
+    confidence: medium
+    confidence_basis: >
+      Credentials are declared in configuration (jdbc.username and redacted
+      jdbc.password), indicating database authentication is required. However, no
+      code showing authentication flow is present in this extraction, so confidence
+      is medium (configuration-only source).
+    risk_class: operational
+    basis: >
+      The jdbc.properties file configures both jdbc.username (petstore_app) and
+      jdbc.password as separate properties, indicating the JDBC driver uses these
+      credentials for authentication. The presence of a username property confirms
+      the database is not using operating system authentication.
+    traces:
+      - path: legacy-source/conf/jdbc.properties
+        line_start: 2
+        line_end: 3
+        excerpt: |
+          jdbc.username=petstore_app
+          jdbc.password=«REDACTED:secret-finding-2»
+    stack_metadata:
+      db.object: oracle-database
+      framework: jdbc-configuration
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/conf/integration.properties
+    description: >
+      Payment gateway endpoint is hardcoded in the configuration file with no
+      indication of environment-specific overrides (dev/staging/prod). It is
+      unclear whether the same endpoint is used across all deployment environments
+      or if configuration substitution occurs at deploy time. This affects the
+      risk of accidentally routing transactions to the wrong gateway in non-production
+      environments.
+
+  - kind: ambiguity
+    path: legacy-source/conf
+    description: >
+      No retry policy or fallback behavior is specified for payment gateway or
+      database connection failures. The 8-second timeout on the payment gateway
+      constrains timeout handling, but no requirement addresses what happens when
+      the timeout is exceeded (e.g., transient retry, immediate failure, customer
+      notification).
+
+  - kind: ambiguity
+    path: legacy-source/conf/integration.properties
+    description: >
+      The payment timeout of 8000ms is configured but there is no indication of
+      whether this timeout applies to individual operations (e.g., a single
+      authorization) or to the entire transaction flow. This ambiguity affects how
+      orders are processed under high latency conditions.
+
+  - kind: unparseable
+    path: legacy-source/conf
+    description: >
+      Configuration files are in Java properties format with no schema, type
+      information, or validation rules. It is unclear whether payment.timeout.ms
+      expects milliseconds as a string (parsed as int at runtime) or another
+      format. Similarly, jdbc.pool.max expects an integer but properties files
+      are untyped, creating a potential runtime parsing failure if a non-numeric
+      value is provided.
