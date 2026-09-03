@@ -1,0 +1,179 @@
+records:
+  - record_key: BILL-BRAND-VALIDATION-001
+    kind: business-rule
+    capability_key: accepted-card-brands
+    requirement: >
+      The system SHALL accept payment cards that begin with the digit 4 (Visa) or
+      digit 5 (Mastercard). All other card brands and starting digits are rejected.
+    confidence: high
+    confidence_basis: >
+      The isAcceptedBrand method implements the rule with explicit conditionals:
+      `return first == '4' || first == '5';`. The logic is straightforward and
+      enforced in code. The inline comment provides historical context (Amex dropped
+      in 2003) but does not add ambiguity to the current rule.
+    risk_class: financial
+    basis: >
+      The isAcceptedBrand method checks the first character of the card number
+      against literal digit values. Lines 8-9 show the check is limited to '4' or
+      '5'. This is the enforcement point for card brand acceptance in the system.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 5
+        line_end: 10
+        excerpt: |
+          public boolean isAcceptedBrand(String number) {
+              if (number == null || number.length() < 13) return false;
+              char first = number.charAt(0);
+              // Visa (4) and Mastercard (5) only; Amex was dropped in 2003.
+              return first == '4' || first == '5';
+          }
+    stack_metadata:
+      framework: none
+
+  - record_key: BILL-CARD-LENGTH-MINIMUM-001
+    kind: business-rule
+    capability_key: card-number-minimum-length
+    requirement: >
+      The system SHALL reject any payment card with a card number shorter than
+      13 characters. GIVEN a card number is provided, WHEN its length is less than
+      13 characters, THEN the card is rejected.
+    confidence: high
+    confidence_basis: >
+      The length check is explicitly coded as a literal constraint: `number.length() < 13`.
+      This appears before the brand check, making it a primary validation gate. The
+      literal value (13) is hardcoded with no configuration override visible.
+    risk_class: financial
+    basis: >
+      Line 6 of isAcceptedBrand implements an immediate validation gate:
+      `if (number == null || number.length() < 13) return false;`. This rejects
+      cards shorter than 13 characters before any brand validation occurs. The
+      constraint is a hardcoded literal with no configuration mechanism.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 6
+        line_end: 6
+        excerpt: |
+          if (number == null || number.length() < 13) return false;
+    stack_metadata:
+      framework: none
+
+  - record_key: BILL-EXPIRY-CHECK-001
+    kind: business-rule
+    capability_key: card-expiry-validation
+    requirement: >
+      The system SHALL reject expired payment cards. A card is expired when its
+      expiry year is in the past, OR when the expiry year equals the current year
+      AND the expiry month is in the past. GIVEN expiryYear and expiryMonth,
+      WHEN expiryYear < currentYear, THEN card is expired. WHEN expiryYear ==
+      currentYear AND expiryMonth < currentMonth, THEN card is expired. Otherwise
+      the card is not expired.
+    confidence: high
+    confidence_basis: >
+      The expiry logic is explicitly implemented in the isExpired method with
+      straightforward conditional branches. The method signature and implementation
+      clearly define the comparison logic without ambiguity in the control flow.
+    risk_class: financial
+    basis: >
+      The isExpired method (lines 12-15) implements two-part expiry validation:
+      first checking year comparison, then month comparison when years are equal.
+      This is standard payment card expiry logic. The method receives four integer
+      parameters (expiryYear, expiryMonth, nowYear, nowMonth) and returns a boolean
+      indicating expiry status.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 12
+        line_end: 15
+        excerpt: |
+          public boolean isExpired(int expiryYear, int expiryMonth, int nowYear, int nowMonth) {
+              if (expiryYear < nowYear) return true;
+              return expiryYear == nowYear && expiryMonth < nowMonth;
+          }
+    stack_metadata:
+      framework: none
+
+  - record_key: BILL-REFUND-ELIGIBILITY-001
+    kind: business-rule
+    capability_key: refund-time-window
+    requirement: >
+      The system SHALL permit refunds for transactions settled up to and including
+      90 days after the settlement date. GIVEN a transaction with daysSinceSettlement,
+      WHEN daysSinceSettlement is less than or equal to 90, THEN a refund is
+      permitted. WHEN daysSinceSettlement exceeds 90, THEN a refund is not permitted.
+    confidence: high
+    confidence_basis: >
+      The refund window is explicitly defined in the canRefund method as:
+      `return daysSinceSettlement <= 90;`. The value is a hardcoded literal with
+      no configuration override. The method documentation reinforces the 90-day window.
+    risk_class: financial
+    basis: >
+      The canRefund method (lines 17-20) enforces a hard deadline of 90 days for
+      refund eligibility. The method receives an integer parameter (daysSinceSettlement)
+      and applies a simple threshold comparison. The javadoc comment at line 17
+      ("Refunds are permitted for 90 days after settlement.") documents the rule
+      that the code implements.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 17
+        line_end: 20
+        excerpt: |
+          /** Refunds are permitted for 90 days after settlement. */
+          public boolean canRefund(int daysSinceSettlement) {
+              return daysSinceSettlement <= 90;
+          }
+    stack_metadata:
+      framework: none
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      The card brand validation checks only the first digit of the card number.
+      For Visa, this correctly identifies cards starting with '4'. For Mastercard,
+      the standard identifies cards in ranges 51-55 and more recently 2221-2720.
+      The implementation accepts any card starting with '5', which may be
+      overly permissive or reflect a legacy simplified validation. It is unclear
+      whether additional Mastercard validation occurs in calling code.
+
+  - kind: ambiguity
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      No maximum card number length is enforced. The minimum is 13, but there is
+      no maximum constraint. Different card brands have standard lengths (Visa 16,
+      Mastercard 16). It is unclear whether the absence of a maximum is intentional
+      or whether validation occurs in the calling code or payment gateway.
+
+  - kind: ambiguity
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      The isExpired method compares expiryMonth only when the years are equal.
+      When comparing `expiryMonth < nowMonth`, there is no consideration of the day
+      of the month. For a card expiring on May 31, when checked on June 1, the card
+      is considered expired (month 5 < month 6). However, this logic does not account
+      for whether the card is valid throughout the entire expiry month or only up to
+      a specific day.
+
+  - kind: unparseable
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      The CreditCardValidator class provides three validation methods but there is
+      no indication of how they are composed or called together. It is unclear
+      whether isAcceptedBrand, isExpired, and canRefund are always called in sequence,
+      whether they are optional checks, or whether the calling code selects a subset
+      of validations. The order and flow are not evident from this class alone.
+
+  - kind: unparseable
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      No checksum validation (Luhn algorithm) or other card number cryptographic
+      verification is present in the isAcceptedBrand method. The validation is
+      limited to length and brand prefix checking. It is unclear whether checksum
+      validation occurs in the calling code, the payment gateway, or is intentionally
+      omitted from this module.
+
+  - kind: ambiguity
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      The canRefund method does not validate that daysSinceSettlement is a
+      non-negative integer. It is unclear how the method behaves if passed a
+      negative value (e.g., a transaction not yet settled), or what assumptions
+      are made about the caller's responsibility to ensure valid input.
