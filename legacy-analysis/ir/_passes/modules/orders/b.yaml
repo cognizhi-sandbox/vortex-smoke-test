@@ -1,0 +1,221 @@
+records:
+  - record_key: ORD-APPROVAL-STANDARD-001
+    kind: business-rule
+    capability_key: standard-order-approval-threshold
+    requirement: >
+      The system SHALL require manager approval for orders with a monetary total
+      at or above $5,000.00 USD. GIVEN an order with orderTotal, WHEN
+      customerTier is not "PLATINUM" AND orderTotal >= $5,000.00, THEN manager
+      approval is required before the order may proceed.
+    confidence: high
+    confidence_basis: >
+      The approval threshold is defined as a static final constant with explicit
+      value (5000.00d) and enforced via direct numeric comparison in the
+      requiresApproval method. The rule is code-level, with no configuration
+      override or alternative enforcement visible.
+    risk_class: financial
+    basis: >
+      Line 6 defines APPROVAL_THRESHOLD = 5000.00d. Line 15 applies this in
+      requiresApproval: `return orderTotal >= APPROVAL_THRESHOLD;`. This is the
+      fallback case when customerTier does not match "PLATINUM". The threshold
+      is a financial decision point for order risk management.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 6
+        line_end: 6
+        excerpt: |
+          private static final double APPROVAL_THRESHOLD = 5000.00d;
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 15
+        line_end: 15
+        excerpt: |
+          return orderTotal >= APPROVAL_THRESHOLD;
+    stack_metadata:
+      framework: none
+
+  - record_key: ORD-PLATINUM-APPROVAL-EXEMPTION-001
+    kind: business-rule
+    capability_key: platinum-tier-approval-bypass
+    requirement: >
+      The system SHALL provide higher approval thresholds to customers with the
+      "PLATINUM" tier classification. For PLATINUM tier customers, manager
+      approval is required only for orders at or above $10,000.00 USD (twice the
+      standard threshold). GIVEN customerTier == "PLATINUM" AND orderTotal, WHEN
+      orderTotal >= $10,000.00, THEN manager approval is required. Otherwise, no
+      approval is required.
+    confidence: high
+    confidence_basis: >
+      The Platinum tier exemption is explicitly implemented via string comparison
+      and a literal multiplier (2) applied to the threshold. Line 13 shows:
+      `return orderTotal >= (APPROVAL_THRESHOLD * 2);`. This is code-level
+      enforcement with no configuration alternative visible.
+    risk_class: financial
+    basis: >
+      Lines 11-13 implement the tier-based exemption. The method checks
+      `if ("PLATINUM".equals(customerTier))` and applies a 2x multiplier to the
+      threshold. This creates a higher authorization limit for a customer segment,
+      reflecting tiered business logic for customer value differentiation.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 11
+        line_end: 13
+        excerpt: |
+          if ("PLATINUM".equals(customerTier)) {
+              // Platinum customers bypass approval up to twice the threshold.
+              return orderTotal >= (APPROVAL_THRESHOLD * 2);
+    stack_metadata:
+      framework: none
+
+  - record_key: ORD-FREE-SHIPPING-THRESHOLD-001
+    kind: business-rule
+    capability_key: complimentary-shipping-minimum
+    requirement: >
+      The system SHALL provide free (complimentary) shipping on all orders
+      with a monetary total at or above $75.00 USD. GIVEN an order with
+      orderTotal, WHEN orderTotal >= $75.00, THEN shipping cost SHALL be $0.00.
+    confidence: high
+    confidence_basis: >
+      The free shipping threshold is defined as a static final constant
+      (FREE_SHIPPING_MIN = 75.00d) and enforced as the primary condition in
+      shippingCost method via direct comparison. This is code-level enforcement
+      with no configuration override visible.
+    risk_class: financial
+    basis: >
+      Line 8 defines FREE_SHIPPING_MIN = 75.00d. Line 19 applies this:
+      `if (orderTotal >= FREE_SHIPPING_MIN) return 0.0d;`. This is a revenue
+      incentive rule that waives shipping charges to encourage higher order
+      values. The threshold is a customer acquisition and order value metric.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 8
+        line_end: 8
+        excerpt: |
+          private static final double FREE_SHIPPING_MIN = 75.00d;
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 19
+        line_end: 19
+        excerpt: |
+          if (orderTotal >= FREE_SHIPPING_MIN) return 0.0d;
+    stack_metadata:
+      framework: none
+
+  - record_key: ORD-SHIPPING-CHARGE-FORMULA-001
+    kind: business-rule
+    capability_key: non-complimentary-shipping-cost
+    requirement: >
+      The system SHALL calculate shipping cost for orders below the free shipping
+      threshold using a base flat rate plus a per-unit handling fee. For orders
+      with orderTotal < $75.00, the shipping cost SHALL be $4.95 (base rate) +
+      ($0.75 × itemCount). GIVEN itemCount and orderTotal < $75.00, the formula
+      is: shippingCost = $4.95 + ($0.75 × itemCount).
+    confidence: high
+    confidence_basis: >
+      The shipping formula is explicitly coded in line 21 as a arithmetic
+      expression: `return 4.95d + (itemCount * 0.75d);`. The constant values
+      (4.95 and 0.75) are hardcoded literals with no configuration mechanism.
+      The formula is deterministic and unambiguous in its implementation.
+    risk_class: financial
+    basis: >
+      Line 21 in the shippingCost method implements the calculation:
+      `return 4.95d + (itemCount * 0.75d);`. This is a two-component formula:
+      a fixed base rate ($4.95) and a variable per-item charge ($0.75). The
+      ordering of operations (addition of components) is explicit. This is a
+      revenue rule that combines fixed and variable shipping costs.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 21
+        line_end: 21
+        excerpt: |
+          return 4.95d + (itemCount * 0.75d);
+    stack_metadata:
+      framework: none
+
+  - record_key: ORD-CANCEL-ELIGIBILITY-STATE-001
+    kind: business-rule
+    capability_key: order-cancellation-allowed-states
+    requirement: >
+      The system SHALL permit order cancellation only for orders in pre-fulfillment
+      states. An order is eligible for cancellation if its status is "PENDING"
+      (awaiting processing) OR "APPROVED" (approved but not yet fulfilled).
+      GIVEN an order status, WHEN status == "PENDING" OR status == "APPROVED",
+      THEN cancellation is permitted. Otherwise, cancellation is NOT permitted.
+    confidence: high
+    confidence_basis: >
+      The cancellation eligibility logic is explicitly implemented via string
+      literal comparisons in the canCancel method: `return "PENDING".equals(status)
+      || "APPROVED".equals(status);`. The eligible states are hardcoded with no
+      configuration alternative or state machine enumeration visible.
+    risk_class: financial
+    basis: >
+      Lines 24-26 implement the cancellation rule. The canCancel method returns
+      true only when the order status matches one of two specific values. The
+      comment on line 25 provides context: "An order may only be cancelled before
+      it enters fulfilment." This reflects a workflow constraint that prevents
+      cancellation of orders already in fulfillment/shipping stages.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 24
+        line_end: 26
+        excerpt: |
+          public boolean canCancel(String status) {
+              // An order may only be cancelled before it enters fulfilment.
+              return "PENDING".equals(status) || "APPROVED".equals(status);
+    stack_metadata:
+      framework: none
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+    description: >
+      The customerTier parameter is checked by exact string match for
+      "PLATINUM". It is ambiguous what values are valid for customerTier
+      (e.g., is it "PLATINUM" vs "Platinum"? Are there other tiers like
+      "GOLD", "SILVER"? What happens with null or empty string?). The method
+      silently defaults non-matching tiers to the standard threshold, but the
+      set of valid tier values is not defined.
+
+  - kind: ambiguity
+    path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+    description: >
+      The itemCount parameter in shippingCost is not validated. The method does
+      not check that itemCount is non-negative. A negative itemCount would
+      reduce shipping cost via the formula (4.95 + itemCount * 0.75). It is
+      unclear what the semantics should be for zero or negative item counts.
+
+  - kind: ambiguity
+    path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+    description: >
+      The definition of "itemCount" is not specified. It is ambiguous whether
+      this represents the number of distinct SKUs, the total number of physical
+      items (where a bundle might be one or many items), the number of product
+      categories, or some other metric. Different interpretations affect the
+      calculated shipping cost.
+
+  - kind: ambiguity
+    path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+    description: >
+      The canCancel method recognizes only two status values: "PENDING" and
+      "APPROVED". It is ambiguous what the full set of valid order statuses is.
+      The comment mentions "fulfilment" as the transition point, but the complete
+      order state machine (e.g., "SUBMITTED", "SHIPPED", "DELIVERED", "RETURNED")
+      is not defined in this method.
+
+  - kind: ambiguity
+    path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+    description: >
+      The APPROVAL_THRESHOLD and FREE_SHIPPING_MIN constants are defined as
+      static final fields with no indication of environment-specific configuration
+      or override mechanism. It is ambiguous whether these values are truly
+      immutable or whether deployment-time configuration (e.g., properties files,
+      system variables) can override them. The lack of indirection suggests they
+      are hardcoded.
+
+  - kind: unparseable
+    path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+    description: >
+      The three public methods (requiresApproval, shippingCost, canCancel)
+      appear to implement independent business rules. There is no indication of
+      how these methods are composed or orchestrated during order processing.
+      It is unclear whether all three checks are always performed, whether they
+      are conditional, or whether the calling code uses them selectively based
+      on order state or context.
