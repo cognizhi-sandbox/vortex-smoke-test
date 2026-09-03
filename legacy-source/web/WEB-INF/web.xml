@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app>
+  <display-name>Pet Store Legacy</display-name>
+  <login-config><auth-method>FORM</auth-method></login-config>
+  <session-config><session-timeout>30</session-timeout></session-config>
+</web-app>
