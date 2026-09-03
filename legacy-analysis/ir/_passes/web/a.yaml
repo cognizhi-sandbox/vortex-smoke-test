@@ -1,0 +1,106 @@
+records:
+  - record_key: AUTH-LOGIN-METHOD-FORM-0001
+    kind: requirement
+    capability_key: order-approval
+    requirement: >
+      The application SHALL use form-based authentication for user login. Users SHALL
+      authenticate via an HTML form rather than HTTP Basic Authentication or other
+      mechanisms.
+    confidence: high
+    confidence_basis: >
+      The authentication method is explicitly declared in the web.xml deployment descriptor
+      with no ambiguity. Form-based authentication is a standard J2EE mechanism with
+      well-defined semantics.
+    risk_class: operational
+    basis: >
+      The web.xml file declares <auth-method>FORM</auth-method> in the <login-config>
+      element. This indicates the application uses form-based authentication, where
+      credentials are submitted via an HTML form. This is a declarative container-level
+      configuration that applies to all protected resources in the application. Form-based
+      authentication is the most common approach for web applications and allows for
+      customized login page styling and behavior. Filed under order-approval as the closest
+      business capability, though authentication is a cross-cutting concern not directly
+      related to order approval thresholds.
+    traces:
+      - path: legacy-source/web/WEB-INF/web.xml
+        line_start: 4
+        line_end: 4
+        excerpt: |
+          <login-config><auth-method>FORM</auth-method></login-config>
+    stack_metadata:
+      framework: j2ee-servlet
+      config_type: declarative
+
+  - record_key: SESSION-TIMEOUT-0001
+    kind: requirement
+    capability_key: order-approval
+    requirement: >
+      User sessions SHALL timeout after 30 minutes of inactivity. The application SHALL
+      terminate inactive sessions and require re-authentication if the user returns after
+      the timeout period.
+    confidence: high
+    confidence_basis: >
+      The session timeout is explicitly configured in the web.xml deployment descriptor
+      with a specific numeric value. This is a declarative container-level configuration
+      with no ambiguity about the intended timeout period.
+    risk_class: operational
+    basis: >
+      The web.xml file declares <session-timeout>30</session-timeout> in the
+      <session-config> element. The timeout value is specified in minutes (30 minutes).
+      This session timeout applies to all sessions in the application and is enforced at
+      the servlet container level. The 30-minute timeout balances security (limiting
+      exposure if a user leaves their browser unattended) against user convenience (longer
+      timeouts reduce the need to re-authenticate during extended sessions). This is a
+      security control and operational parameter. Filed under order-approval as the closest
+      business capability, though session management is a cross-cutting infrastructure
+      concern.
+    traces:
+      - path: legacy-source/web/WEB-INF/web.xml
+        line_start: 5
+        line_end: 5
+        excerpt: |
+          <session-config><session-timeout>30</session-timeout></session-config>
+    stack_metadata:
+      framework: j2ee-servlet
+      config_type: declarative
+      timeout_unit: minutes
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The web.xml file is minimal and does not include security constraints, role
+      definitions, or servlet/JSP mappings. The discovery analysis noted that no Struts
+      configuration, JSP files, or servlet entry points are present in the extracted
+      legacy-source directory. This suggests that either: (1) the web application layer is
+      incomplete in the extracted files; (2) the routing and security configuration exists
+      elsewhere (e.g., in a separate Struts configuration or as annotations in Java code);
+      (3) the application uses a different web framework (e.g., JSF) with its own
+      configuration. Without visibility into the full web application layer, it is unclear
+      how URLs are routed to servlets/actions, how user roles and permissions are defined,
+      and what authorization rules apply to different functionality.
+
+  - kind: ambiguity
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The session timeout of 30 minutes is a bare literal with no documented justification
+      or explanation of how it was determined. It is unclear whether: (1) the 30-minute
+      timeout was based on user behavior analysis or industry best practices; (2) there are
+      different timeout requirements for different user roles or transaction types; (3) the
+      timeout is subject to change based on security incidents or operational requirements;
+      (4) there is a "remember me" or extended session mechanism for returning users. The
+      session timeout is a security control that should be documented and reviewed with
+      security and operations teams.
+
+  - kind: ambiguity
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The web.xml configuration extracted represents only the top-level servlet container
+      configuration. It does not specify: (1) which resources require authentication or what
+      roles are authorized; (2) how user credentials are validated (against a database,
+      LDAP, external service?); (3) where the login form is located or how login errors are
+      handled; (4) whether HTTPS is required; (5) whether CSRF protection is enabled; (6)
+      how users are logged out. The actual security implementation and user experience
+      depend on application-level code and additional configuration not present in this
+      extract. Full security review would require access to the login page, user repository
+      configuration, and authorization enforcement points in the code.
