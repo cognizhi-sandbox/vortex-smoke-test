@@ -1,0 +1,124 @@
+records:
+  - record_key: AUTH-METHOD-FORM-BASED-0001
+    kind: requirement
+    capability_key: order-approval
+    requirement: >
+      User authentication SHALL be performed using form-based authentication, where
+      credentials are collected via an HTML login form submitted over HTTP POST to the
+      server.
+    confidence: high
+    confidence_basis: >
+      The authentication method is explicitly declared in the web application deployment
+      descriptor (web.xml) using standard J2EE declarative syntax. This is the only
+      authentication mechanism specified for the application.
+    risk_class: operational
+    basis: >
+      The <login-config> element in web.xml specifies <auth-method>FORM</auth-method>. This
+      is a declarative configuration that applies to all protected resources managed by the
+      servlet container. Form-based authentication is one of the standard J2EE authentication
+      methods and allows the application to present a custom login form to users. When a user
+      attempts to access a protected resource without valid credentials, the container
+      redirects them to a login page where they enter username and password via an HTML form.
+      Filed under order-approval as the closest business capability, though authentication is
+      an infrastructure concern that supports all business capabilities, not just order
+      approval.
+    traces:
+      - path: legacy-source/web/WEB-INF/web.xml
+        line_start: 4
+        line_end: 4
+        excerpt: |
+          <login-config><auth-method>FORM</auth-method></login-config>
+    stack_metadata:
+      framework: j2ee-servlet
+      config_element: login-config
+      config_type: declarative
+
+  - record_key: SESSION-TIMEOUT-THIRTY-MINUTES-0001
+    kind: requirement
+    capability_key: order-approval
+    requirement: >
+      User HTTP sessions SHALL expire after 30 minutes of inactivity. Once a session expires,
+      the user SHALL be logged out and must re-authenticate to access protected resources.
+    confidence: high
+    confidence_basis: >
+      The session timeout value is explicitly specified in the web application deployment
+      descriptor using standard J2EE declarative syntax. The value is specified as a single
+      integer with no conditional logic or parameterization.
+    risk_class: operational
+    basis: >
+      The <session-config> element in web.xml specifies <session-timeout>30</session-timeout>,
+      where the timeout value is expressed in minutes. This is enforced at the servlet
+      container level and applies to all HTTP sessions in the application. A 30-minute
+      timeout balances security and usability: it is long enough to avoid excessive
+      re-authentication during normal use, but short enough to limit exposure if a user
+      leaves their browser unattended at a shared device or unlocks terminal. This timeout
+      affects user experience, productivity, and security posture. Filed under order-approval
+      as the closest business capability, though session management is an infrastructure
+      cross-cutting concern that applies to the entire application, not specifically to order
+      approval.
+    traces:
+      - path: legacy-source/web/WEB-INF/web.xml
+        line_start: 5
+        line_end: 5
+        excerpt: |
+          <session-config><session-timeout>30</session-timeout></session-config>
+    stack_metadata:
+      framework: j2ee-servlet
+      config_element: session-config
+      config_type: declarative
+      timeout_value: 30
+      timeout_unit: minutes
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The web.xml file contains only minimal configuration and does not specify: (1) the
+      location of the login form (form-login-page) or error page (form-error-page); (2)
+      security constraints defining which resources require authentication or specific roles;
+      (3) role definitions or authorization rules; (4) servlet and filter mappings; (5)
+      error handling or exception configuration. Form-based authentication requires the
+      container to display or redirect to a login form when unauthenticated users access
+      protected resources, but the path to this form is not specified in web.xml. This
+      suggests either: (1) a default login form location is used by the container; (2) the
+      form configuration is specified elsewhere; (3) a custom filter or listener handles
+      authentication. Without visibility into the login form and role-based authorization
+      rules, the security model cannot be fully understood.
+
+  - kind: ambiguity
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The 30-minute session timeout is a bare literal with no context or documentation. It
+      is unclear whether: (1) this value was derived from user behavior analysis, login
+      frequency data, or regulatory requirements; (2) different timeout values are used for
+      different types of users (e.g., administrators vs. customers) or transaction types; (3)
+      there is a "remember me" mechanism to extend sessions beyond 30 minutes; (4) the timeout
+      can be adjusted per user or per session; (5) the value has been reviewed or adjusted
+      based on security incidents or operational issues. Session timeout is a security
+      parameter that should have documented justification and be subject to periodic review.
+
+  - kind: ambiguity
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The minimal web.xml configuration does not indicate how the application is organized
+      or what functionality it provides. The discovery analysis noted that no Struts
+      configuration, JSP files, servlet mappings, or other request handlers are present in
+      the extracted files. This raises questions: (1) Is the web application layer truly
+      minimal, or are JSPs and servlets stored elsewhere? (2) Does the application use a
+      different web framework (e.g., JSF, Spring MVC) with its own routing mechanism? (3) Are
+      there other configuration files (struts-config.xml, faces-config.xml, Spring bean
+      files) not extracted? (4) How do client requests map to handlers? Without the full
+      web application configuration, the application's architecture and entry points cannot
+      be understood.
+
+  - kind: ambiguity
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The application is named "Pet Store Legacy" in the display-name element, but no other
+      metadata about the application's purpose, version, or vendor is provided. The word
+      "Legacy" in the name suggests this is a refactored or migrated version of an older
+      system, but there is no documentation of: (1) what system it was extracted from; (2)
+      whether there are other versions (current, production, test); (3) the timeline of the
+      extraction; (4) what functionality was retained or removed during extraction. This is
+      context information that would aid understanding of the application's constraints and
+      design decisions.
