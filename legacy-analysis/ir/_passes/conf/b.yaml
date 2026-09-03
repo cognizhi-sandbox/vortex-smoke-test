@@ -1,0 +1,183 @@
+records:
+  - record_key: CARD-PAYMENT-TIMEOUT-0001
+    kind: requirement
+    capability_key: card-validation
+    requirement: >
+      The system SHALL impose a maximum timeout of 8 seconds on payment authorization requests
+      sent to the external payment gateway.
+    confidence: high
+    confidence_basis: >
+      Timeout value is explicitly defined in configuration with no ambiguity or calculation.
+      This is a direct operational requirement derived from the configuration file.
+    risk_class: operational
+    basis: >
+      The integration configuration specifies payment.timeout.ms=8000, establishing an explicit
+      8-second timeout constraint. This timeout applies to the billing module's payment
+      processing workflow and affects how the system handles slow or unresponsive gateway
+      endpoints. The timeout is critical to prevent payment requests from hanging indefinitely.
+    traces:
+      - path: legacy-source/conf/integration.properties
+        line_start: 3
+        line_end: 3
+        excerpt: |
+          payment.timeout.ms=8000
+    stack_metadata:
+      config_key: payment.timeout.ms
+      config_source: integration.properties
+      value_unit: milliseconds
+
+  - record_key: CARD-PAYMENT-ENDPOINT-0001
+    kind: integration
+    capability_key: card-validation
+    requirement: >
+      All payment card validation and authorization requests SHALL be routed to the payment
+      gateway at the URL https://gateway.example.test/v1.
+    confidence: high
+    confidence_basis: >
+      Gateway endpoint URL is explicitly specified in the configuration file without
+      ambiguity or calculation.
+    risk_class: operational
+    basis: >
+      The integration configuration specifies the payment gateway endpoint as
+      payment.gateway.url=https://gateway.example.test/v1. This URL serves as the contract
+      point between the billing/payment module and the external payment processor. All
+      requests for card validation, authorization, and settlement flow through this endpoint.
+    traces:
+      - path: legacy-source/conf/integration.properties
+        line_start: 1
+        line_end: 1
+        excerpt: |
+          payment.gateway.url=https://gateway.example.test/v1
+    stack_metadata:
+      config_key: payment.gateway.url
+      config_source: integration.properties
+      integration_target: payment-processor
+
+  - record_key: ORDER-PERSISTENCE-DATABASE-0001
+    kind: integration
+    capability_key: order-approval
+    requirement: >
+      Order and customer data SHALL be persisted to an Oracle database instance located at
+      host legacy-db, port 1521, with service name PETSTORE, using the JDBC connection
+      string jdbc:oracle:thin:@legacy-db:1521:PETSTORE.
+    confidence: high
+    confidence_basis: >
+      Database connection parameters are explicitly specified in the JDBC configuration
+      without ambiguity.
+    risk_class: operational
+    basis: >
+      The JDBC configuration specifies jdbc.url=jdbc:oracle:thin:@legacy-db:1521:PETSTORE,
+      establishing the connection contract for the database that supports order processing,
+      order approval workflows, and customer data storage. Both the orders and billing modules
+      depend on this database for data persistence and retrieval.
+    traces:
+      - path: legacy-source/conf/jdbc.properties
+        line_start: 1
+        line_end: 1
+        excerpt: |
+          jdbc.url=jdbc:oracle:thin:@legacy-db:1521:PETSTORE
+    stack_metadata:
+      config_key: jdbc.url
+      config_source: jdbc.properties
+      db_vendor: oracle
+      db_version: thin-client
+
+  - record_key: ORDER-DATABASE-CONNECTION-POOL-0001
+    kind: requirement
+    capability_key: order-approval
+    requirement: >
+      The JDBC connection pool to the database SHALL be configured with a maximum of 25
+      concurrent connections.
+    confidence: medium
+    confidence_basis: >
+      The pool size limit is explicitly configured but no supporting documentation explains
+      the choice of 25 or relates it to expected application load, throughput, or database
+      constraints. The value appears as a bare literal without context or tuning justification.
+    risk_class: operational
+    basis: >
+      The JDBC configuration specifies jdbc.pool.max=25, establishing a hard limit on
+      concurrent database connections. This constraint affects system scalability and
+      concurrency capacity. However, the discovery analysis identified that no authoritative
+      source documents why 25 was chosen or what load profile this pool size supports. The
+      pool size is an operational parameter that should be correlated with database instance
+      limits and expected concurrent user load, but this correlation is not documented.
+    traces:
+      - path: legacy-source/conf/jdbc.properties
+        line_start: 4
+        line_end: 4
+        excerpt: |
+          jdbc.pool.max=25
+    stack_metadata:
+      config_key: jdbc.pool.max
+      config_source: jdbc.properties
+      pool_type: jdbc-connection-pool
+
+  - record_key: ORDER-DATABASE-CREDENTIALS-0001
+    kind: requirement
+    capability_key: order-approval
+    requirement: >
+      Database connections SHALL authenticate using the service account username petstore_app
+      with an associated password stored in the jdbc.properties configuration.
+    confidence: high
+    confidence_basis: >
+      The database username is explicitly specified in the configuration. The password is
+      present but redacted in the current repository state. This is a clear credential
+      requirement with no ambiguity about the account to be used.
+    risk_class: operational
+    basis: >
+      The JDBC configuration specifies jdbc.username=petstore_app, establishing that
+      database access occurs through a dedicated service account. This account is presumed
+      to have appropriate role-based permissions within the database. The associated password
+      is configured via jdbc.password (redacted in current state). This service account
+      approach is standard practice for application-to-database authentication.
+    traces:
+      - path: legacy-source/conf/jdbc.properties
+        line_start: 2
+        line_end: 2
+        excerpt: |
+          jdbc.username=petstore_app
+    stack_metadata:
+      config_key: jdbc.username
+      config_source: jdbc.properties
+      credential_type: service-account
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/conf/integration.properties
+    description: >
+      The payment gateway API key is stored as a configuration value
+      (payment.gateway.api_key, currently redacted). The configuration approach does not
+      specify: (1) whether the API key is environment-specific (test vs. production); (2) how
+      frequently the key is rotated; (3) who has access to modify it; (4) whether it is
+      encrypted in transit or at rest; (5) whether the key is scoped to specific operations
+      (e.g., authorization vs. settlement). Additionally, the gateway endpoint URL
+      (gateway.example.test/v1) uses a .test domain, suggesting this is a test or sandbox
+      environment configuration. It is unclear whether this URL is hardcoded in the
+      production deployment or if production uses a different endpoint. This distinction
+      affects the configuration management and deployment strategy.
+
+  - kind: ambiguity
+    path: legacy-source/conf/jdbc.properties
+    description: >
+      The database credentials (username and password) are stored in plain-text properties
+      files. This configuration does not specify: (1) whether the password is encrypted or
+      rotated; (2) who has read access to the properties file; (3) whether the service
+      account (petstore_app) is specific to this application or shared with other systems;
+      (4) what database roles and permissions the account holds; (5) whether the account can
+      drop tables or modify schema, or is restricted to DML operations. The current repository
+      shows redacted passwords, indicating security awareness, but the underlying
+      configuration approach (plain-text properties files) is a legacy anti-pattern that may
+      not meet modern credential management standards.
+
+  - kind: ambiguity
+    path: legacy-source/conf/jdbc.properties
+    description: >
+      The maximum connection pool size of 25 lacks documented justification or tuning
+      rationale. It is unclear whether: (1) this value is based on expected concurrent users
+      or transactions; (2) it is constrained by database license terms or instance
+      configuration; (3) it represents a performance tuning decision or a default; (4)
+      whether the database server (legacy-db) can accept more than 25 connections and this
+      limit is artificial, or whether 25 is the database's maximum. Without this context,
+      future operators cannot assess whether the pool size is appropriate for scale changes,
+      load increases, or new use cases. This should be documented or parameterized by
+      environment.
