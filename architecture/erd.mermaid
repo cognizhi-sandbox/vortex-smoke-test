@@ -1,0 +1,88 @@
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    ORDER ||--o{ ORDER_ITEM : contains
+    ORDER ||--o{ PAYMENT : has
+    PAYMENT ||--o{ CARD : uses
+    ORDER ||--o{ REFUND : may_have
+    PRODUCT ||--o{ ORDER_ITEM : "ordered_as"
+
+    CUSTOMER {
+        string customer_id PK "UUID"
+        string tier "STANDARD | PLATINUM"
+        string name
+        string email
+        datetime created_at
+        datetime updated_at
+    }
+
+    ORDER {
+        string order_id PK "UUID"
+        string customer_id FK "references CUSTOMER"
+        decimal total "order subtotal"
+        decimal shipping_cost "calculated from total and item count"
+        decimal tax "calculated"
+        decimal grand_total "total + shipping + tax"
+        string status "PENDING | APPROVED | FULFILLED | SHIPPED | CANCELLED"
+        boolean requires_approval "true if total >= threshold"
+        datetime approval_deadline "if requires_approval=true"
+        datetime created_at
+        datetime updated_at
+    }
+
+    ORDER_ITEM {
+        string order_item_id PK "UUID"
+        string order_id FK "references ORDER"
+        string product_id FK "references PRODUCT"
+        integer quantity "quantity ordered"
+        decimal unit_price "price per unit at time of order"
+        decimal subtotal "quantity * unit_price"
+    }
+
+    PRODUCT {
+        string product_id PK "UUID"
+        string name
+        string sku "Stock Keeping Unit"
+        decimal current_price
+        boolean active
+    }
+
+    PAYMENT {
+        string payment_id PK "UUID"
+        string order_id FK "references ORDER"
+        string card_id FK "references CARD"
+        decimal amount "amount charged"
+        string status "PENDING | AUTHORIZED | CAPTURED | DECLINED | REFUNDED"
+        string gateway_ref "payment gateway transaction reference"
+        string gateway_response "JSON response from payment gateway"
+        datetime authorization_time
+        datetime settlement_time
+        datetime created_at
+    }
+
+    CARD {
+        string card_id PK "UUID"
+        string customer_id FK "references CUSTOMER"
+        string card_number_last_four "last 4 digits only (PCI-compliant)"
+        string brand "VISA | MASTERCARD | (other stored as OTHER)"
+        integer expiry_month
+        integer expiry_year
+        boolean valid "validation status (null check, length, brand)"
+        datetime validated_at
+        boolean is_default
+        datetime created_at
+        datetime updated_at
+    }
+
+    REFUND {
+        string refund_id PK "UUID"
+        string order_id FK "references ORDER"
+        string payment_id FK "references PAYMENT"
+        decimal amount "refund amount"
+        string status "PENDING | APPROVED | PROCESSED | REJECTED"
+        string reason "customer request reason"
+        datetime requested_at
+        datetime settlement_date "original payment settlement date"
+        integer days_since_settlement "calculated: TODAY() - settlement_date"
+        boolean eligible "true if days_since_settlement <= 90"
+        datetime created_at
+    }
