@@ -1,0 +1,47 @@
+module: web
+pass_a_records: 2
+pass_b_records: 2
+cross_validation_summary:
+  records_agreed: 2 (100% of both passes)
+  records_partial: 0 (0%)
+  records_disputed: 0 (0%)
+  findings_agreed: 4
+  findings_partial: 0
+  findings_unidentified_by_either_pass: 2
+
+records_by_status:
+  agreed:
+    - WEB-AUTH-METHOD (Pass A: WEB-AUTH-METHOD-001, Pass B: WEB-FORM-AUTH-001) — Form-based user authentication via web.xml
+    - WEB-SESSION-TIMEOUT (Pass A: WEB-SESSION-TIMEOUT-001, Pass B: WEB-SESSION-TIMEOUT-REQUIREMENT-001) — 30-minute HTTP session inactivity timeout
+
+  partial:
+    # None - all records have identical semantic content
+
+  disputed:
+    # None - no disagreements on authentication or timeout requirements
+
+findings_by_status:
+  agreed:
+    - FORM-based authentication is declared but form location/page path and `<form-login-config>` element are absent
+    - Session timeout of 30 minutes is declared but ambiguity exists regarding idle timeout vs absolute timeout scope
+    - Web.xml configuration is minimal with no security constraints, servlet mappings, filters, or role definitions
+    - No servlet or filter definitions present; request routing and integration of business logic modules unclear
+
+  partial:
+    # None - no finding disagreements exist
+
+  unidentified_by_pass_a:
+    # Pass B identified: Session timeout specified as integer with no explicit unit declaration (though servlet spec defines minutes)
+
+  unidentified_by_pass_b:
+    # Pass A identified: Display name "Pet Store Legacy" present but provides no technical requirement
+
+analysis_notes:
+  - Perfect 100% agreement on both web layer requirements (form auth and session timeout)
+  - Both passes identified identical authentication and timeout rules from declarative web.xml configuration
+  - Both record naming schemes differ (WEB-AUTH-METHOD vs WEB-FORM-AUTH, SESSION-TIMEOUT vs SESSION-TIMEOUT-REQUIREMENT) but semantic content is identical
+  - Identical confidence levels (high for both records) with identical reasoning about authoritative declarative configuration
+  - Four findings fully agreed across both passes; two minor findings differ between passes (display name vs unit ambiguity)
+  - Record granularity is identical (2 records each covering same 2 web layer requirements)
+  - Confidence upgrades supported for both records based on agreement
+  - No SME judgment needed on these records — agreement is complete and unambiguous

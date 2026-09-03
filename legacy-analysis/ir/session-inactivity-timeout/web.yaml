@@ -1,0 +1,65 @@
+records:
+  - record_key: WEB-SESSION-TIMEOUT-AGREED-001
+    kind: requirement
+    capability_key: http-session-inactivity-timeout
+    requirement: >
+      The system SHALL enforce an HTTP session timeout of 30 minutes of
+      inactivity. GIVEN a user's authenticated HTTP session, WHEN the session
+      remains inactive (no requests received) for 30 consecutive minutes,
+      THEN the servlet container SHALL automatically invalidate the session
+      and the user SHALL be logged out. Any subsequent request SHALL require
+      re-authentication.
+    confidence: high
+    confidence_basis: >
+      Both passes independently identified the session timeout requirement from
+      the declarative configuration element `<session-config><session-timeout>30</session-timeout>`
+      in web.xml. Per J2EE servlet specification, the session-timeout element is
+      authoritative and specifies minutes. High confidence: both passes agree,
+      single authoritative declarative source, no configuration alternatives visible.
+    risk_class: operational
+    basis: >
+      Line 5 of web.xml declares the session timeout via the `<session-timeout>`
+      element within `<session-config>`. The value "30" indicates 30 minutes per
+      servlet specification. This timeout is a security control that mitigates
+      the risk of session hijacking and ensures that abandoned sessions are
+      periodically terminated. Both passes correctly identified this as a binding
+      declarative requirement.
+    traces:
+      - path: legacy-source/web/WEB-INF/web.xml
+        line_start: 5
+        line_end: 5
+        excerpt: |
+          <session-config><session-timeout>30</session-timeout></session-config>
+    cross_validation: agreed
+    stack_metadata:
+      framework: servlet
+
+findings:
+  - kind: ambiguity
+    classification: agreed
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The session timeout of 30 minutes is declared but it is ambiguous whether
+      this represents idle timeout (session invalidated after 30 minutes of
+      inactivity) or absolute timeout (session expires after 30 minutes
+      regardless of activity). Standard servlet specification behavior implements
+      idle timeout, but the explicit scope is not stated in this configuration.
+
+  - kind: ambiguity
+    classification: pass_b_identified
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The session timeout of 30 minutes is specified as an integer value but
+      no explicit unit label is declared in the `<session-timeout>` element.
+      While the servlet specification defines the unit as minutes, the lack of
+      explicit labeling in the configuration creates potential for
+      misinterpretation (could be seconds or milliseconds). This is a minor
+      ambiguity about the explicit unit declaration.
+
+  - kind: ambiguity
+    classification: agreed
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The session timeout declaration does not specify whether the 30-minute
+      timeout applies to authenticated sessions, unauthenticated sessions, or
+      both. It is unclear if the timeout scope is session-wide or role-specific.

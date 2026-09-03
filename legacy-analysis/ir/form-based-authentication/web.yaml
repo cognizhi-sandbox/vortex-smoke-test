@@ -1,0 +1,43 @@
+records:
+  - record_key: WEB-AUTH-METHOD-AGREED-001
+    kind: requirement
+    capability_key: form-based-user-authentication
+    requirement: >
+      The system SHALL use form-based authentication (HTTP FORM) as the primary
+      authentication mechanism. Users SHALL authenticate via an HTML form rather
+      than HTTP basic authentication or other mechanisms. The system requires
+      form-based credential submission for user login.
+    confidence: high
+    confidence_basis: >
+      Both passes independently identified the form-based authentication requirement
+      from the declarative configuration element `<login-config><auth-method>FORM</auth-method>`
+      in web.xml. Per J2EE servlet specification, the auth-method element is
+      authoritative and binding. High confidence: both passes agree, single
+      authoritative declarative source, no configuration alternatives visible.
+    risk_class: operational
+    basis: >
+      Line 4 of web.xml declares the authentication method via the `<auth-method>`
+      element within `<login-config>`. The value "FORM" indicates form-based
+      authentication is required. This is a declarative configuration requirement
+      that directly impacts the authentication flow and security architecture.
+      Both passes correctly identified this as a servlet specification requirement.
+    traces:
+      - path: legacy-source/web/WEB-INF/web.xml
+        line_start: 4
+        line_end: 4
+        excerpt: |
+          <login-config><auth-method>FORM</auth-method></login-config>
+    cross_validation: agreed
+    stack_metadata:
+      framework: servlet
+
+findings:
+  - kind: ambiguity
+    classification: agreed
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The web.xml declares FORM-based authentication but does not specify the
+      login form location, login page path, or error page path. It is unclear
+      where the login form is served from (e.g., /login.jsp, /auth/login.html)
+      or how login failures are handled. The `<form-login-config>` element that
+      typically specifies these details is absent from this configuration.
