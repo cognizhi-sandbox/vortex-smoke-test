@@ -1,0 +1,177 @@
+---
+records:
+  - record_key: order-approval-standard-0001
+    kind: business-rule
+    capability_key: order-approval
+    requirement: >
+      The system SHALL require manager approval for all orders with a total amount
+      of $5,000 or greater. Orders totaling less than $5,000 do not require approval.
+      GIVEN an order total >= $5,000, THEN approval is required.
+      GIVEN an order total < $5,000, THEN approval is not required.
+    confidence: medium
+    confidence_basis: >
+      The $5,000 threshold is stated in the class-level JavaDoc comment ("Orders at or
+      above this total require a manager's approval") and enforced in requiresApproval().
+      The value is a hardcoded constant. Confidence is medium: clearly documented intent,
+      but no configuration mechanism or test context.
+    risk_class: financial
+    basis: >
+      The APPROVAL_THRESHOLD constant is defined as 5000.00d with an explanatory comment.
+      The requiresApproval() method implements >= comparison against this threshold.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 5
+        line_end: 6
+        excerpt: |
+          /** Orders at or above this total require a manager's approval. */
+          private static final double APPROVAL_THRESHOLD = 5000.00d;
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 15
+        line_end: 15
+        excerpt: |
+          return orderTotal >= APPROVAL_THRESHOLD;
+
+  - record_key: order-approval-tier-bypass-0002
+    kind: business-rule
+    capability_key: order-approval
+    requirement: >
+      Platinum tier customers are entitled to an approval bypass that doubles the
+      standard approval threshold. Platinum customers require approval only for orders
+      totaling $10,000 or more (2x the base threshold of $5,000). Orders below $10,000
+      do not require approval for Platinum customers.
+      GIVEN a Platinum customer AND order total >= $10,000, THEN approval is required.
+      GIVEN a Platinum customer AND order total < $10,000, THEN approval is not required.
+    confidence: low
+    confidence_basis: >
+      The tier bypass logic is implemented using a hardcoded multiplier (2x), with an
+      explanatory inline comment. However, the multiplier value (2) is a bare literal
+      with no documented business justification. No comment explains why Platinum gets
+      exactly 2x, when this policy was established, or under what conditions it might change.
+    risk_class: financial
+    basis: >
+      The requiresApproval() method contains a tier-based conditional that checks for
+      "PLATINUM" customer tier and multiplies APPROVAL_THRESHOLD by 2. The comment states
+      the intent but not the rationale.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 11
+        line_end: 13
+        excerpt: |
+          if ("PLATINUM".equals(customerTier)) {
+              // Platinum customers bypass approval up to twice the threshold.
+              return orderTotal >= (APPROVAL_THRESHOLD * 2);
+
+  - record_key: order-fulfillment-free-shipping-threshold-0003
+    kind: business-rule
+    capability_key: order-fulfillment
+    requirement: >
+      The system SHALL provide free shipping for all orders with a total amount of
+      $75.00 or greater. Orders with totals below $75.00 are subject to shipping charges.
+      GIVEN an order total >= $75.00, THEN shipping cost is $0.00.
+      GIVEN an order total < $75.00, THEN shipping charges apply per the shipping formula.
+    confidence: medium
+    confidence_basis: >
+      The $75.00 threshold is documented in a class-level JavaDoc comment ("Orders below
+      this total ship free") and enforced in shippingCost(). The value is a hardcoded
+      constant. Confidence is medium: clear intent, no configuration mechanism.
+    risk_class: financial
+    basis: >
+      The FREE_SHIPPING_MIN constant is defined as 75.00d with an explanatory comment.
+      The shippingCost() method checks if orderTotal >= FREE_SHIPPING_MIN and returns
+      0.0d if true.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 7
+        line_end: 8
+        excerpt: |
+          /** Orders below this total ship free. */
+          private static final double FREE_SHIPPING_MIN = 75.00d;
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 19
+        line_end: 19
+        excerpt: |
+          if (orderTotal >= FREE_SHIPPING_MIN) return 0.0d;
+
+  - record_key: order-fulfillment-shipping-formula-0004
+    kind: business-rule
+    capability_key: order-fulfillment
+    requirement: >
+      For orders below the free shipping threshold ($75.00), shipping cost SHALL be
+      calculated as: $4.95 flat rate plus $0.75 per item in the order.
+      Formula: shippingCost = 4.95 + (itemCount × 0.75)
+      GIVEN an order < $75.00 with N items, THEN shippingCost = $4.95 + ($0.75 × N).
+    confidence: low
+    confidence_basis: >
+      The shipping formula is implemented using hardcoded values (4.95d flat rate,
+      0.75d per-item rate). An inline comment describes the general formula concept but
+      not the specific values. No documentation explains when these rates were set,
+      their cost basis, or how often they are reviewed. Confidence is low due to bare literals.
+    risk_class: financial
+    basis: >
+      The shippingCost() method calculates shipping for orders < $75 by adding a hardcoded
+      flat rate (4.95d) to a per-item rate (0.75d × itemCount). The inline comment states
+      the concept ("Flat rate plus a per-item handling charge") but not the values.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 20
+        line_end: 21
+        excerpt: |
+          // Flat rate plus a per-item handling charge.
+          return 4.95d + (itemCount * 0.75d);
+
+  - record_key: order-fulfillment-cancellation-eligibility-0005
+    kind: business-rule
+    capability_key: order-fulfillment
+    requirement: >
+      Orders may be cancelled only when they have not yet entered fulfilment. Specifically,
+      orders with status PENDING or APPROVED may be cancelled. All other order statuses
+      (implicitly: SHIPPED, FULFILLED, FAILED, CANCELLED, etc.) shall prevent cancellation.
+      GIVEN an order with status PENDING, THEN cancellation is allowed.
+      GIVEN an order with status APPROVED, THEN cancellation is allowed.
+      GIVEN an order with any other status, THEN cancellation is not allowed.
+    confidence: medium
+    confidence_basis: >
+      The two cancellable statuses (PENDING and APPROVED) are explicitly implemented in
+      canCancel() using equality checks. The method comment describes the business intent
+      clearly. However, the enumeration of other valid statuses is implicit and not formally
+      documented. Confidence is medium: clear for these two, ambiguous for others.
+    risk_class: operational
+    basis: >
+      The canCancel() method performs string equality checks for status, returning true
+      only for PENDING or APPROVED. The inline comment ("An order may only be cancelled
+      before it enters fulfilment") explains the business rule but does not enumerate
+      the complete status state machine.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 24
+        line_end: 26
+        excerpt: |
+          public boolean canCancel(String status) {
+              // An order may only be cancelled before it enters fulfilment.
+              return "PENDING".equals(status) || "APPROVED".equals(status);
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+    description: >
+      The Platinum tier approval multiplier (2x) has no documented business justification.
+      Why 2? When was Platinum tier established? Is 2x a contractual commitment, a risk
+      calculation, or a historical artifact? Does Platinum entitle any other benefits?
+      This should be documented for compliance and audit purposes.
+
+  - kind: ambiguity
+    path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+    description: >
+      The shipping cost components ($4.95 flat rate and $0.75 per item) are hardcoded
+      with no justification. What cost basis do these reflect (packaging, handling, carrier
+      subsidy, margin)? When were they last reviewed? How often should they be adjusted?
+      No configuration mechanism exists for updating these values.
+
+  - kind: ambiguity
+    path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+    description: >
+      Order status enumeration is implicit. The code shows PENDING and APPROVED as
+      cancellable, but does not formally define the complete status state machine or
+      the valid transitions between statuses. What statuses exist (SHIPPED, FULFILLED,
+      FAILED, CANCELLED, RETURNED)? When does each transition occur? This should be
+      documented as a formal state machine.
