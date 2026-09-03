@@ -1,0 +1,122 @@
+---
+records:
+  - record_key: order-fulfillment-free-shipping-0003
+    kind: business-rule
+    capability_key: order-fulfillment
+    requirement: >
+      The system SHALL provide free shipping for orders with a total amount of $75
+      or more. Orders below $75 are subject to shipping charges.
+      GIVEN an order total >= $75, THEN shipping cost is $0.
+      GIVEN an order total < $75, THEN shipping cost is calculated per the handling charge formula.
+    confidence: medium
+    confidence_basis: >
+      Both independent passes agreed on medium confidence. The $75 threshold is documented
+      in a code comment and enforced in the shippingCost() method. The value is a bare literal,
+      but the intent is clearly stated.
+    risk_class: financial
+    basis: >
+      The OrderRules class defines FREE_SHIPPING_MIN as 75.00 with an explanatory comment.
+      The shippingCost() method checks if orderTotal >= FREE_SHIPPING_MIN and returns 0.0d
+      if true.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 7
+        line_end: 8
+        excerpt: |
+          /** Orders below this total ship free. */
+          private static final double FREE_SHIPPING_MIN = 75.00d;
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 19
+        line_end: 19
+        excerpt: |
+          if (orderTotal >= FREE_SHIPPING_MIN) return 0.0d;
+    crossvalidation:
+      pass_a: order-fulfillment-free-shipping-0003
+      pass_b: order-fulfillment-free-shipping-threshold-0003
+      agreement: both_passes_agreed
+
+  - record_key: order-fulfillment-shipping-calculation-0004
+    kind: business-rule
+    capability_key: order-fulfillment
+    requirement: >
+      For orders below $75 (subject to shipping charges), the shipping cost SHALL be
+      calculated as a flat rate of $4.95 plus a per-item handling charge of $0.75
+      per item in the order.
+      Formula: shipping = 4.95 + (itemCount * 0.75)
+      GIVEN an order < $75 with N items, THEN shipping cost = $4.95 + ($0.75 × N).
+    confidence: low
+    confidence_basis: >
+      Both independent passes agreed on low confidence. The shipping calculation is implemented
+      using bare literals ($4.95 flat rate, $0.75 per item) with only an inline comment.
+      No explanation for these values or when they were established. No configuration
+      mechanism exists. Confidence is low due to undocumented values.
+    risk_class: financial
+    basis: >
+      The shippingCost() method implements the formula using hardcoded values: 4.95d
+      (flat rate) and 0.75d (per-item rate). The inline comment describes the general
+      formula but not the specific values.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 20
+        line_end: 21
+        excerpt: |
+          // Flat rate plus a per-item handling charge.
+          return 4.95d + (itemCount * 0.75d);
+    crossvalidation:
+      pass_a: order-fulfillment-shipping-calculation-0004
+      pass_b: order-fulfillment-shipping-formula-0004
+      agreement: both_passes_agreed
+
+  - record_key: order-fulfillment-cancellation-0005
+    kind: business-rule
+    capability_key: order-fulfillment
+    requirement: >
+      Orders may be cancelled only before entering fulfilment. Specifically, orders
+      with status PENDING or APPROVED may be cancelled. Orders in any other status
+      (e.g., SHIPPED, FULFILLED, FAILED) cannot be cancelled.
+      GIVEN an order with status PENDING, THEN cancellation is permitted.
+      GIVEN an order with status APPROVED, THEN cancellation is permitted.
+      GIVEN an order with any other status, THEN cancellation is not permitted.
+    confidence: medium
+    confidence_basis: >
+      Both independent passes agreed on medium confidence. The two cancellable statuses
+      (PENDING and APPROVED) are clearly implemented in the canCancel() method. The comment
+      explains the business intent. However, the enumeration of other possible statuses is
+      implicit and not documented.
+    risk_class: operational
+    basis: >
+      The canCancel() method performs an equality check on the status parameter,
+      returning true only for PENDING or APPROVED. The comment ("An order may only be
+      cancelled before it enters fulfilment") describes the intent but does not enumerate
+      other valid statuses.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 24
+        line_end: 26
+        excerpt: |
+          public boolean canCancel(String status) {
+              // An order may only be cancelled before it enters fulfilment.
+              return "PENDING".equals(status) || "APPROVED".equals(status);
+    crossvalidation:
+      pass_a: order-fulfillment-cancellation-0005
+      pass_b: order-fulfillment-cancellation-eligibility-0005
+      agreement: both_passes_agreed
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+    description: >
+      The shipping cost components ($4.95 flat rate and $0.75 per item) are bare literals
+      with no documented justification. Both passes independently flagged this. When were these
+      rates set? Are they reviewed annually? What cost basis do they reflect (packaging,
+      handling, base carrier cost)?
+    crossvalidation: both_passes_agreed
+
+  - kind: ambiguity
+    path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+    description: >
+      The order status enumeration is implicit. Both passes independently flagged this.
+      Only PENDING and APPROVED are shown as cancellable; other statuses are inferred but
+      not formally listed. A status state machine should be documented to clarify valid
+      transitions and what triggers each state change.
+    crossvalidation: both_passes_agreed

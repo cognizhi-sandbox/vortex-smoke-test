@@ -1,0 +1,79 @@
+---
+records:
+  - record_key: order-approval-threshold-0001
+    kind: business-rule
+    capability_key: order-approval
+    requirement: >
+      The system SHALL require manager approval for orders with a total amount of $5,000
+      or greater. Orders below $5,000 do not require approval.
+      GIVEN an order total >= $5,000, THEN approval is required.
+      GIVEN an order total < $5,000, THEN approval is not required.
+    confidence: medium
+    confidence_basis: >
+      Both independent passes agreed on this rule with medium confidence. The $5,000 threshold
+      is documented in a code comment and enforced in the requiresApproval() method. The value
+      is a bare literal with no configuration mechanism, but the intent is clear.
+    risk_class: financial
+    basis: >
+      The OrderRules class defines APPROVAL_THRESHOLD as 5000.00 with an explanatory
+      comment. The requiresApproval() method implements the comparison using >=, making
+      $5,000 orders requiring approval.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 5
+        line_end: 6
+        excerpt: |
+          /** Orders at or above this total require a manager's approval. */
+          private static final double APPROVAL_THRESHOLD = 5000.00d;
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 15
+        line_end: 15
+        excerpt: |
+          return orderTotal >= APPROVAL_THRESHOLD;
+    crossvalidation:
+      pass_a: order-approval-threshold-0001
+      pass_b: order-approval-standard-0001
+      agreement: both_passes_agreed
+
+  - record_key: order-approval-platinum-bypass-0002
+    kind: business-rule
+    capability_key: order-approval
+    requirement: >
+      Platinum tier customers are granted a bypass that doubles the standard approval
+      threshold. Platinum customers require approval only for orders totaling $10,000
+      or more (twice the standard $5,000 threshold). Orders below $10,000 do not require
+      approval for Platinum customers.
+      GIVEN a Platinum customer with order total >= $10,000, THEN approval is required.
+      GIVEN a Platinum customer with order total < $10,000, THEN approval is not required.
+    confidence: low
+    confidence_basis: >
+      Both independent passes agreed on low confidence. The 2x multiplier is enforced in
+      code with a comment but the multiplier value (2) is a bare literal with no documented
+      business justification. Confidence is low due to undocumented scaling factor.
+    risk_class: financial
+    basis: >
+      The requiresApproval() method contains a conditional check for Platinum tier
+      customers that multiplies the threshold by 2. The comment explains the intent but
+      not why the multiplier is 2 or when this policy was established.
+    traces:
+      - path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+        line_start: 11
+        line_end: 13
+        excerpt: |
+          if ("PLATINUM".equals(customerTier)) {
+              // Platinum customers bypass approval up to twice the threshold.
+              return orderTotal >= (APPROVAL_THRESHOLD * 2);
+    crossvalidation:
+      pass_a: order-approval-platinum-bypass-0002
+      pass_b: order-approval-tier-bypass-0002
+      agreement: both_passes_agreed
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/modules/orders/src/com/petstore/orders/OrderRules.java
+    description: >
+      The Platinum tier multiplier (2x the approval threshold) is not justified. Both
+      passes independently flagged this as ambiguous. Is this a historical business decision,
+      a contractual commitment, a risk-based tier, or something else? When (and why) was
+      Platinum established? This should be documented for compliance and audit purposes.
+    crossvalidation: both_passes_agreed
