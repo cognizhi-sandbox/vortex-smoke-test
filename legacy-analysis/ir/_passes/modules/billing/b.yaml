@@ -1,0 +1,235 @@
+records:
+  - record_key: CARD-VALIDATION-NULL-CHECK-0001
+    kind: business-rule
+    capability_key: card-validation
+    requirement: >
+      A credit card number that is null or empty SHALL be immediately rejected and not
+      accepted for payment processing.
+    confidence: high
+    confidence_basis: >
+      The validation method contains an explicit null check in the guard clause. This is
+      enforced at the method's entry point before any other validation occurs.
+    risk_class: financial
+    basis: >
+      The isAcceptedBrand() method begins with a null check: if (number == null || ...).
+      This establishes that null card numbers cannot pass validation. This is a defensive
+      programming practice that prevents null pointer exceptions and ensures all accepted
+      cards are non-null objects.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 5
+        line_end: 6
+        excerpt: |
+          public boolean isAcceptedBrand(String number) {
+            if (number == null || number.length() < 13) return false;
+    stack_metadata:
+      method: isAcceptedBrand
+      class: CreditCardValidator
+      validation_order: first
+
+  - record_key: CARD-VALIDATION-LENGTH-REQUIREMENT-0001
+    kind: business-rule
+    capability_key: card-validation
+    requirement: >
+      A credit card number SHALL be rejected if it contains fewer than 13 digits.
+    confidence: high
+    confidence_basis: >
+      The minimum length requirement is explicitly enforced in the guard clause using a
+      direct length comparison operator with a specific numeric literal (13).
+    risk_class: financial
+    basis: >
+      The isAcceptedBrand() method checks number.length() < 13 in the same guard clause
+      that checks for null. Card numbers with 12 or fewer characters are rejected before
+      any brand validation occurs. The specific value of 13 digits is a bare literal with
+      no configuration or comment explaining why this minimum was chosen. This is conservatively
+      lower than typical card number lengths (Visa and Mastercard are typically 16 digits),
+      suggesting it may accept non-standard or test card formats.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 6
+        line_end: 6
+        excerpt: |
+          if (number == null || number.length() < 13) return false;
+    stack_metadata:
+      method: isAcceptedBrand
+      class: CreditCardValidator
+      minimum_digits: 13
+
+  - record_key: CARD-VALIDATION-BRAND-VISA-MASTERCARD-0001
+    kind: business-rule
+    capability_key: card-validation
+    requirement: >
+      Only credit cards with the first digit 4 (Visa) or 5 (Mastercard) SHALL be accepted.
+      All other card brands, including American Express and all others, SHALL be rejected.
+    confidence: high
+    confidence_basis: >
+      The brand acceptance logic is explicitly implemented using a first-digit check with
+      direct character comparison. The code and inline comment are in agreement that only
+      Visa and Mastercard are accepted.
+    risk_class: regulated
+    basis: >
+      The isAcceptedBrand() method checks char first = number.charAt(0) and then validates
+      return first == '4' || first == '5'. This establishes that only Visa (first digit 4)
+      and Mastercard (first digit 5) are accepted. The inline comment explicitly states
+      "Visa (4) and Mastercard (5) only; Amex was dropped in 2003." This indicates that
+      American Express was previously supported but is no longer accepted. The specific
+      date of 2003 suggests a deliberate business decision or contract change, though the
+      reason is not documented.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 7
+        line_end: 9
+        excerpt: |
+          char first = number.charAt(0);
+          // Visa (4) and Mastercard (5) only; Amex was dropped in 2003.
+          return first == '4' || first == '5';
+    stack_metadata:
+      method: isAcceptedBrand
+      class: CreditCardValidator
+      accepted_schemes:
+        - visa: "4"
+        - mastercard: "5"
+      rejected_schemes:
+        - amex: "dropped_2003"
+
+  - record_key: CARD-EXPIRY-YEAR-MONTH-COMPARISON-0001
+    kind: business-rule
+    capability_key: card-expiry
+    requirement: >
+      A payment card SHALL be considered expired if: (1) the card's expiry year is earlier
+      than the current year, OR (2) the card's expiry year equals the current year AND the
+      card's expiry month is earlier than the current month.
+    confidence: high
+    confidence_basis: >
+      The expiry logic is directly and explicitly implemented with year and month comparisons
+      using standard less-than operators. The logic is unambiguous.
+    risk_class: financial
+    basis: >
+      The isExpired() method implements two conditions: if (expiryYear < nowYear) return true,
+      and return expiryYear == nowYear && expiryMonth < nowMonth. This establishes that a
+      card is expired if the expiry year is in the past, or if the expiry year matches the
+      current year but the expiry month is in the past. The use of less-than operators means
+      the current month (when expiryMonth == nowMonth) is NOT considered expired, implying
+      the card is valid through the entire expiry month. This is the standard interpretation
+      for payment card expiry in the financial industry.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 12
+        line_end: 14
+        excerpt: |
+          public boolean isExpired(int expiryYear, int expiryMonth, int nowYear, int nowMonth) {
+            if (expiryYear < nowYear) return true;
+            return expiryYear == nowYear && expiryMonth < nowMonth;
+    stack_metadata:
+      method: isExpired
+      class: CreditCardValidator
+
+  - record_key: CARD-EXPIRY-CURRENT-MONTH-VALIDITY-0001
+    kind: business-rule
+    capability_key: card-expiry
+    requirement: >
+      GIVEN a credit card with expiry month M and expiry year Y, WHEN the current date falls
+      within month M of year Y, THEN the card SHALL be considered valid (not expired).
+    confidence: high
+    confidence_basis: >
+      This edge case is implicit in the expiry comparison logic, which uses less-than (<)
+      rather than less-than-or-equal (<=) for month comparison.
+    risk_class: financial
+    basis: >
+      The isExpired() method returns false (not expired) when expiryYear == nowYear and
+      expiryMonth == nowMonth because the condition expiryMonth < nowMonth evaluates to
+      false. This means a card expiring in the current month is still valid for all
+      transactions during that month. This interpretation aligns with standard payment
+      card industry practice where the card remains usable through the last day of the
+      stated expiry month.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 12
+        line_end: 14
+        excerpt: |
+          public boolean isExpired(int expiryYear, int expiryMonth, int nowYear, int nowMonth) {
+            if (expiryYear < nowYear) return true;
+            return expiryYear == nowYear && expiryMonth < nowMonth;
+    stack_metadata:
+      method: isExpired
+      class: CreditCardValidator
+
+  - record_key: REFUND-NINETY-DAY-WINDOW-0001
+    kind: business-rule
+    capability_key: refund-eligibility
+    requirement: >
+      A refund for a settled payment transaction SHALL be permitted if the refund is
+      requested within 90 days from the date of settlement.
+    confidence: high
+    confidence_basis: >
+      The 90-day window is explicitly stated in both the method's javadoc comment and the
+      implementation logic (daysSinceSettlement <= 90). The two sources agree on the value,
+      providing high confidence that the 90-day window is the intended business rule.
+    risk_class: financial
+    basis: >
+      The canRefund() method checks daysSinceSettlement <= 90. The javadoc comment
+      explicitly documents "Refunds are permitted for 90 days after settlement." The 90-day
+      period is a bare literal with no external configuration, parameterization, or
+      explanation of how this value was determined. However, 90 days aligns with standard
+      payment card industry practices and chargeback rules (typically 120-180 days). The
+      specific choice of 90 days should be verified against company refund policy and card
+      association agreements.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 17
+        line_end: 19
+        excerpt: |
+          /** Refunds are permitted for 90 days after settlement. */
+          public boolean canRefund(int daysSinceSettlement) {
+            return daysSinceSettlement <= 90;
+    stack_metadata:
+      method: canRefund
+      class: CreditCardValidator
+      refund_window_days: 90
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      The class-level javadoc states "Card acceptance rules. Extracted from the legacy
+      billing tier." The phrase "extracted from the legacy billing tier" suggests this code
+      may be a partial extraction of a larger system, but it is unclear whether: (1) this
+      represents the complete set of card acceptance rules; (2) additional validation rules
+      exist elsewhere in the codebase (e.g., velocity checks, fraud scoring, CVV validation);
+      (3) this validator is always called or whether there are bypass paths. Without
+      visibility into how this class is invoked and whether it's the sole arbiter of card
+      acceptance, the completeness of these rules cannot be verified.
+
+  - kind: ambiguity
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      The comment "Amex was dropped in 2003" provides a date but not the reason. Possible
+      explanations include: (1) a contract or partnership change with American Express;
+      (2) changes in payment card regulations or compliance requirements; (3) cost structure
+      changes (transaction fees); (4) a business decision to simplify the card portfolio.
+      Understanding the reason for dropping Amex is important if there are current or future
+      discussions about re-adding it or other card brands. This should be documented or
+      clarified with the business stakeholders.
+
+  - kind: ambiguity
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      The card number minimum length of 13 digits is a bare literal with no explanation or
+      configuration. Standard Visa and Mastercard numbers are 16 digits. A minimum of 13
+      digits would accept: (1) unusually short cards (e.g., some international or corporate
+      cards); (2) test or development card numbers; (3) legacy card formats. It is unclear
+      whether this minimum is intentional for business reasons or an artifact of legacy code.
+      This should be reviewed to ensure it does not create security or compliance risks and
+      that it aligns with current payment processing standards.
+
+  - kind: ambiguity
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      The 90-day refund window is a bare literal without external configuration or
+      documented justification. While 90 days is within the standard payment card industry
+      refund window (typically 120-180 days for chargeback disputes), the specific choice
+      of 90 days should be verified against: (1) the company's documented refund policy;
+      (2) payment card association rules (Visa, Mastercard); (3) regulatory requirements
+      for the jurisdictions served; (4) any SLAs or commitments to customers. The absence
+      of configuration means the refund window cannot be adjusted without code changes, which
+      may create operational inflexibility.
