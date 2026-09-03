@@ -1,0 +1,60 @@
+module: modules/billing
+pass_a_records: 5
+pass_b_records: 4
+cross_validation_summary:
+  records_agreed: 4 (100% of Pass B, 80% of Pass A)
+  records_partial: 0 (0%)
+  records_disputed: 1 (Pass A only: BILL-CARD-BRAND-HISTORY-001)
+  findings_agreed: 6
+  findings_partial: 0
+  findings_unidentified_by_either_pass: 0
+
+records_by_status:
+  agreed:
+    - BILL-CARD-BRAND-AGREED-001 (Pass A: BILL-CARD-BRAND-001, Pass B: BILL-BRAND-VALIDATION-001)
+    - BILL-CARD-LENGTH-AGREED-001 (Pass A: BILL-CARD-LENGTH-001, Pass B: BILL-CARD-LENGTH-MINIMUM-001)
+    - BILL-CARD-EXPIRY-AGREED-001 (Pass A: BILL-CARD-EXPIRY-001, Pass B: BILL-EXPIRY-CHECK-001)
+    - BILL-REFUND-WINDOW-AGREED-001 (Pass A: BILL-REFUND-WINDOW-001, Pass B: BILL-REFUND-ELIGIBILITY-001)
+
+  partial:
+    # None - all core records agreed semantically
+
+  disputed:
+    # BILL-CARD-BRAND-HISTORY-001: Pass A created a separate record for Amex deprecation
+    # (historical context), while Pass B didn't separate it as a distinct requirement.
+    # This is a granularity/decomposition choice, not a semantic disagreement.
+    # Pass A treats "Amex was dropped in 2003" as its own business rule with medium
+    # confidence (historical reasoning only). Pass B treats it as context within the
+    # main brand validation record. Neither is wrong; it's a choice about requirement
+    # decomposition. This requires SME judgment to resolve.
+
+findings_by_status:
+  agreed:
+    - Mastercard validation overly permissive (first digit '5' only, not ranges 51-55/2221-2720)
+    - No maximum card number length enforced
+    - Card expiry logic lacks day-of-month consideration
+    - canRefund method doesn't validate non-negative input
+    - No checksum validation (Luhn algorithm)
+    - Validation method composition unclear (no flow ordering)
+
+  partial:
+    # None - all findings are textually equivalent
+
+  unidentified:
+    # None - both passes identified the same set of ambiguities/unparseable issues
+
+analysis_notes:
+  - 100% agreement on the four core card validation requirements. Both passes captured
+    identical business rules with identical confidence levels and nearly identical traces.
+  - Disagreement exists only on requirement granularity: Pass A separated Amex
+    deprecation as a distinct historical business rule (medium confidence) while Pass B
+    treated it as context within brand validation. Both approaches are defensible.
+  - All 6 findings are agreed (identical ambiguities/unparseable issues), just listed
+    in different order by the two passes.
+  - Pass A's separation of BILL-CARD-BRAND-HISTORY-001 reflects a judgment that
+    historical context ("dropped in 2003") is itself a requirement worth capturing.
+    Pass B's inclusion within the main record reflects a judgment that it's context
+    for the current requirement, not a separate requirement.
+  - Recommendation: SME input needed on whether historical deprecation context
+    (Amex dropped in 2003) should be a separate requirement record or context within
+    the current brand acceptance rule.

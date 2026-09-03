@@ -1,0 +1,43 @@
+records:
+  - record_key: BILL-CARD-EXPIRY-AGREED-001
+    kind: business-rule
+    capability_key: card-expiration-validation
+    requirement: >
+      The system SHALL validate card expiration by comparing card expiry year and
+      month against current year and month. A card is expired when expiryYear <
+      currentYear, OR when expiryYear == currentYear AND expiryMonth < currentMonth.
+    confidence: high
+    confidence_basis: >
+      Both passes independently identified the isExpired method with identical trace
+      spans and identical interpretation. The conditional logic is explicit and
+      unambiguous. High confidence: both passes agree, single code-level source,
+      comparison logic is straightforward.
+    risk_class: financial
+    basis: >
+      The isExpired method implements two-part validation: first comparing years,
+      then comparing months when years are equal. Both passes correctly identified
+      this standard credit card expiry validation logic. The method receives four
+      integer parameters (expiryYear, expiryMonth, nowYear, nowMonth).
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 12
+        line_end: 15
+        excerpt: |
+          public boolean isExpired(int expiryYear, int expiryMonth, int nowYear, int nowMonth) {
+              if (expiryYear < nowYear) return true;
+              return expiryYear == nowYear && expiryMonth < nowMonth;
+          }
+    cross_validation: agreed
+    stack_metadata:
+      framework: none
+
+findings:
+  - kind: ambiguity
+    classification: agreed
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      The isExpired method compares expiryMonth only when years are equal, with no
+      consideration of day-of-month. Both passes identified this ambiguity. For a
+      card expiring on May 31, when checked on June 1, the card is considered
+      expired (month 5 < month 6). However, this logic does not account for whether
+      the card is valid throughout the entire expiry month or only up to a specific day.

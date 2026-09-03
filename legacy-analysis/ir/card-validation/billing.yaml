@@ -1,0 +1,81 @@
+records:
+  - record_key: BILL-CARD-BRAND-AGREED-001
+    kind: business-rule
+    capability_key: accepted-card-brands
+    requirement: >
+      The system SHALL accept only payment cards that begin with digit 4 (Visa) or
+      digit 5 (Mastercard). All other card brands and starting digits are rejected.
+    confidence: high
+    confidence_basis: >
+      Both passes independently identified the isAcceptedBrand method with identical
+      trace spans and identical interpretation. The code-level check is explicit and
+      authoritative. High confidence: both passes agree, single code-level source,
+      literal values are unambiguous.
+    risk_class: financial
+    basis: >
+      The isAcceptedBrand method checks the first character of the card number
+      against literal digit patterns: '4' for Visa, '5' for Mastercard. Both passes
+      correctly identified this as the card brand enforcement point. The inline comment
+      provides historical context (Amex dropped 2003) but does not affect the
+      current requirement.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 5
+        line_end: 10
+        excerpt: |
+          public boolean isAcceptedBrand(String number) {
+              if (number == null || number.length() < 13) return false;
+              char first = number.charAt(0);
+              // Visa (4) and Mastercard (5) only; Amex was dropped in 2003.
+              return first == '4' || first == '5';
+          }
+    cross_validation: agreed
+    stack_metadata:
+      framework: none
+
+  - record_key: BILL-CARD-LENGTH-AGREED-001
+    kind: business-rule
+    capability_key: minimum-card-number-length
+    requirement: >
+      The system SHALL reject payment cards with a card number length less than
+      13 characters.
+    confidence: high
+    confidence_basis: >
+      Both passes independently identified the length validation with identical trace
+      and interpretation. The check is explicit in code: `number.length() < 13` at
+      line 6. High confidence: both passes agree, single code-level source, literal
+      value (13) is unambiguous.
+    risk_class: financial
+    basis: >
+      The isAcceptedBrand method enforces an immediate length validation gate before
+      brand checking. Both passes correctly identified this as a hardcoded constraint
+      reflecting payment network standards for card number lengths.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 6
+        line_end: 6
+        excerpt: |
+          if (number == null || number.length() < 13) return false;
+    cross_validation: agreed
+    stack_metadata:
+      framework: none
+
+findings:
+  - kind: ambiguity
+    classification: agreed
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      The card brand validation checks only the first digit of the card number.
+      Both passes identified this. For Mastercard, the standard identifies cards in
+      ranges 51-55 and 2221-2720. The implementation accepts any card starting with
+      '5', which may be overly permissive. It is unclear whether additional validation
+      occurs in calling code.
+
+  - kind: ambiguity
+    classification: agreed
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      No maximum card number length is enforced. Both passes identified this ambiguity.
+      The minimum is 13, but there is no maximum constraint. Different card brands
+      have standard lengths (Visa 16, Mastercard 16). It is unclear whether the
+      absence of a maximum is intentional or whether validation occurs elsewhere.

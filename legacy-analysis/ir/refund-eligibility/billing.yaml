@@ -1,0 +1,62 @@
+records:
+  - record_key: BILL-REFUND-WINDOW-AGREED-001
+    kind: business-rule
+    capability_key: refund-eligibility-period
+    requirement: >
+      The system SHALL permit refunds for transactions within 90 days after
+      settlement. When daysSinceSettlement <= 90, refund is permitted. When
+      daysSinceSettlement > 90, refund is not permitted.
+    confidence: high
+    confidence_basis: >
+      Both passes independently identified the canRefund method with identical trace
+      spans and identical interpretation. The logic is explicit: `daysSinceSettlement <= 90`.
+      The method javadoc confirms the requirement. High confidence: both passes agree,
+      single code-level source, literal value (90) is unambiguous.
+    risk_class: financial
+    basis: >
+      The canRefund method enforces a hard deadline of 90 days for refund eligibility.
+      Both passes correctly identified this critical financial rule that constrains
+      the refund request deadline. The javadoc comment ("Refunds are permitted for
+      90 days after settlement.") documents the rule the code implements.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 17
+        line_end: 20
+        excerpt: |
+          /** Refunds are permitted for 90 days after settlement. */
+          public boolean canRefund(int daysSinceSettlement) {
+              return daysSinceSettlement <= 90;
+          }
+    cross_validation: agreed
+    stack_metadata:
+      framework: none
+
+findings:
+  - kind: ambiguity
+    classification: agreed
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      The canRefund method does not validate that daysSinceSettlement is a
+      non-negative integer. Both passes identified this. It is unclear how the
+      method behaves if passed a negative value (e.g., transaction not yet settled),
+      or what assumptions are made about the caller's responsibility to ensure
+      valid input.
+
+  - kind: unparseable
+    classification: agreed
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      No checksum validation (Luhn algorithm) is performed on card numbers. Both
+      passes identified this. The validation is limited to length and brand prefix
+      checking. It is unclear whether checksum validation occurs in calling code,
+      the payment gateway, or is intentionally omitted from this module.
+
+  - kind: unparseable
+    classification: agreed
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      The three validation methods (isAcceptedBrand, isExpired, canRefund) have no
+      explicit composition or ordering. Both passes identified this. It is unclear
+      whether all three are always called, whether they are optional, or whether
+      the caller selects a subset. The validation flow is not evident from this
+      class alone.
