@@ -1,0 +1,17 @@
+---
+records: []
+findings:
+  - kind: unparseable
+    path: legacy-source/conf/jdbc.properties
+    description: >
+      Database connection pooling configuration (max pool size 25, Oracle connection string) is
+      operational deployment tuning, not a business rule. This is a deployment artifact that
+      should not appear in business specification. No business requirement can be extracted.
+
+  - kind: unparseable
+    path: legacy-source/conf/integration.properties
+    description: >
+      Payment gateway integration parameters (URL endpoint, API credentials, timeout 8000ms)
+      are operational integration artifacts, not business rules. The timeout is a system constraint
+      but not a codified business requirement. Credentials are secrets requiring separate handling.
+      No business requirement can be extracted.
