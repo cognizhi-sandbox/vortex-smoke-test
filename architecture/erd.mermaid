@@ -1,0 +1,92 @@
+erDiagram
+    USERS ||--o{ CUSTOMERS : manages
+    USERS ||--o{ SESSIONS : maintains
+    CUSTOMERS ||--o{ ORDERS : places
+    CUSTOMERS ||--o{ CREDIT_CARDS : owns
+    ORDERS ||--o{ ORDER_ITEMS : contains
+    ORDERS ||--o{ TRANSACTIONS : generates
+    CREDIT_CARDS ||--o{ TRANSACTIONS : processes
+    TRANSACTIONS ||--o{ REFUNDS : may_trigger
+
+    USERS {
+        int user_id PK
+        string username UK
+        string email UK
+        string password_hash
+        string auth_method "FORM"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    CUSTOMERS {
+        int customer_id PK
+        int user_id FK
+        string tier "STANDARD or PLATINUM"
+        string first_name
+        string last_name
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    SESSIONS {
+        string session_id PK
+        int user_id FK
+        timestamp created_at
+        timestamp last_activity
+        timestamp expires_at "30 minutes from last_activity"
+    }
+
+    ORDERS {
+        int order_id PK
+        int customer_id FK
+        string status "PENDING, APPROVED, SHIPPED, FULFILLED, FAILED"
+        decimal total_amount
+        int item_count
+        decimal shipping_cost
+        bool requires_approval
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ORDER_ITEMS {
+        int order_item_id PK
+        int order_id FK
+        string sku
+        string description
+        int quantity
+        decimal unit_price
+        decimal line_total
+    }
+
+    CREDIT_CARDS {
+        int card_id PK
+        int customer_id FK
+        string number_last_four "stored for reference only"
+        string brand "Visa or Mastercard"
+        int expiry_month
+        int expiry_year
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    TRANSACTIONS {
+        int transaction_id PK
+        int order_id FK
+        int card_id FK
+        decimal amount
+        string status "PENDING, AUTHORIZED, CAPTURED, FAILED"
+        timestamp authorization_timestamp
+        timestamp settlement_timestamp
+        timestamp created_at
+    }
+
+    REFUNDS {
+        int refund_id PK
+        int transaction_id FK
+        decimal amount
+        string status "PENDING, APPROVED, COMPLETED, FAILED"
+        int days_since_settlement
+        bool eligible "calculated from days_since_settlement <= 90"
+        timestamp created_at
+        timestamp processed_at
+    }

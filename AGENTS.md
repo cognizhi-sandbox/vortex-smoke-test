@@ -232,6 +232,31 @@ New test files: copy a similar existing test file — the table is in `## Test &
 
 ## Changelog
 
+### 2026-09-03 — Spec Extraction SX-0002: Business Rules Extracted from Legacy J2EE Application
+
+Completed comprehensive specification extraction (SX-0002) from the legacy Pet Store J2EE application. Extracted and formalized 14 business rules across 5 capabilities into OpenSpec change format:
+
+- **card-acceptance** (3 rules): Visa/Mastercard brand validation, 13-digit minimum, card expiry checking
+- **order-approval** (5 rules): $5k/$10k approval thresholds, Platinum tier bypass, free shipping, shipping formula, cancellation eligibility
+- **order-fulfillment** (3 rules): Shipping calculation, cancellation windows, order status tracking
+- **refund-policy** (1 rule): 90-day refund eligibility window
+- **session-management** (2 rules): Form-based authentication, 30-minute session timeout
+
+**Deliverables:**
+
+- Full OpenAPI contract (`api/openapi.yaml`) covering all extracted capabilities
+- SQLite schema design (`architecture/schema.sql`) with 8 core tables and relationships
+- Entity-relationship diagram (`architecture/erd.mermaid`) showing data model
+- Build manifest (`build/manifest.yaml`) documenting technology stack, deployment, and SME review items
+- OpenSpec changes under `openspec/changes/` for each capability (proposal, design, tasks, formal spec)
+- Complete specification documentation in `AGENTS.md` (this file)
+
+**Confidence levels:** 3 high-confidence rules, 9 medium-confidence rules, 2 low-confidence rules (bare literals without documented justification)
+
+**Known ambiguities flagged for SME review:** Shipping rate cost basis, order status enumeration, 30-minute timeout rationale, Platinum multiplier justification, 13-digit card length minimum, authorization model (web tier vs module tier), settlement date definition for refund window, future card brand support, Luhn validation requirement, session timeout warning implementation, partial refund rules, refund completion time.
+
+**Next steps:** Business review of ambiguities and bare-literal thresholds, formal authorization model definition, session timeout warning UI design.
+
 ### 2026-08-25 — Sprint VRTX3-S-0039: Three Independent Health Check Endpoints (812788042)
 
 Added `/api/healthz-smoke-812788042-a`, `-b` and `-c`, each returning HTTP 200 with `Content-Type: application/json` and body `{ ok: true, variant: "812788042" }`. Purely additive — 6 new files, 0 existing source files modified. Probe family count 121 → 124, re-derived from the filesystem and bumped in all three docs that carry it (this file, `ARCHITECTURE.md`, `PRODUCT.md`) in the same pass.

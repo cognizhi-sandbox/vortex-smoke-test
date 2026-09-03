@@ -1,0 +1,225 @@
+name: Pet Store Application
+version: 1.0.0
+description: Pet Store e-commerce application rebuilt from legacy J2EE specification (SX-0002)
+
+# Specification extraction source
+specification:
+  source: legacy-source/
+  extraction_id: SX-0002
+  extracted_capabilities:
+    - card-acceptance
+    - order-approval
+    - order-fulfillment
+    - refund-policy
+    - session-management
+  total_rules_extracted: 14
+  confidence_distribution:
+    high: 3
+    medium: 9
+    low: 2
+
+# Target technology stack
+stack:
+  runtime: Bun
+  frontend:
+    framework: React 18
+    bundler: Vite
+    router: vite-plugin-pages + react-router
+    styling: Tailwind CSS v4
+    ui_components: shadcn-style with Radix Slot and CVA
+  backend:
+    runtime: Nitro (H3)
+    server: Node.js-compatible (runs under Bun)
+    database: SQLite via better-sqlite3
+    orm: Drizzle ORM
+  testing:
+    unit_integration: Vitest + React Testing Library
+    e2e: Playwright
+  deployment:
+    container: Docker
+    server_interpreter: Bun (required for bun:sqlite)
+
+# Build targets
+build:
+  outputs:
+    spa: dist/
+    server: .output/server/index.mjs
+  prerequisites:
+    - prebuild: generates auto-imports.d.ts
+    - pretypecheck: generates auto-imports.d.ts
+  commands:
+    install: bun install
+    build: tsc --build && vite build
+    dev: Vite + Nitro together with HMR
+    verify: lint + typecheck + unit tests
+    verify_full: verify + E2E tests
+    test_smoke: e2e/smoke.spec.ts (home load + /api/hello)
+
+# Database schema
+database:
+  type: SQLite
+  location: sqlite.db (dev), :memory: (test)
+  tables:
+    - users: Authentication and user profiles
+    - customers: Customer profiles and tier tracking
+    - sessions: User session management
+    - orders: Order records with status and approval tracking
+    - order_items: Line items within orders
+    - credit_cards: Payment card information (tokenized)
+    - transactions: Payment transaction records
+    - refunds: Refund requests and eligibility tracking
+  migrations: drizzle/ (Drizzle migrations)
+
+# Capabilities and their implementation
+capabilities:
+  card_acceptance:
+    rules: 3
+    confidence: high, low, high
+    implementation:
+      validators: brand, length, expiry
+      storage: credit_cards table
+      validation_endpoint: POST /payments/validate-card
+    ambiguities:
+      - 13-digit minimum justification
+      - Amex historical context
+      - Future brand support
+      - Luhn validation requirement
+      - Card BIN database strategy
+
+  order_approval:
+    rules: 5
+    confidence: medium, low, medium, low, medium
+    implementation:
+      thresholds: $5k standard, $10k Platinum
+      tier_tracking: customers.tier
+      endpoints:
+        - POST /orders (calculates approval_required)
+        - GET /orders/{id}
+    ambiguities:
+      - Platinum multiplier rationale
+      - Shipping rate cost basis
+      - Order status enumeration
+
+  order_fulfillment:
+    rules: 3
+    confidence: medium, low, medium
+    implementation:
+      shipping_calculator: $75 free threshold, $4.95+$0.75/item formula
+      cancellation_checker: PENDING/APPROVED only
+      endpoints:
+        - POST /orders (calculates shipping_cost)
+        - PATCH /orders/{id}/cancel
+    ambiguities:
+      - Shipping rate cost basis
+      - Order status state machine
+      - Fulfillment trigger logic
+
+  refund_policy:
+    rules: 1
+    confidence: medium
+    implementation:
+      eligibility_window: 90 days from settlement
+      endpoints:
+        - POST /refunds (checks days_since_settlement)
+    ambiguities:
+      - Settlement date definition (authorization vs capture vs clearing)
+      - Days calculation method (calendar vs business days)
+      - Timezone handling
+      - Regulatory compliance (state/federal)
+      - Payment processor constraints
+      - Partial refund rules
+      - Refund completion time
+
+  session_management:
+    rules: 2
+    confidence: high, medium
+    implementation:
+      auth_method: FORM-based (HTML form submission)
+      timeout: 30 minutes (inactivity)
+      endpoints:
+        - POST /auth/login
+        - POST /auth/logout
+      middleware: auth validation on protected routes
+    ambiguities:
+      - 30-minute timeout rationale
+      - Timeout warning requirement
+      - Remember me feature
+      - Authorization model (web tier vs module tier)
+      - Session binding strategy
+      - Cookie security flags
+
+# Open items requiring SME review
+smee_review_items:
+  priority_1:
+    - Shipping rate cost basis ($4.95 flat, $0.75/item)
+    - Order status enumeration and state machine
+    - 30-minute session timeout rationale
+  priority_2:
+    - Platinum customer multiplier justification
+    - Card brand expansion strategy (Amex, Discover, etc.)
+    - Authorization model (RBAC at web tier vs module tier)
+  priority_3:
+    - 13-digit card length minimum justification
+    - Refund window settlement date definition
+    - Session timeout warning/countdown implementation
+
+# Dependencies and integrations
+integrations:
+  payment_gateway:
+    source: legacy-source/conf/integration.properties
+    details: timeout 8000ms, credentials required
+    status: Not extracted as business rule (operational config)
+  database:
+    source: legacy-source/conf/jdbc.properties (Oracle)
+    target: SQLite (schema.sql)
+    migration_notes: SQL dialect changes required
+
+# Health probe routes
+health_probes:
+  pattern: routes/api/healthz-smoke-*.ts
+  purpose: Constant-returning status endpoints for monitoring
+  count: 130+ variants
+  testing_notes: No timing assertions (constant function returns in <1ms)
+  pinned_template: healthz-smoke-528856326-a pair (no timing case)
+
+# Deployment and rollout
+deployment:
+  staging_validation:
+    - Verify all endpoints match OpenAPI contract
+    - Load test shipping calculation at scale
+    - Verify session timeout behavior under concurrent load
+    - Validate refund eligibility checks
+  production_monitoring:
+    - Track card validation failure rates
+    - Monitor order approval threshold hits
+    - Watch refund eligibility denials
+    - Alert on session timeout customer complaints
+  rollback_triggers:
+    - Card validation rejects >10% of transactions
+    - Shipping calculation incorrect (exceeds legacy baseline by >5%)
+    - Session timeout <5 minutes results in excessive user complaints
+
+# Known constraints and decisions
+constraints:
+  database:
+    - SQLite only (no remote database)
+    - No server-side pagination in schema (application-level)
+    - Single-file database (not distributed)
+  frontend:
+    - No Next.js or Server Components (Vite SPA architecture)
+    - File-based routing (vite-plugin-pages convention)
+    - No hybrid rendering
+  authentication:
+    - No OAuth or SSO in initial build (FORM only)
+    - Session managed by framework (30-minute timeout enforced)
+  payment:
+    - No tokenization of full card numbers (last-4 only stored)
+    - PCI DSS scoping depends on gateway integration
+
+decisions:
+  rationale_documentation: ARCHITECTURE.md § Key Decisions
+  examples:
+    - Bare literals kept as documented (not externalized to config yet)
+    - Order status enumeration TBD (implement as needed during orders module)
+    - Authorization model TBD (may be module-level, not web-tier)
+    - 13-digit card minimum kept as-is pending SME review

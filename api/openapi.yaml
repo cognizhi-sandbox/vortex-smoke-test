@@ -1,0 +1,445 @@
+openapi: 3.0.3
+info:
+  title: Pet Store API
+  description: |
+    REST API for the Pet Store application.
+    Extracted requirements from legacy J2EE system (SX-0002).
+  version: 1.0.0
+  contact:
+    name: Architecture
+servers:
+  - url: http://localhost:5000
+    description: Development server
+  - url: /api
+    description: Production server (relative URL)
+
+tags:
+  - name: Authentication
+    description: Session and user authentication
+  - name: Orders
+    description: Order management and approval
+  - name: Payments
+    description: Card validation and transaction processing
+  - name: Refunds
+    description: Refund eligibility and processing
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login (form-based authentication)
+      description: Authenticate user via username/password. Creates HTTP session.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Login successful. Session cookie set.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                  username:
+                    type: string
+                  tier:
+                    type: string
+                    enum: [STANDARD, PLATINUM]
+        '401':
+          description: Invalid credentials
+        '500':
+          description: Server error
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Invalidate current session. Session timeout is 30 minutes.
+      responses:
+        '204':
+          description: Logout successful
+        '401':
+          description: Not authenticated
+
+  /orders:
+    post:
+      tags:
+        - Orders
+      summary: Create new order
+      description: Create an order. Calculates shipping cost and determines if approval is required.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      sku:
+                        type: string
+                      quantity:
+                        type: integer
+                      unit_price:
+                        type: number
+                  minItems: 1
+              required:
+                - items
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Invalid order data
+        '401':
+          description: Not authenticated
+
+  /orders/{orderId}:
+    get:
+      tags:
+        - Orders
+      summary: Get order details
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Order not found
+        '401':
+          description: Not authenticated
+
+  /orders/{orderId}/cancel:
+    patch:
+      tags:
+        - Orders
+      summary: Cancel an order
+      description: Cancel order if status is PENDING or APPROVED. Other statuses cannot be cancelled.
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Order cannot be cancelled (e.g., already shipped)
+        '404':
+          description: Order not found
+        '401':
+          description: Not authenticated
+
+  /payments/validate-card:
+    post:
+      tags:
+        - Payments
+      summary: Validate credit card
+      description: |
+        Validate credit card for payment processing.
+        Rules:
+        - Only Visa (4) and Mastercard (5) accepted
+        - Minimum 13 digits
+        - Card must not be expired
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                card_number:
+                  type: string
+                  minLength: 13
+                expiry_month:
+                  type: integer
+                  minimum: 1
+                  maximum: 12
+                expiry_year:
+                  type: integer
+              required:
+                - card_number
+                - expiry_month
+                - expiry_year
+      responses:
+        '200':
+          description: Card is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  brand:
+                    type: string
+                    enum: [Visa, Mastercard]
+        '400':
+          description: Card validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: string
+
+  /transactions:
+    post:
+      tags:
+        - Payments
+      summary: Process payment transaction
+      description: Process payment for an order using a credit card.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order_id:
+                  type: integer
+                card_id:
+                  type: integer
+                amount:
+                  type: number
+              required:
+                - order_id
+                - card_id
+                - amount
+      responses:
+        '201':
+          description: Transaction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Invalid transaction data
+        '401':
+          description: Not authenticated
+
+  /transactions/{transactionId}:
+    get:
+      tags:
+        - Payments
+      summary: Get transaction details
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Transaction details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '404':
+          description: Transaction not found
+        '401':
+          description: Not authenticated
+
+  /refunds:
+    post:
+      tags:
+        - Refunds
+      summary: Request refund
+      description: |
+        Request refund for a transaction.
+        Refunds are only eligible for transactions settled within 90 days.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                transaction_id:
+                  type: integer
+                amount:
+                  type: number
+              required:
+                - transaction_id
+                - amount
+      responses:
+        '201':
+          description: Refund created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+        '400':
+          description: Refund not eligible (e.g., outside 90-day window)
+        '401':
+          description: Not authenticated
+
+  /refunds/{refundId}:
+    get:
+      tags:
+        - Refunds
+      summary: Get refund status
+      parameters:
+        - name: refundId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Refund details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+        '404':
+          description: Refund not found
+        '401':
+          description: Not authenticated
+
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        order_id:
+          type: integer
+        customer_id:
+          type: integer
+        status:
+          type: string
+          enum: [PENDING, APPROVED, SHIPPED, FULFILLED, FAILED, CANCELLED]
+        total_amount:
+          type: number
+        item_count:
+          type: integer
+        shipping_cost:
+          type: number
+          description: $0 if total >= $75, else $4.95 + ($0.75 × item_count)
+        requires_approval:
+          type: boolean
+          description: true if total >= $5000 (or $10000 for Platinum)
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    OrderItem:
+      type: object
+      properties:
+        order_item_id:
+          type: integer
+        sku:
+          type: string
+        description:
+          type: string
+        quantity:
+          type: integer
+        unit_price:
+          type: number
+        line_total:
+          type: number
+
+    Transaction:
+      type: object
+      properties:
+        transaction_id:
+          type: integer
+        order_id:
+          type: integer
+        card_id:
+          type: integer
+        amount:
+          type: number
+        status:
+          type: string
+          enum: [PENDING, AUTHORIZED, CAPTURED, FAILED]
+        authorization_timestamp:
+          type: string
+          format: date-time
+        settlement_timestamp:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    Refund:
+      type: object
+      properties:
+        refund_id:
+          type: integer
+        transaction_id:
+          type: integer
+        amount:
+          type: number
+        status:
+          type: string
+          enum: [PENDING, APPROVED, COMPLETED, FAILED]
+        days_since_settlement:
+          type: integer
+        eligible:
+          type: boolean
+          description: true if days_since_settlement <= 90
+        created_at:
+          type: string
+          format: date-time
+        processed_at:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: Session cookie created by form-based authentication
+
+security:
+  - sessionCookie: []
