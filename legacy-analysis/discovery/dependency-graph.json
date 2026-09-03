@@ -1,0 +1,64 @@
+{
+  "nodes": [
+    {
+      "id": "modules/orders",
+      "label": "Orders Module",
+      "type": "module",
+      "loc": 28,
+      "risk": "high"
+    },
+    {
+      "id": "modules/billing",
+      "label": "Billing Module",
+      "type": "module",
+      "loc": 21,
+      "risk": "high"
+    },
+    {
+      "id": "web",
+      "label": "Web Tier Configuration",
+      "type": "config",
+      "loc": 6,
+      "risk": "low"
+    },
+    {
+      "id": "conf",
+      "label": "Integration Configuration",
+      "type": "config",
+      "loc": 7,
+      "risk": "low"
+    }
+  ],
+  "edges": [
+    {
+      "source": "modules/orders",
+      "target": "modules/billing",
+      "label": "payment processing dependency"
+    },
+    {
+      "source": "modules/orders",
+      "target": "conf",
+      "label": "configuration dependency"
+    },
+    {
+      "source": "modules/billing",
+      "target": "conf",
+      "label": "payment gateway config"
+    },
+    {
+      "source": "web",
+      "target": "modules/orders",
+      "label": "order routing"
+    },
+    {
+      "source": "web",
+      "target": "modules/billing",
+      "label": "payment routing"
+    },
+    {
+      "source": "web",
+      "target": "conf",
+      "label": "session and JDBC config"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+capability_key,name,summary
+order-approval,Order approval,Approval thresholds and tier-based rules that bypass approval for premium customers
+order-fulfillment,Order fulfillment,Shipping cost calculation and order cancellation eligibility based on order status
+card-acceptance,Card acceptance,Card brand validation and expiry checking that determine payment acceptance
+refund-policy,Refund policy,Refund eligibility rules based on days since settlement
+session-management,Session management,Authentication method and session timeout configuration
