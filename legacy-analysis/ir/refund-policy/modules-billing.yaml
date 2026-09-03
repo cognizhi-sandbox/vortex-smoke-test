@@ -1,0 +1,36 @@
+---
+records:
+  - record_key: refund-policy-window-0004
+    kind: business-rule
+    capability_key: refund-policy
+    requirement: >
+      The system SHALL permit refunds for transactions settled within the last 90 days.
+      Refunds are not permitted for transactions settled more than 90 days ago.
+      GIVEN a transaction settled N days ago where N <= 90, THEN refund SHALL be permitted.
+      GIVEN a transaction settled N days ago where N > 90, THEN refund SHALL NOT be permitted.
+    confidence: medium
+    confidence_basis: >
+      Both independent passes agreed on medium confidence. The rule is documented in the
+      method comment ("Refunds are permitted for 90 days after settlement") and enforced
+      in code. However, the boundary value (90 days) is a bare literal with no comment on
+      business justification. Confidence is medium: both sources agree on the value.
+    risk_class: financial
+    basis: >
+      The canRefund() method implements a simple comparison against a 90-day window.
+      The method comment explicitly states the policy, and the code enforces it using
+      a <= comparison (inclusive boundary on 90 days).
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 17
+        line_end: 19
+        excerpt: |
+          /** Refunds are permitted for 90 days after settlement. */
+          public boolean canRefund(int daysSinceSettlement) {
+              return daysSinceSettlement <= 90;
+          }
+    crossvalidation:
+      pass_a: refund-policy-window-0004
+      pass_b: refund-policy-90-day-window-0004
+      agreement: both_passes_agreed
+
+findings: []

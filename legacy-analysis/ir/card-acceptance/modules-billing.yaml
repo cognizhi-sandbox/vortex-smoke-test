@@ -1,0 +1,120 @@
+---
+records:
+  - record_key: card-acceptance-brand-0001
+    kind: business-rule
+    capability_key: card-acceptance
+    requirement: >
+      The system SHALL accept only Visa and Mastercard credit cards. Cards with
+      leading digit 4 (Visa) or 5 (Mastercard) SHALL be accepted; all other brands
+      SHALL be rejected.
+    confidence: high
+    confidence_basis: >
+      Both independent passes agreed on this rule with high confidence. The rule is
+      enforced directly in the isAcceptedBrand() method, and the code comment explicitly
+      states the policy. The implementation is straightforward and unambiguous.
+    risk_class: financial
+    basis: >
+      The isAcceptedBrand() method implements a character-based brand check using
+      the first digit of the card number. The code comment explicitly states the policy:
+      "Visa (4) and Mastercard (5) only; Amex was dropped in 2003."
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 5
+        line_end: 9
+        excerpt: |
+          public boolean isAcceptedBrand(String number) {
+              if (number == null || number.length() < 13) return false;
+              char first = number.charAt(0);
+              // Visa (4) and Mastercard (5) only; Amex was dropped in 2003.
+              return first == '4' || first == '5';
+          }
+    crossvalidation:
+      pass_a: card-acceptance-brand-0001
+      pass_b: card-acceptance-visa-mastercard-0001
+      agreement: both_passes_agreed
+
+  - record_key: card-acceptance-length-0002
+    kind: business-rule
+    capability_key: card-acceptance
+    requirement: >
+      The system SHALL reject credit card numbers with fewer than 13 digits.
+      GIVEN a card number with length < 13, WHEN validation is performed,
+      THEN the card SHALL be rejected.
+    confidence: low
+    confidence_basis: >
+      Both independent passes agreed on low confidence. The rule is a bare literal with
+      no documented justification. No comment explains why 13 is the threshold
+      (ISO/IEC 7812 specifies 12-19 digits; 13 is not a standard).
+    risk_class: financial
+    basis: >
+      The minimum length check (13 digits) is enforced as an inline literal in
+      isAcceptedBrand(), but there is no comment or configuration justifying this value.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 6
+        line_end: 6
+        excerpt: |
+          if (number == null || number.length() < 13) return false;
+    crossvalidation:
+      pass_a: card-acceptance-length-0002
+      pass_b: card-acceptance-minimum-digits-0002
+      agreement: both_passes_agreed
+
+  - record_key: card-acceptance-expiry-0003
+    kind: business-rule
+    capability_key: card-acceptance
+    requirement: >
+      The system SHALL detect expired credit cards based on expiry year and month.
+      A card is expired if the expiry year is before the current year, or if the expiry
+      year equals the current year AND the expiry month is before the current month.
+      GIVEN a card with expiry year < current year, THEN it is expired.
+      GIVEN a card with expiry year = current year AND expiry month < current month,
+      THEN it is expired.
+      GIVEN a card with expiry year = current year AND expiry month = current month,
+      THEN it is NOT expired (last day of expiry month is included).
+    confidence: high
+    confidence_basis: >
+      Both independent passes agreed on high confidence. The rule is clearly implemented
+      in the isExpired() method with explicit year-first comparison logic. The boundary
+      condition (month equality) shows inclusion of the expiry month.
+    risk_class: financial
+    basis: >
+      The isExpired() method implements a year-first comparison, checking if expiry
+      year is strictly less than current year (expired), then checking the same-year
+      boundary condition. The use of < for month comparison (not <=) indicates the
+      expiry month is inclusive.
+    traces:
+      - path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+        line_start: 12
+        line_end: 14
+        excerpt: |
+          public boolean isExpired(int expiryYear, int expiryMonth, int nowYear, int nowMonth) {
+              if (expiryYear < nowYear) return true;
+              return expiryYear == nowYear && expiryMonth < nowMonth;
+          }
+    crossvalidation:
+      pass_a: card-acceptance-expiry-0003
+      pass_b: card-acceptance-expiry-check-0003
+      agreement: both_passes_agreed
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      Historical note in code comments states "Amex was dropped in 2003" but provides
+      no business justification (contract termination, fraud concerns, regulatory change,
+      market shift, etc.). Both passes independently flagged this as ambiguous. This is
+      context for understanding the Visa/Mastercard-only policy but cannot be extracted
+      as a current requirement. Future implementations should record the business reason
+      if Amex acceptance is to be reconsidered.
+    crossvalidation: both_passes_agreed
+
+  - kind: ambiguity
+    path: legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java
+    description: >
+      Minimum card length (13 digits) is not documented in code or comments. Industry
+      standard ISO/IEC 7812 specifies 12-19 digits. The choice of 13 may be intentional
+      (rejecting older 12-digit cards) or arbitrary. Both passes independently flagged
+      this as ambiguous. Without justification, this value should be marked for human
+      review if the specification is ported to a new system.
+    crossvalidation: both_passes_agreed
