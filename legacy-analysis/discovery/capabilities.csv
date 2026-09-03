@@ -1,0 +1,7 @@
+capability_key,name,summary
+order-approval,Order Approval,Thresholds and tier-based rules that determine when an order requires manager approval
+card-validation,Card Validation,Card brand acceptance and basic validation rules (length, format, brand restrictions)
+card-expiry,Card Expiry,Card expiration validation logic and expiry date interpretation
+shipping-cost,Shipping Calculation,Logic for calculating shipping costs based on order total and item count
+order-cancellation,Order Cancellation,Rules determining when an order can be cancelled based on its status
+refund-eligibility,Refund Eligibility,Rules determining when refunds can be processed after payment settlement

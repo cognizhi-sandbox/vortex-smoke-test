@@ -1,0 +1,151 @@
+{
+  "application": "petstore-legacy",
+  "timestamp": "2026-09-03T00:00:00Z",
+  "modules": {
+    "orders": {
+      "path": "modules/orders",
+      "type": "business-logic",
+      "primary_class": "com.petstore.orders.OrderRules",
+      "loc": 28,
+      "screens_owned": 3,
+      "dependencies": {
+        "internal": [],
+        "external": [
+          {
+            "type": "service",
+            "name": "order-service",
+            "relationship": "likely-caller",
+            "status": "not-in-tree"
+          }
+        ],
+        "data": [
+          {
+            "type": "database",
+            "name": "oracle-db",
+            "config": "jdbc.properties",
+            "tables": ["orders", "customers"],
+            "status": "inferred"
+          }
+        ]
+      }
+    },
+    "billing": {
+      "path": "modules/billing",
+      "type": "business-logic",
+      "primary_class": "com.petstore.billing.CreditCardValidator",
+      "loc": 21,
+      "screens_owned": 2,
+      "dependencies": {
+        "internal": [],
+        "external": [
+          {
+            "type": "service",
+            "name": "payment-service",
+            "relationship": "likely-caller",
+            "status": "not-in-tree"
+          },
+          {
+            "type": "api",
+            "name": "payment-gateway",
+            "config": "integration.properties",
+            "endpoint": "https://gateway.example.test/v1",
+            "timeout_ms": 8000
+          }
+        ],
+        "data": [
+          {
+            "type": "database",
+            "name": "oracle-db",
+            "config": "jdbc.properties",
+            "tables": ["payment_transactions", "card_settlements"],
+            "status": "inferred"
+          }
+        ]
+      }
+    },
+    "configuration": {
+      "path": "conf",
+      "type": "infrastructure",
+      "files": ["jdbc.properties", "integration.properties"],
+      "loc": 8,
+      "screens_owned": 0,
+      "dependencies": {
+        "internal": [],
+        "external": [
+          {
+            "type": "database",
+            "name": "oracle-db",
+            "host": "legacy-db",
+            "port": 1521,
+            "service": "PETSTORE",
+            "pool_size": 25
+          },
+          {
+            "type": "api",
+            "name": "payment-gateway",
+            "url": "https://gateway.example.test/v1",
+            "timeout_ms": 8000
+          }
+        ]
+      }
+    },
+    "web-config": {
+      "path": "web/WEB-INF",
+      "type": "infrastructure",
+      "files": ["web.xml"],
+      "loc": 6,
+      "screens_owned": 0,
+      "configuration": {
+        "auth_method": "FORM",
+        "session_timeout_minutes": 30,
+        "application_name": "Pet Store Legacy"
+      },
+      "dependencies": {
+        "internal": [],
+        "external": []
+      }
+    }
+  },
+  "external_systems": {
+    "oracle-database": {
+      "type": "database",
+      "host": "legacy-db",
+      "port": 1521,
+      "driver": "oracle.jdbc.OracleDriver",
+      "pool_size": 25,
+      "used_by": ["orders", "billing"]
+    },
+    "payment-gateway": {
+      "type": "http-api",
+      "url": "https://gateway.example.test/v1",
+      "timeout_ms": 8000,
+      "used_by": ["billing"]
+    }
+  },
+  "missing_modules": [
+    {
+      "name": "order-service",
+      "type": "service",
+      "likely_location": "not-in-tree",
+      "reason": "OrderRules is a utility class; caller is inferred but not present"
+    },
+    {
+      "name": "payment-service",
+      "type": "service",
+      "likely_location": "not-in-tree",
+      "reason": "CreditCardValidator is a utility class; caller is inferred but not present"
+    },
+    {
+      "name": "order-repository",
+      "type": "data-access",
+      "likely_location": "not-in-tree",
+      "reason": "Database schema and DAOs not in extracted files"
+    },
+    {
+      "name": "web-ui",
+      "type": "presentation",
+      "likely_location": "not-in-tree",
+      "reason": "No JSP files, Struts config, or servlet mappings in extracted files"
+    }
+  ]
+}
