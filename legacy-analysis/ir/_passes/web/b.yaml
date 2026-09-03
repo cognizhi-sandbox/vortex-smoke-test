@@ -1,0 +1,109 @@
+records:
+  - record_key: WEB-FORM-AUTH-001
+    kind: requirement
+    capability_key: form-based-user-authentication
+    requirement: >
+      The system SHALL authenticate users via form-based authentication (FORM).
+      Users SHALL submit credentials through an HTTP form rather than using HTTP
+      Basic authentication or other authentication mechanisms. The form-based
+      approach requires an HTML login page and form submission to authenticate.
+    confidence: high
+    confidence_basis: >
+      The authentication method is declared in web.xml via the declarative
+      configuration element `<login-config><auth-method>FORM</auth-method>`.
+      Per J2EE servlet specification, the auth-method element is authoritative
+      and binding. This is a single declarative source with no configuration
+      alternatives or overrides visible.
+    risk_class: operational
+    basis: >
+      Line 4 of web.xml specifies the authentication method via the
+      `<auth-method>` element within `<login-config>`. The value "FORM"
+      indicates form-based authentication is required. This is a declarative
+      configuration requirement that directly impacts the authentication flow
+      and security architecture of the application.
+    traces:
+      - path: legacy-source/web/WEB-INF/web.xml
+        line_start: 4
+        line_end: 4
+        excerpt: |
+          <login-config><auth-method>FORM</auth-method></login-config>
+    stack_metadata:
+      framework: servlet
+
+  - record_key: WEB-SESSION-TIMEOUT-REQUIREMENT-001
+    kind: requirement
+    capability_key: session-inactivity-timeout-duration
+    requirement: >
+      The system SHALL enforce an HTTP session timeout of 30 minutes of
+      inactivity. GIVEN a user's authenticated HTTP session, WHEN no request
+      is received from that session for 30 consecutive minutes, THEN the
+      servlet container SHALL automatically invalidate the session and the
+      user SHALL be logged out. Any subsequent request SHALL require re-authentication.
+    confidence: high
+    confidence_basis: >
+      The session timeout is declared in web.xml via the declarative
+      configuration element `<session-config><session-timeout>30</session-timeout>`.
+      The value is specified in minutes per servlet specification. This is
+      authoritative declarative configuration with no conflicting sources or
+      configuration alternatives visible.
+    risk_class: operational
+    basis: >
+      Line 5 of web.xml specifies the session timeout via the `<session-timeout>`
+      element within `<session-config>`. The value "30" indicates 30 minutes.
+      Per servlet specification, this timeout applies to HTTP sessions in the
+      deployed web application. This is a security control that mitigates
+      session hijacking and credential compromise by terminating idle sessions.
+    traces:
+      - path: legacy-source/web/WEB-INF/web.xml
+        line_start: 5
+        line_end: 5
+        excerpt: |
+          <session-config><session-timeout>30</session-timeout></session-config>
+    stack_metadata:
+      framework: servlet
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The web.xml declares FORM-based authentication but provides no
+      `<form-login-config>` element specifying the login page URL, the form
+      action, or the error page URL. It is unclear where the login form is
+      served (e.g., /login.jsp, /auth/login.html) or how login failures and
+      errors are displayed. The `<form-login-config>` nested element typically
+      specifies these details but is absent from this configuration.
+
+  - kind: ambiguity
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The session timeout of 30 minutes is declared but without additional
+      context. It is ambiguous whether this timeout represents idle timeout
+      (no activity for 30 minutes triggers logout) or absolute timeout
+      (session expires after 30 minutes regardless of activity). Standard
+      servlet behavior implements idle timeout, but this is not explicit here.
+
+  - kind: ambiguity
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The web.xml configuration is minimal and contains no security constraints
+      (`<security-constraint>` elements), servlet mappings, or role definitions.
+      It is unclear which URLs/paths require authentication, which are public,
+      and what roles exist in the application. The access control policy and
+      authorization rules are not defined in this configuration.
+
+  - kind: unparseable
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      No servlet or filter definitions are present in web.xml. It is unclear
+      how HTTP requests are routed to servlets, which servlets handle which
+      paths, and how the business logic modules (billing, orders) are integrated
+      into the request dispatch. A servlet container default dispatcher or
+      external framework (Struts, Spring) may provide this routing.
+
+  - kind: ambiguity
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The session timeout of 30 minutes is specified as an integer but no
+      explicit unit is declared in this element. While servlet specification
+      defines the unit as minutes, the lack of explicit labeling creates
+      potential for misinterpretation (could it be seconds? milliseconds?).
