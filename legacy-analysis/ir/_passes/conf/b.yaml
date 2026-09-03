@@ -1,0 +1,208 @@
+records:
+  - record_key: CONF-DATABASE-CONNECTION-001
+    kind: requirement
+    capability_key: oracle-database-connectivity
+    requirement: >
+      The system SHALL establish connections to an Oracle database instance using
+      JDBC thin client protocol, targeting the server at legacy-db on port 1521
+      with database identifier PETSTORE.
+    confidence: high
+    confidence_basis: >
+      Connection string is explicitly specified in jdbc.properties with standard
+      Oracle JDBC URL syntax. This is a declarative configuration value with no
+      conflicting sources. The properties file is the authoritative configuration
+      source for database connectivity.
+    risk_class: operational
+    basis: >
+      The jdbc.url property specifies the complete database connectivity endpoint.
+      This is a hard-coded connection target that binds the application to a
+      specific Oracle instance. The JDBC thin client indicates network connectivity
+      rather than local/embedded database access.
+    traces:
+      - path: legacy-source/conf/jdbc.properties
+        line_start: 1
+        line_end: 1
+        excerpt: |
+          jdbc.url=jdbc:oracle:thin:@legacy-db:1521:PETSTORE
+    stack_metadata:
+      db.object: oracle-database
+      framework: jdbc
+
+  - record_key: CONF-DATABASE-CREDENTIALS-001
+    kind: requirement
+    capability_key: database-user-authentication
+    requirement: >
+      The system SHALL authenticate to the Oracle database using the username
+      petstore_app with a password configured at deployment time.
+    confidence: high
+    confidence_basis: >
+      Both username and password properties are explicitly configured in
+      jdbc.properties. The username is visible (petstore_app) and the password is
+      marked as redacted, confirming it is treated as a secret. Both are required
+      for JDBC authentication to proceed.
+    risk_class: operational
+    basis: >
+      The jdbc.properties file declares both jdbc.username and jdbc.password as
+      separate configuration properties. The JDBC driver uses these credentials for
+      connection authentication. The specific username (petstore_app) indicates
+      a dedicated database account rather than OS authentication.
+    traces:
+      - path: legacy-source/conf/jdbc.properties
+        line_start: 2
+        line_end: 3
+        excerpt: |
+          jdbc.username=petstore_app
+          jdbc.password=«REDACTED:secret-finding-2»
+    stack_metadata:
+      db.object: oracle-database
+      framework: jdbc
+
+  - record_key: CONF-DATABASE-POOL-001
+    kind: requirement
+    capability_key: database-connection-pool-size
+    requirement: >
+      The system SHALL configure a maximum connection pool size of 25 simultaneous
+      connections to the Oracle database.
+    confidence: high
+    confidence_basis: >
+      Pool size is explicitly specified in jdbc.properties as a literal integer
+      value with no competing sources or configuration overrides visible. This is
+      declarative configuration that directly constrains system resource usage.
+    risk_class: operational
+    basis: >
+      The jdbc.pool.max property sets a hard limit on the number of concurrent
+      database connections the application may hold. A pool of 25 suggests a
+      mid-scale application with moderate concurrency requirements. This parameter
+      is critical for database resource management and application stability.
+    traces:
+      - path: legacy-source/conf/jdbc.properties
+        line_start: 4
+        line_end: 4
+        excerpt: |
+          jdbc.pool.max=25
+    stack_metadata:
+      db.object: connection-pool
+      framework: jdbc
+
+  - record_key: CONF-PAYMENT-GATEWAY-ENDPOINT-001
+    kind: integration
+    capability_key: external-payment-processing
+    requirement: >
+      The system SHALL integrate with an external payment gateway service
+      accessible at the HTTPS endpoint https://gateway.example.test/v1.
+    confidence: high
+    confidence_basis: >
+      Payment gateway endpoint is explicitly configured in integration.properties.
+      This is a declarative configuration value representing the integration target.
+      No competing sources or alternative endpoints are visible.
+    risk_class: financial
+    basis: >
+      The payment.gateway.url property specifies the complete HTTPS endpoint for
+      external payment processing. This is a critical integration point for order
+      payment handling. The endpoint uses HTTPS, indicating encrypted communication
+      for sensitive transaction data.
+    traces:
+      - path: legacy-source/conf/integration.properties
+        line_start: 1
+        line_end: 1
+        excerpt: |
+          payment.gateway.url=https://gateway.example.test/v1
+    stack_metadata:
+      framework: properties-based-configuration
+
+  - record_key: CONF-PAYMENT-GATEWAY-AUTH-001
+    kind: requirement
+    capability_key: payment-gateway-api-key
+    requirement: >
+      The system SHALL authenticate to the payment gateway using an API key
+      configured as a deployment secret.
+    confidence: high
+    confidence_basis: >
+      API key is declared in integration.properties as a configuration property
+      with redacted value. The property name (api_key) indicates authentication use.
+      This is declarative configuration with no conflicting sources.
+    risk_class: financial
+    basis: >
+      The payment.gateway.api_key property indicates the payment gateway requires
+      credential-based authentication. The redaction of the value in this extraction
+      confirms it is treated as sensitive. API key authentication is standard
+      practice for payment processing integrations.
+    traces:
+      - path: legacy-source/conf/integration.properties
+        line_start: 2
+        line_end: 2
+        excerpt: |
+          payment.gateway.api_key=«REDACTED:secret-finding-1»
+    stack_metadata:
+      framework: properties-based-configuration
+
+  - record_key: CONF-PAYMENT-TIMEOUT-001
+    kind: requirement
+    capability_key: payment-transaction-timeout
+    requirement: >
+      The system SHALL enforce a maximum timeout of 8000 milliseconds on payment
+      gateway requests. GIVEN a payment request is initiated, WHEN the payment
+      gateway does not respond within 8 seconds, THEN the request SHALL be
+      terminated.
+    confidence: high
+    confidence_basis: >
+      Timeout value is explicitly configured in integration.properties as 8000
+      milliseconds. This is a literal numeric value with no competing timeout
+      policies visible. Declarative configuration is authoritative.
+    risk_class: financial
+    basis: >
+      The payment.timeout.ms property sets a hard deadline for payment gateway
+      communication. This timeout is critical for preventing indefinite request
+      blocking during payment transactions. An 8-second timeout is a typical value
+      for online payment processing to balance reliability against customer
+      experience.
+    traces:
+      - path: legacy-source/conf/integration.properties
+        line_start: 3
+        line_end: 3
+        excerpt: |
+          payment.timeout.ms=8000
+    stack_metadata:
+      framework: properties-based-configuration
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/conf
+    description: >
+      The configuration files use Java properties format with no schema definition,
+      type information, or validation rules. For numeric values like jdbc.pool.max
+      and payment.timeout.ms, it is unclear what happens if non-numeric values are
+      provided. Similarly, jdbc.url must follow JDBC URL syntax but no validation
+      is declared. This creates potential for silent configuration errors at
+      runtime.
+
+  - kind: ambiguity
+    path: legacy-source/conf/jdbc.properties
+    description: >
+      The JDBC pool configuration specifies only the maximum size (25). No minimum
+      pool size, pool timeout, connection timeout, or idle timeout configuration
+      is visible. It is unclear whether a new connection is created on-demand,
+      pre-created at startup, or lazily created up to the maximum.
+
+  - kind: ambiguity
+    path: legacy-source/conf/integration.properties
+    description: >
+      The payment timeout of 8000ms is specified, but it is ambiguous whether this
+      timeout applies to the network round-trip, to the entire payment processing
+      on the gateway, or only to the initial connection establishment. The scope
+      of the timeout affects how order processing handles network latency.
+
+  - kind: ambiguity
+    path: legacy-source/conf
+    description: >
+      No retry policy, circuit breaker configuration, or fallback behavior is
+      specified for either database or payment gateway failures. The configuration
+      declares integration endpoints but provides no resilience parameters.
+
+  - kind: unparseable
+    path: legacy-source/conf
+    description: >
+      Both configuration files are in Java .properties format, which treats all
+      values as strings. There is no type safety or validation. For example,
+      payment.timeout.ms might be parsed as "8000" (string) or 8000 (integer)
+      depending on the consuming code, which is not visible in this extraction.
