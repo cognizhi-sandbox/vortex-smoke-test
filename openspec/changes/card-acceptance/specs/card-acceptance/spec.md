@@ -8,90 +8,125 @@ The card acceptance capability defines which credit cards the system accepts for
 **Confidence:** High (3 rules, 2 ambiguities requiring review)  
 **Risk Class:** Financial (PCI DSS compliance, fraud risk, refund liability)
 
-## Rules
+## ADDED Requirements
 
-### Rule 1: Card Brand Acceptance
+### Card Brand Acceptance
 
-**Requirement:** The system SHALL accept only Visa and Mastercard credit cards. Cards with leading digit 4 (Visa) or 5 (Mastercard) SHALL be accepted; all other brands SHALL be rejected.
-
-**Confidence:** High
+The system SHALL accept only Visa and Mastercard credit cards. Cards with leading digit 4 (Visa) or 5 (Mastercard) SHALL be accepted; all other brands SHALL be rejected.
 
 **Trace:** `legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java:5-9`
 
-**Implementation:**
-
-```java
-public boolean isAcceptedBrand(String number) {
-    if (number == null || number.length() < 13) return false;
-    char first = number.charAt(0);
-    // Visa (4) and Mastercard (5) only; Amex was dropped in 2003.
-    return first == '4' || first == '5';
-}
-```
+**Confidence:** High
 
 **Rationale:** PCI DSS compliance requires card brand validation. The legacy system explicitly supports only Visa and Mastercard, rejecting all others including Amex (dropped 2003).
 
-**Edge Cases:**
+#### Scenario: Visa card is accepted
 
-- Null card number → Rejected
-- Empty string → Rejected
-- Card number too short (< 13 digits) → Rejected before brand check
+- GIVEN a card number starting with digit 4
+- WHEN card validation is performed
+- THEN the card SHALL be accepted as valid
+
+#### Scenario: Mastercard is accepted
+
+- GIVEN a card number starting with digit 5
+- WHEN card validation is performed
+- THEN the card SHALL be accepted as valid
+
+#### Scenario: American Express is rejected
+
+- GIVEN a card number starting with digit 3
+- WHEN card validation is performed
+- THEN the card SHALL be rejected
+
+#### Scenario: Invalid brand digit is rejected
+
+- GIVEN a card number starting with digit 6, 7, 8, or 9
+- WHEN card validation is performed
+- THEN the card SHALL be rejected
+
+#### Scenario: Null card is rejected
+
+- GIVEN a null card number
+- WHEN card validation is performed
+- THEN the card SHALL be rejected
 
 ---
 
-### Rule 2: Minimum Card Length
+### Minimum Card Length
 
-**Requirement:** The system SHALL reject credit card numbers with fewer than 13 digits. GIVEN a card number with length < 13, WHEN validation is performed, THEN the card SHALL be rejected.
-
-**Confidence:** Low (undocumented threshold)
+The system SHALL reject credit card numbers with fewer than 13 digits.
 
 **Trace:** `legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java:6`
 
-**Implementation:**
+**Confidence:** Low (undocumented threshold)
 
-```java
-if (number == null || number.length() < 13) return false;
-```
+**Rationale:** Industry standard ISO/IEC 7812 specifies card numbers between 12 and 19 digits. The choice of 13 as a minimum is not justified in the legacy code.
 
-**Rationale:** Industry standard ISO/IEC 7812 specifies card numbers between 12 and 19 digits. The choice of 13 as a minimum is not justified in the legacy code. **This threshold requires SME review.**
+#### Scenario: 12-digit card is rejected
 
-**Ambiguity:** Is the 13-digit minimum intentional (e.g., rejecting legacy 12-digit cards) or arbitrary? No documentation provided.
+- GIVEN a valid Visa card number with 12 digits
+- WHEN card validation is performed
+- THEN the card SHALL be rejected for being too short
+
+#### Scenario: 13-digit card is accepted
+
+- GIVEN a valid Visa card number with 13 digits
+- WHEN card validation is performed
+- THEN the card SHALL be accepted (if other validations pass)
+
+#### Scenario: Empty string is rejected
+
+- GIVEN an empty string as card number
+- WHEN card validation is performed
+- THEN the card SHALL be rejected
+
+#### Scenario: Very short number is rejected
+
+- GIVEN a card number with 1-5 digits
+- WHEN card validation is performed
+- THEN the card SHALL be rejected
 
 ---
 
-### Rule 3: Card Expiry Validation
+### Card Expiry Validation
 
-**Requirement:** The system SHALL detect expired credit cards based on expiry year and month. A card is expired if the expiry year is before the current year, or if the expiry year equals the current year AND the expiry month is before the current month.
-
-**Confidence:** High
+The system SHALL detect expired credit cards based on expiry year and month. A card is expired if the expiry year is before the current year, or if the expiry year equals the current year AND the expiry month is before the current month.
 
 **Trace:** `legacy-source/modules/billing/src/com/petstore/billing/CreditCardValidator.java:12-14`
 
-**Implementation:**
-
-```java
-public boolean isExpired(int expiryYear, int expiryMonth, int nowYear, int nowMonth) {
-    if (expiryYear < nowYear) return true;
-    return expiryYear == nowYear && expiryMonth < nowMonth;
-}
-```
+**Confidence:** High
 
 **Rationale:** Standard credit card expiry logic. Cards are valid through the last day of the expiry month.
 
-**Boundary Condition:** Cards expiring in the current month ARE valid.
+#### Scenario: Card expired in prior year is rejected
 
-**Edge Cases:**
+- GIVEN a card with expiry year 2024 and current year is 2026
+- WHEN card validation is performed
+- THEN the card SHALL be marked as expired
 
-- Expiry year < current year → Expired
-- Expiry year = current year AND expiry month < current month → Expired
-- Expiry year = current year AND expiry month = current month → NOT expired (valid)
-- Expiry year > current year → NOT expired (valid)
+#### Scenario: Card expired in prior month of current year is rejected
 
-**Implicit Assumptions:**
+- GIVEN a card with expiry month 06/2026 and current date is 08/2026
+- WHEN card validation is performed
+- THEN the card SHALL be marked as expired
 
-- Expiry month is 1-12 (calendar month)
-- Current date is provided as integer year and month (not timestamp)
-- No time-of-day consideration (valid through end of month)
+#### Scenario: Card expiring in current month is valid
+
+- GIVEN a card with expiry month 08/2026 and current date is 08/2026
+- WHEN card validation is performed
+- THEN the card SHALL be marked as valid
+
+#### Scenario: Card expiring in future month is valid
+
+- GIVEN a card with expiry month 12/2026 and current date is 08/2026
+- WHEN card validation is performed
+- THEN the card SHALL be marked as valid
+
+#### Scenario: Card expiring in future year is valid
+
+- GIVEN a card with expiry year 2027 and current year is 2026
+- WHEN card validation is performed
+- THEN the card SHALL be marked as valid
 
 ---
 
