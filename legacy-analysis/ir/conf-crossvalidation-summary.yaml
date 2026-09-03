@@ -1,0 +1,58 @@
+module: conf
+pass_a_records: 5
+pass_b_records: 6
+cross_validation_summary:
+  records_agreed: 5 (100%)
+  records_partial: 0 (0%)
+  records_disputed: 0 (0%)
+  findings_agreed: 4
+  findings_partial: 1
+  findings_unidentified_by_either_pass: 1
+
+records_by_status:
+  agreed:
+    - CONF-DATABASE-CONNECTIVITY-AGREED-001 (Pass A: CONF-DATABASE-0002, Pass B: CONF-DATABASE-CONNECTION-001)
+    - CONF-DATABASE-AUTHENTICATION-AGREED-001 (Pass A: CONF-DATABASE-0003, Pass B: CONF-DATABASE-CREDENTIALS-001)
+    - CONF-DATABASE-POOLING-AGREED-001 (Pass A: CONF-DATABASE-0001, Pass B: CONF-DATABASE-POOL-001)
+    - CONF-PAYMENT-GATEWAY-ENDPOINT-AGREED-001 (Pass A: CONF-INTEGRATION-0001 endpoint, Pass B: CONF-PAYMENT-GATEWAY-ENDPOINT-001)
+    - CONF-PAYMENT-GATEWAY-AUTH-AGREED-001 (Pass A: CONF-INTEGRATION-0002, Pass B: CONF-PAYMENT-GATEWAY-AUTH-001)
+
+  partial:
+    # None - all records agreed semantically
+
+  disputed:
+    # None - no records have conflicting content
+    # Note: Pass A combined endpoint+timeout into single record, Pass B split them.
+    # This is granularity difference, not semantic disagreement.
+
+findings_by_status:
+  agreed:
+    - Hardcoded payment gateway endpoint with no environment-specific overrides
+    - Payment timeout scope ambiguous (network vs. entire flow vs. connection only)
+    - No retry policy or fallback behavior specified for gateway failures
+    - Configuration files untyped (properties format), unclear parsing behavior
+
+  partial:
+    - Hardcoded endpoint risk framing (Pass A emphasizes deployment environment risk;
+      Pass B doesn't explicitly frame this security risk)
+
+  unidentified_by_either_pass:
+    - Connection pool incomplete configuration (Pass B identified: no min size, timeouts,
+      creation strategy; Pass A did not)
+      This is a valid finding that Pass A missed but Pass B caught.
+
+analysis_notes:
+  - Pass A and Pass B identified the same 5 core requirements (database connectivity,
+    authentication, pool size, gateway endpoint, gateway auth) with 100% semantic
+    agreement. Differences in record naming and granularity are immaterial.
+  - Pass A confidence for database-auth was medium (code-only assumption);
+    Pass B assigned high (configuration + visibility + property name + standard practice).
+    Cross-validation supports upgrade to high (both passes agree on same source).
+  - Pass A confidence for gateway-auth was medium (code-only assumption);
+    Pass B assigned high (redaction + property name confirm secret).
+    Cross-validation supports upgrade to high.
+  - Key difference: Pass B identified an additional finding (connection pool incomplete
+    config) that Pass A did not explicitly flag. This is a valid finding worth carrying
+    forward.
+  - All ambiguity findings (4 agreed + 1 partial) are substantive and should be carried
+    forward for future refinement.

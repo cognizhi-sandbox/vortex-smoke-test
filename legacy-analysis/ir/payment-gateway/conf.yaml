@@ -1,0 +1,139 @@
+records:
+  - record_key: CONF-PAYMENT-GATEWAY-ENDPOINT-AGREED-001
+    kind: integration
+    capability_key: external-payment-processing
+    requirement: >
+      The system SHALL integrate with an external payment gateway service accessible
+      at the HTTPS endpoint https://gateway.example.test/v1.
+    confidence: high
+    confidence_basis: >
+      Both passes identified payment.gateway.url in integration.properties with
+      identical traces and identical content. The endpoint is declarative configuration
+      with no competing sources. High confidence: both passes agree, single authoritative
+      source (configuration file), literal URL value is unambiguous.
+    risk_class: financial
+    basis: >
+      The payment.gateway.url property in legacy-source/conf/integration.properties
+      line 1 specifies https://gateway.example.test/v1. Both passes correctly
+      identified this as a critical integration point for payment processing. Pass A
+      combined this with timeout in a single record; Pass B separated them. The
+      requirement itself is identical.
+    traces:
+      - path: legacy-source/conf/integration.properties
+        line_start: 1
+        line_end: 1
+        excerpt: |
+          payment.gateway.url=https://gateway.example.test/v1
+    cross_validation: agreed
+    stack_metadata:
+      framework: properties-based-configuration
+
+  - record_key: CONF-PAYMENT-GATEWAY-AUTH-AGREED-001
+    kind: requirement
+    capability_key: payment-gateway-api-key
+    requirement: >
+      The system SHALL authenticate to the payment gateway using an API key
+      configured as a deployment secret.
+    confidence: high
+    confidence_basis: >
+      Both passes identified payment.gateway.api_key in integration.properties with
+      identical traces. Pass A assigned medium confidence (configuration-only, no code
+      showing transmission); Pass B assigned high confidence (property name indicates
+      use, redaction confirms secrecy). The configuration itself is authoritative;
+      agreement on both passes + property name + redaction support high confidence.
+    risk_class: financial
+    basis: >
+      The payment.gateway.api_key property in legacy-source/conf/integration.properties
+      line 2 is marked as «REDACTED:secret-finding-1», confirming it is treated as a
+      secret. Both passes correctly identified this as authentication requirement.
+      Pass B's reasoning (redaction + property name + standard practice) is slightly
+      stronger than Pass A's (assuming code layer uses it).
+    traces:
+      - path: legacy-source/conf/integration.properties
+        line_start: 2
+        line_end: 2
+        excerpt: |
+          payment.gateway.api_key=«REDACTED:secret-finding-1»
+    cross_validation: agreed
+    confidence_upgraded_from: medium (pass_a) to high (both_agree)
+    stack_metadata:
+      framework: properties-based-configuration
+
+  - record_key: CONF-PAYMENT-TIMEOUT-AGREED-001
+    kind: requirement
+    capability_key: payment-transaction-timeout
+    requirement: >
+      The system SHALL enforce a maximum timeout of 8000 milliseconds on payment
+      gateway requests.
+    confidence: high
+    confidence_basis: >
+      Both passes identified payment.timeout.ms=8000 with identical traces and
+      interpretation. This is declarative configuration with no conflicting sources.
+      High confidence: both passes agree, single authoritative source, literal numeric
+      value is unambiguous. Note: scope of timeout (network vs. entire flow) is
+      ambiguous but value itself is clear.
+    risk_class: financial
+    basis: >
+      The payment.timeout.ms property in legacy-source/conf/integration.properties
+      line 3 specifies 8000. Both passes identified this as a critical timeout for
+      payment processing. Pass A combined with endpoint; Pass B separated them. The
+      requirement value (8000ms) is identical.
+    traces:
+      - path: legacy-source/conf/integration.properties
+        line_start: 3
+        line_end: 3
+        excerpt: |
+          payment.timeout.ms=8000
+    cross_validation: agreed
+    stack_metadata:
+      framework: properties-based-configuration
+
+findings:
+  - kind: ambiguity
+    classification: agreed
+    path: legacy-source/conf/integration.properties
+    description: >
+      Payment gateway endpoint is hardcoded in the configuration file with no
+      indication of environment-specific overrides (dev/staging/prod). Both passes
+      identified this ambiguity (Pass A explicitly, Pass B implied in findings).
+      It is unclear whether the same endpoint is used across all deployment
+      environments or if configuration substitution occurs at deploy time.
+
+  - kind: ambiguity
+    classification: agreed
+    path: legacy-source/conf/integration.properties
+    description: >
+      The payment timeout of 8000ms scope is ambiguous. Both passes flagged this
+      independently. It is unclear whether the timeout applies to network round-trip,
+      entire gateway processing, or just connection establishment. The scope affects
+      how order processing handles network latency.
+
+  - kind: ambiguity
+    classification: agreed
+    path: legacy-source/conf
+    description: >
+      No retry policy, circuit breaker configuration, or fallback behavior is
+      specified for payment gateway failures. Both passes identified this gap
+      (Pass A explicitly under "No retry policy", Pass B under "No retry policy/
+      circuit breaker/fallback"). Configuration declares integration endpoints but
+      provides no resilience parameters.
+
+  - kind: unparseable
+    classification: agreed
+    path: legacy-source/conf
+    description: >
+      Configuration files are in Java .properties format with no schema, type
+      information, or validation rules. Both passes identified this. It is unclear
+      whether payment.timeout.ms is parsed as string or integer at runtime,
+      creating potential parsing failures if non-numeric values are provided.
+
+  - kind: ambiguity
+    classification: partial
+    path: legacy-source/conf
+    description: >
+      Pass A: "Payment gateway endpoint is hardcoded with no env-specific overrides"
+      Pass B: (no explicit finding, but implied context about hardcoding)
+      Partial agreement. Both identify the issue but Pass A frames it as a security/
+      deployment risk (wrong environment), while Pass B doesn't explicitly flag this
+      variant. The core finding (hardcoded endpoint) is agreed; the deployment risk
+      framing differs.

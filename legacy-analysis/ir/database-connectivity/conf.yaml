@@ -1,0 +1,92 @@
+records:
+  - record_key: CONF-DATABASE-CONNECTIVITY-AGREED-001
+    kind: requirement
+    capability_key: oracle-database-connectivity
+    requirement: >
+      The system SHALL establish connections to an Oracle database instance at
+      legacy-db:1521 using JDBC thin client protocol with database identifier PETSTORE.
+    confidence: high
+    confidence_basis: >
+      Both passes explicitly cited the jdbc.url configuration property with identical
+      traces and content. The connection string is declarative configuration in
+      jdbc.properties. High confidence: both passes agree, single authoritative source
+      (configuration file), and straightforward syntax.
+    risk_class: operational
+    basis: >
+      The jdbc.url property in legacy-source/conf/jdbc.properties specifies
+      jdbc:oracle:thin:@legacy-db:1521:PETSTORE. This binds the application to
+      a specific Oracle instance and indicates network connectivity via JDBC thin
+      client. Both extractions identified this requirement independently.
+    traces:
+      - path: legacy-source/conf/jdbc.properties
+        line_start: 1
+        line_end: 1
+        excerpt: |
+          jdbc.url=jdbc:oracle:thin:@legacy-db:1521:PETSTORE
+    cross_validation: agreed
+    stack_metadata:
+      db.object: oracle-database
+      framework: jdbc
+
+  - record_key: CONF-DATABASE-AUTHENTICATION-AGREED-001
+    kind: requirement
+    capability_key: database-user-authentication
+    requirement: >
+      The system SHALL authenticate to the Oracle database using the username
+      petstore_app with a password configured at deployment time.
+    confidence: high
+    confidence_basis: >
+      Both passes identified the database credentials in jdbc.properties with identical
+      traces. Pass A assigned medium confidence (code-only source), Pass B assigned high
+      confidence (config-only source + username visibility). The configuration is
+      authoritative; the visibility of username and redaction of password confirms
+      these are required credentials.
+    risk_class: operational
+    basis: >
+      The jdbc.properties file declares jdbc.username=petstore_app and
+      jdbc.password=«REDACTED:secret-finding-2» on lines 2-3. Both passes agreed
+      this indicates JDBC authentication with specific credentials. Pass B's reasoning
+      (both properties visible/redacted confirming they're required) is slightly
+      stronger than Pass A's (assuming code layer uses them).
+    traces:
+      - path: legacy-source/conf/jdbc.properties
+        line_start: 2
+        line_end: 3
+        excerpt: |
+          jdbc.username=petstore_app
+          jdbc.password=«REDACTED:secret-finding-2»
+    cross_validation: agreed
+    confidence_upgraded_from: medium (pass_a) to high (both_agree)
+    stack_metadata:
+      db.object: oracle-database
+      framework: jdbc
+
+  - record_key: CONF-DATABASE-POOLING-AGREED-001
+    kind: requirement
+    capability_key: database-connection-pool-size
+    requirement: >
+      The system SHALL configure a maximum connection pool size of 25 simultaneous
+      connections to the Oracle database.
+    confidence: high
+    confidence_basis: >
+      Both passes independently identified jdbc.pool.max=25 with identical traces and
+      identical interpretation. This is declarative configuration with no conflicting
+      sources. High confidence: both passes agree, single authoritative source, literal
+      value is unambiguous.
+    risk_class: operational
+    basis: >
+      The jdbc.pool.max property in legacy-source/conf/jdbc.properties line 4
+      specifies 25. This sets a hard limit on concurrent database connections.
+      Both passes correctly identified this as critical for resource management.
+      Pass B's reasoning about "mid-scale application with moderate concurrency" is
+      inferred context, but the literal requirement is agreed.
+    traces:
+      - path: legacy-source/conf/jdbc.properties
+        line_start: 4
+        line_end: 4
+        excerpt: |
+          jdbc.pool.max=25
+    cross_validation: agreed
+    stack_metadata:
+      db.object: connection-pool
+      framework: jdbc
