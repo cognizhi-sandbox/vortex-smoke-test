@@ -1,0 +1,103 @@
+records:
+  - record_key: WEB-AUTH-METHOD-001
+    kind: requirement
+    capability_key: form-based-authentication
+    requirement: >
+      The system SHALL use form-based authentication (HTTP FORM) as the
+      authentication mechanism for user login. Users SHALL authenticate via
+      an HTML form rather than HTTP basic authentication or other mechanisms.
+    confidence: high
+    confidence_basis: >
+      The authentication method is explicitly declared in web.xml using the
+      declarative configuration element `<login-config><auth-method>FORM</auth-method></login-config>`.
+      Per J2EE adapter guidance, declared behaviour in web.xml is authoritative.
+      This is a single authoritative source with no conflicting configuration.
+    risk_class: operational
+    basis: >
+      Line 4 of web.xml declares the authentication method via the
+      `<auth-method>` element within `<login-config>`. The value "FORM"
+      indicates form-based (HTML login form) authentication. This is a
+      declarative requirement that binds the application to a specific auth
+      method and affects user login flow and security posture.
+    traces:
+      - path: legacy-source/web/WEB-INF/web.xml
+        line_start: 4
+        line_end: 4
+        excerpt: |
+          <login-config><auth-method>FORM</auth-method></login-config>
+    stack_metadata:
+      framework: servlet
+
+  - record_key: WEB-SESSION-TIMEOUT-001
+    kind: requirement
+    capability_key: http-session-inactivity-timeout
+    requirement: >
+      The system SHALL enforce a session timeout of 30 minutes of inactivity.
+      GIVEN a user's HTTP session, WHEN the session remains inactive (no requests
+      received) for 30 minutes, THEN the session SHALL be invalidated and the
+      user SHALL be logged out. The user must re-authenticate to proceed.
+    confidence: high
+    confidence_basis: >
+      The session timeout is explicitly declared in web.xml using the
+      declarative configuration element `<session-config><session-timeout>30</session-timeout>`.
+      The value is specified in minutes per servlet specification. This is
+      authoritative declarative configuration with no conflicting sources.
+    risk_class: operational
+    basis: >
+      Line 5 of web.xml declares the session timeout via the
+      `<session-timeout>` element within `<session-config>`. The value "30"
+      indicates 30 minutes per servlet specification. This timeout is a
+      security control that mitigates the risk of session hijacking and
+      ensures that abandoned sessions are periodically terminated.
+    traces:
+      - path: legacy-source/web/WEB-INF/web.xml
+        line_start: 5
+        line_end: 5
+        excerpt: |
+          <session-config><session-timeout>30</session-timeout></session-config>
+    stack_metadata:
+      framework: servlet
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The web.xml file declares FORM-based authentication but does not specify
+      the form's location, login page path, or error page path. It is unclear
+      where the login form is served from (e.g., /login.jsp, /auth/login.html)
+      or how login failures are handled. These details would typically be in
+      `<form-login-config>` nested within `<login-config>`, but that element
+      is absent.
+
+  - kind: ambiguity
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The session timeout of 30 minutes is declared, but it is unclear whether
+      this timeout applies only to authenticated sessions or also to unauthenticated
+      sessions. Additionally, there is no indication of whether idle timeout
+      (no activity) or absolute timeout (regardless of activity) is enforced.
+
+  - kind: unparseable
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The web.xml file is minimal and does not declare any security constraints,
+      servlet mappings, filters, or security roles. It is unclear how the
+      application enforces authorization, which endpoints require authentication,
+      or what roles exist. The absence of `<security-constraint>` elements means
+      the access control policy is not defined in this configuration.
+
+  - kind: unparseable
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      No servlet definitions or URL mappings are present in web.xml. It is
+      unclear which servlets handle requests, what URL patterns they serve,
+      or how business logic modules (billing, orders) are integrated into the
+      request dispatch. The servlet container's default behavior or external
+      frameworks (Struts, Spring) may provide this configuration.
+
+  - kind: ambiguity
+    path: legacy-source/web/WEB-INF/web.xml
+    description: >
+      The display name "Pet Store Legacy" is present but provides no technical
+      requirement. It is unclear whether this name has any functional significance
+      or if it is merely a label for documentation purposes.
