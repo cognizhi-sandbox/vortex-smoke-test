@@ -1,0 +1,141 @@
+crossvalidation:
+  module: web
+  pass_a_records: 2
+  pass_b_records: 2
+  agreement_summary: >
+    Both passes identified the same 2 core requirements with 100% semantic agreement. All
+    differences are record-key naming divergence (stylistic conventions). Pass B identified
+    1 additional ambiguity finding (application metadata and context) not flagged in Pass A.
+    Both passes achieved HIGH confidence on all requirements.
+
+record_comparisons:
+  - record_id: "Form-Based Authentication"
+    pass_a_key: AUTH-LOGIN-METHOD-FORM-0001
+    pass_b_key: AUTH-METHOD-FORM-BASED-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified the form-based authentication requirement from line 4
+      of web.xml (<login-config><auth-method>FORM</auth-method></login-config>). Same
+      source, same confidence (high), same risk_class (operational), same capability
+      (order-approval). Record keys differ: Pass A uses AUTH-LOGIN-METHOD-FORM-0001 while
+      Pass B uses AUTH-METHOD-FORM-BASED-0001. Pass A emphasizes "login-method" while Pass B
+      emphasizes "form-based" authentication. Both correctly describe that users authenticate
+      via an HTML form rather than HTTP Basic Auth or other mechanisms. Semantic agreement
+      with stylistic key divergence. Metadata differs slightly: Pass A lists "config_type:
+      declarative" while Pass B adds "config_element: login-config" and repeats "config_type".
+      Both note this is a cross-cutting infrastructure concern filed under order-approval as
+      the closest business capability.
+    agreement_level: semantic-agreement-with-key-divergence
+
+  - record_id: "Session Timeout Configuration"
+    pass_a_key: SESSION-TIMEOUT-0001
+    pass_b_key: SESSION-TIMEOUT-THIRTY-MINUTES-0001
+    status: partial
+    rationale: >
+      Both passes correctly identified the 30-minute session timeout requirement from line 5
+      of web.xml (<session-config><session-timeout>30</session-timeout></session-config>).
+      Same timeout value (30 minutes), same source, same confidence (high), same risk_class
+      (operational). Record keys differ: Pass A uses generic SESSION-TIMEOUT-0001 while Pass
+      B uses SESSION-TIMEOUT-THIRTY-MINUTES-0001, explicitly naming the timeout duration.
+      Both correctly describe that user sessions expire after 30 minutes of inactivity and
+      require re-authentication. Both discuss the balance between security and usability.
+      Semantic agreement with stylistic key divergence (Pass B more specific). Metadata
+      differs: Pass A includes "timeout_unit: minutes" while Pass B provides more complete
+      metadata with "config_element: session-config", "timeout_value: 30", and "timeout_unit:
+      minutes". Both note this is a cross-cutting infrastructure concern filed under
+      order-approval as the closest business capability.
+    agreement_level: semantic-agreement-with-more-specific-key
+
+finding_comparisons:
+  - finding_id: "Minimal Web Configuration"
+    pass_a_status: ambiguity
+    pass_b_status: ambiguity
+    status: partial
+    rationale: >
+      Both passes identified ambiguity about the minimal web.xml configuration, but with
+      different emphasis. Pass A flags missing security constraints, role definitions, servlet
+      and JSP mappings, and general web framework configuration. Pass B is more specific,
+      explicitly mentioning missing form-login-page and form-error-page location declarations,
+      security constraints, role definitions, servlet/filter mappings, and error handling. Both
+      note that Struts configuration, JSP files, and servlet entry points are absent from the
+      extracted files. Pass B additionally raises the question of whether a different web
+      framework (JSF, Spring MVC) is used. Findings are semantically equivalent but Pass B is
+      more granular in identifying specific missing configuration elements (form-login-page,
+      form-error-page, security constraints). Pass B's identification of alternative framework
+      possibilities is more complete.
+    agreement_level: semantic-agreement-with-pass-b-more-specific
+
+  - finding_id: "Session Timeout Justification"
+    pass_a_status: ambiguity
+    pass_b_status: ambiguity
+    status: agreed
+    rationale: >
+      Both passes flagged identical ambiguity about the 30-minute session timeout being a bare
+      literal without documented justification. Both express uncertainty whether: (1) the value
+      was derived from user behavior analysis, industry best practices, or regulatory
+      requirements; (2) different timeout values exist for different user roles or transaction
+      types; (3) there is a "remember me" mechanism; (4) the timeout is subject to periodic
+      review or adjustment. Both note this is a security control that should be documented and
+      reviewed with security and operations teams. Pass B adds detail about adjustability per
+      user/session and periodic review based on security incidents. Findings are semantically
+      identical with Pass B slightly more detailed on operational management aspects.
+
+  - finding_id: "Web Application Architecture and Routing"
+    pass_a_status: ambiguity (implicit)
+    pass_b_status: ambiguity (explicit)
+    status: partial
+    rationale: >
+      Both passes identified ambiguity about the incomplete web layer, but Pass B provided
+      more explicit and detailed coverage. Pass A flags that web.xml is minimal and suggests
+      routing/security configuration exists elsewhere. Pass B goes further by explicitly asking
+      about web application organization, specific framework possibilities (Struts, JSF, Spring
+      MVC), and specific configuration files (struts-config.xml, faces-config.xml, Spring bean
+      files) that may be absent. Pass B's findings are more comprehensive in exploring
+      alternative architectures and configuration locations. This represents a COMPLETENESS
+      DIFFERENCE where Pass B identified the web architecture ambiguity with greater specificity
+      and detail.
+
+  - finding_id: "Application Metadata and Historical Context"
+    pass_a_status: NOT PRESENT
+    pass_b_status: ambiguity
+    status: partial
+    rationale: >
+      Pass B uniquely identified an ambiguity about the application metadata ("Pet Store
+      Legacy" display-name) and the lack of historical context. Pass B asks: (1) what system
+      was this extracted from? (2) are there other versions (current, production, test)? (3)
+      what is the timeline of extraction? (4) what functionality was retained or removed? Pass
+      A did not flag application naming or historical context as a separate ambiguity finding.
+      This represents a COMPLETENESS DIFFERENCE where Pass B identified an additional missing
+      context that would aid understanding of the application's constraints and design
+      decisions.
+
+summary:
+  status: strong-agreement-with-key-naming-and-completeness-differences
+  core_findings: >
+    Both passes achieved 100% semantic agreement on both core requirements (form-based
+    authentication and 30-minute session timeout). Differences are limited to record-key
+    naming conventions. All requirements were assigned HIGH confidence and are sourced from
+    explicit declarations in web.xml.
+
+  concerns: >
+    Record key divergence will cause the ingester to treat semantically equivalent records as
+    separate:
+    - AUTH-LOGIN-METHOD-FORM vs AUTH-METHOD-FORM-BASED
+    - SESSION-TIMEOUT vs SESSION-TIMEOUT-THIRTY-MINUTES
+    This appears to be deliberate stylistic choice (Pass B using more specific, descriptive
+    keys). Pass B's more specific keys (naming exact timeout duration, exact auth method)
+    provide better clarity on the actual requirement. Recommend standardizing to Pass B's
+    approach for specificity.
+
+  pass_b_advantages: >
+    (1) More specific record keys that explicitly name timeout duration and auth method type.
+    (2) Identified 1 additional completeness ambiguity (application metadata and historical
+    context) that Pass A did not surface. (3) More detailed metadata on session configuration
+    (includes config_element and timeout_value). (4) More specific in web framework detection
+    ambiguity, explicitly naming alternative frameworks (JSF, Spring MVC) and configuration
+    files (struts-config.xml, faces-config.xml, Spring beans). (5) More comprehensive coverage
+    of missing configuration elements (specifically names form-login-page and form-error-page).
+
+  ambiguities_agreed: 2
+  ambiguities_pass_b_only: 1
+  total_ambiguities: 3
