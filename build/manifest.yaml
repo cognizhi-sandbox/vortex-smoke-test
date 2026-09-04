@@ -1,0 +1,94 @@
+schemaVersion: 1
+program:
+  key: ledger-1788511735
+  title: Ledger Core (smoke 1788511735)
+  source: extraction
+  generator: vortex-smoke
+  sourceRef: spec-intake-smoke/1788511735
+capabilities:
+  - slug: identity-user-auth
+    title: The identity-user-auth capability
+    order: 1
+    dependsOn:
+      []
+    priority: 0
+    change:
+      dir: openspec/changes/sx-identity-user-auth
+      specCapabilities:
+        - identity-user-auth
+    canvas:
+      problem: identity-user-auth has no documented contract, so every change to it is a guess.
+      solution: Build identity-user-auth against the extracted specification.
+      userStories:
+        - As an operator, I want identity-user-auth to behave predictably.
+      acceptanceCriteria:
+        - "Password login — Valid credentials: the operation is recorded and its outcome is returned"
+      outOfScope:
+        - Anything outside the identity-user-auth boundary.
+      risksAssumptions:
+        - The legacy semantics are correct as observed.
+      techStack: []
+      affectedCode: []
+    evidence:
+      irRefs:
+        - identity-user-auth-REQ-0001
+      reviewedBy: smoke@vortex.test
+      reviewedAt: 2026-09-04
+  - slug: accounts-ledger
+    title: The accounts-ledger capability
+    order: 2
+    dependsOn:
+      - identity-user-auth
+    priority: 0
+    change:
+      dir: openspec/changes/sx-accounts-ledger
+      specCapabilities:
+        - accounts-ledger
+    canvas:
+      problem: accounts-ledger has no documented contract, so every change to it is a guess.
+      solution: Build accounts-ledger against the extracted specification.
+      userStories:
+        - As an operator, I want accounts-ledger to behave predictably.
+      acceptanceCriteria:
+        - "Ledger posting — Balanced posting: the operation is recorded and its outcome is returned"
+      outOfScope:
+        - Anything outside the accounts-ledger boundary.
+      risksAssumptions:
+        - The legacy semantics are correct as observed.
+      techStack: []
+      affectedCode: []
+    evidence:
+      irRefs:
+        - accounts-ledger-REQ-0001
+      reviewedBy: smoke@vortex.test
+      reviewedAt: 2026-09-04
+  - slug: billing-invoices
+    title: The billing-invoices capability
+    order: 3
+    dependsOn:
+      - accounts-ledger
+    priority: 0
+    change:
+      dir: openspec/changes/sx-billing-invoices
+      specCapabilities:
+        - billing-invoices
+    canvas:
+      problem: billing-invoices has no documented contract, so every change to it is a guess.
+      solution: Build billing-invoices against the extracted specification.
+      userStories:
+        - As an operator, I want billing-invoices to behave predictably.
+      acceptanceCriteria:
+        - "Invoice — issue and render — Invoice finalised: the operation is recorded and its outcome is returned"
+      outOfScope:
+        - Anything outside the billing-invoices boundary.
+      risksAssumptions:
+        - The legacy semantics are correct as observed.
+      techStack: []
+      affectedCode: []
+    evidence:
+      irRefs:
+        - billing-invoices-REQ-0001
+      reviewedBy: smoke@vortex.test
+      reviewedAt: 2026-09-04
+artifacts:
+  openapi: api/openapi.yaml
