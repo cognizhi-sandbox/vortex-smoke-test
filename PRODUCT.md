@@ -21,6 +21,7 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 - **Frontend**: React 19 SPA with file-based routing, auto-imports for hooks/components, TypeScript strict mode
 - **Backend**: Nitro 3 server with file-based API routes, SQLite persistence via Drizzle ORM, middleware support
 - **Health probes**: a growing family of `/api/healthz-smoke-*` GET endpoints, each returning `{ ok: true, variant: "<id>" }`. Each is self-contained — no auth, no database, no code shared with any sibling — so it proves two things at once: that the deployed build is actually serving the Nitro API, and that independent units of work can be picked up, built and merged in parallel without conflicting
+- **Password login**: an endpoint that verifies a stored credential, records the attempt, and returns the outcome — the first behaviour of the `identity-user-auth` capability
 - **Testing**: Vitest + React Testing Library (unit/component/API integration tests), Playwright for E2E and smoke tests — all working examples, all scripts in `package.json`
 - **Styling**: Tailwind CSS v4 (CSS-first, no config files), shadcn/ui-style component primitives, custom design tokens
 - **DevEx**: ESLint 10 + typescript-eslint, Prettier, Husky pre-commit hooks, hot module reload, sourcemaps
@@ -29,11 +30,23 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 
 ### Not in Scope
 
-- Real authentication (stub middleware exists; swap with real auth before shipping)
+- Sessions, tokens and logged-in state. `identity-user-auth` proves a credential; it does not carry an identity across requests. `middleware/auth.ts` still fabricates a user for every request and must be replaced before anything ships that depends on who the caller is
+- Account lifecycle around a credential — registration, password change and reset, and any endpoint that writes one
+- Authorization: roles, permissions, and per-route access control
+- Login hardening — rate limiting, lockout, and constant-time comparison
 - Domains features or business logic (boilerplate only)
 - Component library beyond shadcn-style primitives
 - Custom visualization/charting framework
 - Mobile-specific optimization
+
+## Capabilities
+
+One line per capability. The behaviour each one guarantees is written down in its spec, not here.
+
+| Capability           | What it is for                                                                                       | Contract                                                                                         |
+| -------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `health-probes`      | Confirm a deployed build is serving the Nitro API, without auth, database or application state       | [`openspec/specs/health-probes/`](./openspec/specs/health-probes/spec.md)                        |
+| `identity-user-auth` | Prove a person is who they claim to be: store password material, verify it, and record every attempt | `openspec/specs/identity-user-auth/`, once the change introducing it is archived at sprint close |
 
 ## Features
 
@@ -55,6 +68,17 @@ Teams building full-stack TypeScript applications spend significant time scaffol
 **How many exist:** the family grows by a few probes most sprints and none are retired, so this document deliberately carries no count and no "most recent" pointer — both are claims that would be stale the sprint after they were written. The live inventory is `routes/api/healthz-smoke-*.ts`; the contract each probe satisfies is written down per probe in [`openspec/specs/health-probes/`](./openspec/specs/health-probes/spec.md).
 
 **Deliberately not covered:** authentication or authorization on probes, non-`GET` method handling, request params or bodies, observability wiring, Playwright/E2E coverage, and retirement of older probes. See [ARCHITECTURE.md](./ARCHITECTURE.md#key-decisions) for why the duplication between probes is kept.
+
+### Password login (`POST /api/auth/login`)
+
+**User stories**
+
+- As an **operator**, I want to check an email and password against what is stored, so that access to this system rests on something a person knows rather than on a hardcoded stub.
+- As an **operator investigating an account**, I want every login attempt and its outcome kept in the database, so I can answer "did this succeed, and when" from stored data rather than from log retention.
+
+**What it guarantees:** a credential is verified, the attempt is recorded, and the outcome is returned. Password material is held as an argon2id hash in a table of its own, never on `users`, and never appears in any response. The behaviour is specified scenario by scenario in the capability's spec — see the Capabilities table above — and this document does not restate it.
+
+**Deliberately not covered:** sessions, tokens and any notion of a logged-in request; registration, password change and reset; authorization; and rate limiting or lockout. Verifying a credential and carrying an identity are separate concerns, and only the first one exists. `middleware/auth.ts` remains a stub that fabricates a user for every request.
 
 ## Success Criteria
 
