@@ -1,10 +1,11 @@
 import path from "node:path";
 
 import { Database } from "bun:sqlite";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 
-import { users } from "./schema";
+import { loginAttempts, userCredentials, users } from "./schema";
 
 // Vitest sets VITEST=true in every worker; an in-memory db keeps route
 // integration tests isolated from the file-backed dev/prod db and from
@@ -17,7 +18,7 @@ const sqlite = new Database(
   process.env.VITEST ? ":memory:" : path.join(process.cwd(), "sqlite.db"),
 );
 
-export const db = drizzle(sqlite, { schema: { users } });
+export const db = drizzle(sqlite, { schema: { users, userCredentials, loginAttempts } });
 
 migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
 
@@ -30,4 +31,17 @@ if (db.select().from(users).all().length === 0) {
       { name: "Jane Smith", email: "jane@example.com" },
     ])
     .run();
+
+  // Seed a credential for the demo user so the login endpoint is
+  // exercisable against a running server without a registration endpoint
+  // (out of scope). This password is a public demo fixture, not a secret.
+  const john = db.select().from(users).where(eq(users.email, "john@example.com")).get();
+  if (john) {
+    db.insert(userCredentials)
+      .values({
+        userId: john.id,
+        passwordHash: Bun.password.hashSync("password123"),
+      })
+      .run();
+  }
 }
